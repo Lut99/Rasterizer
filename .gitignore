@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# The entire build folder lmao gottem
+build/
+
+# Everything vscode-setting related
+.vscode/*
