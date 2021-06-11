@@ -1,12 +1,12 @@
 # Specify the libraries in this directory
-# add_library(VulkanMemory STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Common.cpp)
+add_library(VulkanMemory STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MemoryPool.cpp)
 
 # Set the dependencies for this library:
-# target_include_directories(VulkanMemory PUBLIC
-#                            "${INCLUDE_DIRS}")
+target_include_directories(VulkanMemory PUBLIC
+                           "${INCLUDE_DIRS}")
 
 # Add it to the list of includes & linked libraries
-# list(APPEND EXTRA_LIBS VulkanMemory)
+list(APPEND EXTRA_LIBS VulkanMemory)
 
 # Carry the list to the parent scope
 set(EXTRA_LIBS "${EXTRA_LIBS}" PARENT_SCOPE)
