@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   21/05/2021, 17:59:59
+ *   11/06/2021, 18:20:14
  * Auto updated?
  *   Yes
  *
@@ -20,9 +20,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "GPU.hpp"
+#include "vulkan/gpu/GPU.hpp"
+#include "vulkan/gpu/Surface.hpp"
 
-namespace RayTracer::Compute {
+namespace Rasterizer::Vulkan {
     /* The Swapchain class, which wraps and manages the swapchain and all images related to it. */
     class Swapchain {
     public:
@@ -34,7 +35,7 @@ namespace RayTracer::Compute {
         VkSwapchainKHR vk_swapchain;
 
         /* The surface to which this swapchain is bound. */
-        VkSurfaceKHR vk_surface;
+        const Surface& surface;
         /* The chosen format for this swapchain. */
         VkSurfaceFormatKHR vk_surface_format;
         /* The chosen presentation mode for this swapchain. */
@@ -54,7 +55,7 @@ namespace RayTracer::Compute {
 
     public:
         /* Constructor for the Swapchain class, which takes the GPU where it will be constructed and the window to which it shall present. */
-        Swapchain(const Compute::GPU& gpu, GLFWwindow* glfw_window, VkSurfaceKHR vk_surface);
+        Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& surface);
         /* Copy constructor for the Swapchain class. */
         Swapchain(const Swapchain& other);
         /* Move constructor for the Swapchain class. */
@@ -68,7 +69,7 @@ namespace RayTracer::Compute {
         /* Returns the number of images in the swapchain. */
         inline uint32_t size() const { return this->vk_actual_image_count; }
         /* Returns the actual extent of the swapchain. */
-        inline VkExtent2D extent() const { return this->vk_surface_extent; }
+        inline const VkExtent2D& extent() const { return this->vk_surface_extent; }
         /* Returns the format of the swapchain images. */
         inline VkFormat format() const { return this->vk_surface_format.format; }
 

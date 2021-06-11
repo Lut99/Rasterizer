@@ -15,16 +15,16 @@
 **/
 
 #include <limits>
-#include <CppDebugger.hpp>
+#include "tools/CppDebugger.hpp"
 
-#include "Formats.hpp"
-#include "ErrorCodes.hpp"
+#include "vulkan/Formats.hpp"
+#include "vulkan/ErrorCodes.hpp"
 
 #include "Swapchain.hpp"
 
 using namespace std;
-using namespace RayTracer;
-using namespace RayTracer::Compute;
+using namespace Rasterizer;
+using namespace Rasterizer::Vulkan;
 using namespace CppDebugger::SeverityValues;
 
 
@@ -67,38 +67,6 @@ static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, Vk
     DRETURN;
 }
 
-// /* Populates a given VkImageViewCreateInfo struct. */
-// static void populate_view_info(VkImageViewCreateInfo& view_info, VkImage vk_image, const VkSurfaceFormatKHR& vk_surface_format) {
-//     DENTER("populate_view_info");
-
-//     // Do the basic stuff first
-//     view_info = {};
-//     view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-
-//     // Bind the image
-//     view_info.image = vk_image;
-
-//     // Bind the image's format
-//     view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-//     view_info.format = vk_surface_format.format;
-
-//     // Next, bind the components. Can be useful to map all channels to red for a monochrome red image, for example
-//     view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-//     view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-//     view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-//     view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-//     // Next, we define what we do with the image and which part we actually access
-//     view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//     view_info.subresourceRange.baseMipLevel = 0;
-//     view_info.subresourceRange.levelCount = 1;
-//     view_info.subresourceRange.baseArrayLayer = 0;
-//     view_info.subresourceRange.layerCount = 1;
-
-//     // Done
-//     DRETURN;
-// }
-
 
 
 
@@ -108,7 +76,7 @@ static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, Vk
 static VkSurfaceFormatKHR choose_swapchain_format(const Tools::Array<VkSurfaceFormatKHR>& formats) {
     DENTER("choose_swapchain_formats");
 
-    for (size_t i = 0; i < formats.size(); i++) {
+    for (uint32_t i = 0; i < formats.size(); i++) {
         if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             DLOG(info, "Using format: " + vk_format_map[formats[i].format]);
             DRETURN formats[i];
@@ -175,9 +143,9 @@ static VkExtent2D choose_swapchain_extent(const VkSurfaceCapabilitiesKHR& capabi
 
 /***** SWAPCHAIN CLASS *****/
 /* Constructor for the Swapchain class, which takes the GPU where it will be constructed and the window to which it shall present. */
-Swapchain::Swapchain(const Compute::GPU& gpu, GLFWwindow* glfw_window, VkSurfaceKHR vk_surface) :
+Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& surface) :
     gpu(gpu),
-    vk_surface(vk_surface)
+    surface(surface)
 {
     DENTER("Compute::Swapchain::Swapchain(copy)");
     DLOG(info, "Initializing Swapchain...");
@@ -207,7 +175,7 @@ Swapchain::Swapchain(const Compute::GPU& gpu, GLFWwindow* glfw_window, VkSurface
 
     // Populate the create info
     VkSwapchainCreateInfoKHR swapchain_info;
-    populate_swapchain_info(swapchain_info, this->vk_surface, this->gpu.swapchain_info().capabilities(), this->vk_surface_format, this->vk_surface_present_mode, this->vk_surface_extent, this->vk_desired_image_count);
+    populate_swapchain_info(swapchain_info, this->surface, this->gpu.swapchain_info().capabilities(), this->vk_surface_format, this->vk_surface_present_mode, this->vk_surface_extent, this->vk_desired_image_count);
 
     // Use that to actually create the swapchain
     VkResult vk_result;
@@ -229,26 +197,6 @@ Swapchain::Swapchain(const Compute::GPU& gpu, GLFWwindow* glfw_window, VkSurface
 
 
 
-    // // Create the image views for those images
-    // DLOG(info, "Creating image views...");
-    // this->vk_swapchain_views.reserve(this->vk_swapchain_images.size());
-    // for (size_t i = 0; i < this->vk_swapchain_images.size(); i++) {
-    //     // First, create the create info
-    //     VkImageViewCreateInfo view_info;
-    //     populate_view_info(view_info, this->vk_swapchain_images[i], this->vk_surface_format);
-
-    //     // Create 'em
-    //     VkImageView result;
-    //     if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &result)) != VK_SUCCESS) {
-    //         DLOG(fatal, "Could not create image view for image " + std::to_string(i) + ": " + vk_error_map[vk_result]);
-    //     }
-
-    //     // Append it to the list
-    //     this->vk_swapchain_views.push_back(result);
-    // }
-
-
-
     DDEDENT;
     DLEAVE;
 }
@@ -256,7 +204,7 @@ Swapchain::Swapchain(const Compute::GPU& gpu, GLFWwindow* glfw_window, VkSurface
 /* Copy constructor for the Swapchain class. */
 Swapchain::Swapchain(const Swapchain& other) :
     gpu(other.gpu),
-    vk_surface(other.vk_surface),
+    surface(other.surface),
     vk_surface_format(other.vk_surface_format),
     vk_surface_present_mode(other.vk_surface_present_mode),
     vk_surface_extent(other.vk_surface_extent),
@@ -267,7 +215,7 @@ Swapchain::Swapchain(const Swapchain& other) :
 
     // We copy the swapchain by-recreating it using the standard options
     VkSwapchainCreateInfoKHR swapchain_info;
-    populate_swapchain_info(swapchain_info, this->vk_surface, this->gpu.swapchain_info().capabilities(), this->vk_surface_format, this->vk_surface_present_mode, this->vk_surface_extent, this->vk_desired_image_count);
+    populate_swapchain_info(swapchain_info, this->surface, this->gpu.swapchain_info().capabilities(), this->vk_surface_format, this->vk_surface_present_mode, this->vk_surface_extent, this->vk_desired_image_count);
 
     // Use that to actually create the swapchain
     VkResult vk_result;
@@ -304,7 +252,7 @@ Swapchain::Swapchain(const Swapchain& other) :
 Swapchain::Swapchain(Swapchain&& other) :
     gpu(other.gpu),
     vk_swapchain(other.vk_swapchain),
-    vk_surface(other.vk_surface),
+    surface(other.surface),
     vk_surface_format(other.vk_surface_format),
     vk_surface_present_mode(other.vk_surface_present_mode),
     vk_surface_extent(other.vk_surface_extent),
@@ -324,13 +272,6 @@ Swapchain::~Swapchain() {
     DLOG(info, "Cleaning Swapchain...");
     DINDENT;
 
-    // if (this->vk_swapchain_views.size() > 0) {
-    //     DLOG(info, "Destroying image views...");
-    //     for (size_t i = 0; i < this->vk_swapchain_views.size(); i++) {
-    //         vkDestroyImageView(this->gpu, this->vk_swapchain_views[i], nullptr);
-    //     }
-    // }
-
     if (this->vk_swapchain != nullptr) {
         DLOG(info, "Destroying internal swapchain object...");
         vkDestroySwapchainKHR(this->gpu, this->vk_swapchain, nullptr);
@@ -343,7 +284,7 @@ Swapchain::~Swapchain() {
 
 
 /* Swap operator for the Swapchain class. */
-void Compute::swap(Swapchain& s1, Swapchain& s2) {
+void Vulkan::swap(Swapchain& s1, Swapchain& s2) {
     DENTER("Compute::swap(Swapchain)");
 
     #ifndef NDEBUG
@@ -351,13 +292,16 @@ void Compute::swap(Swapchain& s1, Swapchain& s2) {
     if (s1.gpu != s2.gpu) {
         DLOG(fatal, "Cannot swap swapchains with different GPUs");
     }
+    // If the surface is not the same...
+    if (s1.surface != s2.surface) {
+        DLOG(fatal, "Cannot swap swapchains with different surfaces");
+    }
     #endif
 
     // Swap all fields
     using std::swap;
     
     swap(s1.vk_swapchain, s2.vk_swapchain);
-    swap(s1.vk_surface, s2.vk_surface);
     swap(s1.vk_surface_format, s2.vk_surface_format);
     swap(s1.vk_surface_present_mode, s2.vk_surface_present_mode);
     swap(s1.vk_surface_extent, s2.vk_surface_extent);
