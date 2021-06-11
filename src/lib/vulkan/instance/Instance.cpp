@@ -187,7 +187,7 @@ Instance::Instance(const Tools::Array<const char*>& extensions, const Tools::Arr
 
     // If we were successfull, print which extensions
     DINDENT;
-    for (size_t i = 0; i < instance_extensions.size(); i++) {
+    for (uint32_t i = 0; i < instance_extensions.size(); i++) {
         DLOG(info, std::string("Enabled extension '") + this->vk_extensions[i] + "'");
     }
     DDEDENT;
@@ -196,7 +196,7 @@ Instance::Instance(const Tools::Array<const char*>& extensions, const Tools::Arr
 
     /* Next, initialize the debugger - but only if debug is set and the layer is enabled. */
     #ifndef NDEBUG
-    for (size_t i = 0; i < this->vk_layers.size(); i++) {
+    for (uint32_t i = 0; i < this->vk_layers.size(); i++) {
         if (this->vk_layers[i] == std::string("VK_LAYER_KHRONOS_validation")) {
             DLOG(info, "Initializing debug logger...");
 

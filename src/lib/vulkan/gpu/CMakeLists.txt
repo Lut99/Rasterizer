@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanGpu STATIC ${CMAKE_CURRENT_SOURCE_DIR}/GPU.cpp)
+add_library(VulkanGpu STATIC ${CMAKE_CURRENT_SOURCE_DIR}/GPU.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Surface.cpp ${CMAKE_CURRENT_SOURCE_DIR}/QueueInfo.cpp ${CMAKE_CURRENT_SOURCE_DIR}/SwapchainInfo.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanGpu PUBLIC

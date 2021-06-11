@@ -4,7 +4,7 @@
  * Created:
  *   30/04/2021, 14:03:39
  * Last edited:
- *   05/06/2021, 15:10:02
+ *   11/06/2021, 15:52:00
  * Auto updated?
  *   Yes
  *
@@ -64,7 +64,7 @@ namespace Rasterizer::Vulkan {
         inline bool operator!=(const Instance& other) const { return this->vk_instance != other.vk_instance; }
 
         /* Explicitly returns the internal VkInstance object. */
-        inline VkInstance instance() const { return this->vk_instance; }
+        inline const VkInstance& instance() const { return this->vk_instance; }
         /* Implicitly returns the internal VkInstance object. */
         inline operator VkInstance() const { return this->vk_instance; }
 

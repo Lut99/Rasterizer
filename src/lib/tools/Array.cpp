@@ -33,7 +33,7 @@ template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array() :
 {}
 
 /* Constructor for the Array class, which takes an initial amount to size to. Each element will thus be uninitialized. */
-template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(size_t initial_size) :
+template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(array_size_t initial_size) :
     length(0),
     max_length(initial_size)
 {
@@ -42,15 +42,25 @@ template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(size_t initia
     if (this->elements == nullptr) { throw std::bad_alloc(); }
 }
 
+/* Constructor for the Array class, which takes a single element and repeats that the given amount of times. Makes use of the element's copy constructor. */
+template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(const T& elem, array_size_t n_repeats) :
+    Array(n_repeats)
+{
+    // Make enough copies
+    for (array_size_t i = 0; i < n_repeats; i++) {
+        new(this->elements + this->length++) T(elem);
+    }
+}
+
 /* Constructor for the Array class, which takes an initializer_list to initialize the Array with. Makes use of the element's copy constructor. */
 template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(const std::initializer_list<T>& list) :
-    Array(list.size())
+    Array(static_cast<array_size_t>(list.size()))
 {
     // Overwrite the length to the list's size
-    this->length = list.size();
+    this->length = static_cast<array_size_t>(list.size());
 
     // Copy all the elements over
-    size_t i = 0;
+    array_size_t i = 0;
     for (const T& elem : list) {
         // Use the placement new to call T's copy constructor
         new(this->elements + i) T(elem);
@@ -59,14 +69,14 @@ template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(const std::in
 }
 
 /* Constructor for the Array class, which takes a raw C-style vector to copy elements from and its size. Note that the Array's element type must have a copy custructor defined. */
-template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(T* list, size_t list_size) :
+template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(T* list, array_size_t list_size) :
     Array(list_size)
 {
     // Overwrite the length to the list's size
     this->length = list_size;
 
     // Copy all the elements over
-    for (size_t i = 0; i < list_size; i++) {
+    for (array_size_t i = 0; i < list_size; i++) {
         // Use the placement new to call T's copy constructor
         new(this->elements + i) T(list[i]);
     }
@@ -74,13 +84,13 @@ template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(T* list, size
 
 /* Constructor for the Array class, which takes a C++-style vector. Note that the Array's element type must have a copy custructor defined. */
 template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(const std::vector<T>& list) :
-    Array(list.size())
+    Array(static_cast<array_size_t>(list.size()))
 {
     // Overwrite the length to the list's size
-    this->length = list.size();
+    this->length = static_cast<array_size_t>(list.size());
 
     // Copy all the elements over
-    for (size_t i = 0; i < list.size(); i++) {
+    for (array_size_t i = 0; i < static_cast<array_size_t>(list.size()); i++) {
         // Use the placement new to call T's copy constructor
         new(this->elements + i) T(list[i]);
     }
@@ -96,7 +106,7 @@ template<class T, bool D, bool C, bool M> Array<T, D, C, M>::Array(const Array& 
     if (this->elements == nullptr) { throw std::bad_alloc(); }
 
     // Copy each element over
-    for (size_t i = 0; i < other.length; i++) {
+    for (array_size_t i = 0; i < other.length; i++) {
         new(this->elements + i) T(other.elements[i]);
     }
 }
@@ -117,7 +127,7 @@ template<class T, bool D, bool C, bool M> Array<T, D, C, M>::~Array() {
     if (this->elements != nullptr) {
         // First deallocate all elements if the element needs that
         if (std::is_destructible<T>::value) {
-            for (size_t i = 0; i < this->length; i++) {
+            for (array_size_t i = 0; i < this->length; i++) {
                 this->elements[i].~T();
             }
         }
@@ -136,7 +146,7 @@ template <class T, bool D, bool C, bool M> Array<T>& Array<T, D, C, M>::operator
     }
 
     // Add the new elements to the end of the array
-    for (size_t i = 0; i < elems.size(); i++) {
+    for (array_size_t i = 0; i < elems.size(); i++) {
         new(this->elements + this->length++) T(elems.elements[i]);
     }
 
@@ -205,7 +215,7 @@ template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::pop_back() {
 
 
 /* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. */
-template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::erase(size_t index) {
+template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::erase(array_size_t index) {
     // Check if in bounds
     if (index >= this->length) { return; }
 
@@ -222,13 +232,13 @@ template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::erase(size_t i
 }
 
 /* Erases multiple elements in the given (inclusive) range from the array. Does nothing if the any index is out-of-bounds or if the start_index is larger than the stop_index. */
-template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::erase(size_t start_index, size_t stop_index) {
+template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index) {
     // Check if in bounds
     if (start_index >= this->length || stop_index >= this->length || start_index > stop_index) { return; }
 
     // Otherwise, delete the elements if needed
     if (std::is_destructible<T>::value) {
-        for (size_t i = start_index; i <= stop_index; i++) {
+        for (array_size_t i = start_index; i <= stop_index; i++) {
             this->elements[i].~T();
         }
     }
@@ -244,7 +254,7 @@ template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::erase(size_t s
 template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::clear() {
     // Delete everything currently in the array if needed
     if (std::is_destructible<T>::value) {
-        for (size_t i = 0; i < this->length; i++) {
+        for (array_size_t i = 0; i < this->length; i++) {
             this->elements[i].~T();
         }
     }
@@ -259,7 +269,7 @@ template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::clear() {
 
 
 /* Re-allocates the internal array to the given size. Any leftover elements will be left unitialized, and elements that won't fit will be deallocated. */
-template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::reserve(size_t new_size) {
+template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::reserve(array_size_t new_size) {
     // Do only something if the size is different from what it is now
     if (new_size == this->max_length) {
         // Do nothing
@@ -271,12 +281,12 @@ template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::reserve(size_t
     if (new_elements == nullptr) { throw std::bad_alloc(); }
 
     // Determine how many elements to move over; either new_size or the length of the array, whichever is smaller
-    size_t n_to_copy = std::min(new_size, this->length);
+    array_size_t n_to_copy = std::min(new_size, this->length);
     memmove(new_elements, this->elements, sizeof(T) * n_to_copy);
     
     // Deallocate any elements that are leftover (if needed), then delete the old array
     if (std::is_destructible<T>::value) {
-        for (size_t i = new_size; i < this->length; i++) {
+        for (array_size_t i = new_size; i < this->length; i++) {
             this->elements[i].~T();
         }
     }
@@ -289,12 +299,12 @@ template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::reserve(size_t
 }
 
 /* Resizes the array to the given size. Any leftover elements will be initialized with their default constructor, and elements that won't fit will be deallocated. If the same size is given as the vector, can be used to initialize a whole array to default constructor. */
-template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::resize(size_t new_size) {
+template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::resize(array_size_t new_size) {
     // Simply reserve the required space
     this->reserve(new_size);
 
     // Loop for the non-reserved elements to initialize them
-    for (size_t i = this->length; i < this->max_length; i++) {
+    for (array_size_t i = this->length; i < this->max_length; i++) {
         new(this->elements + i) T();
     }
 
@@ -305,23 +315,23 @@ template<class T, bool D, bool C, bool M> void Array<T, D, C, M>::resize(size_t 
 
 
 /* Returns a muteable reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
-template<class T, bool D, bool C, bool M> T& Array<T, D, C, M>::at(size_t index) {
+template<class T, bool D, bool C, bool M> T& Array<T, D, C, M>::at(array_size_t index) {
     if (index >= this->length) { throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->length)); }
     return this->elements[index];
 }
 
 /* Returns a constant reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
-template<class T, bool D, bool C, bool M> const T& Array<T, D, C, M>::at(size_t index) const {
+template<class T, bool D, bool C, bool M> const T& Array<T, D, C, M>::at(array_size_t index) const {
     if (index >= this->length) { throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->length)); }
     return this->elements[index];
 }
 
 
 
-/* Returns a muteable pointer to the internal data struct. Use this to fill the array using C-libraries, but beware that the array needs to have enough space reserved. Also note that object put here will still be deallocated by the Array using ~T(). The optional new_size parameter is used to update the size() value of the array, so it knows what is initialized and what is not. Leave it at numeric_limits<size_t>::max() to leave the array size unchanged. */
-template<class T, bool D, bool C, bool M> T* Array<T, D, C, M>::wdata(size_t new_size) {
+/* Returns a muteable pointer to the internal data struct. Use this to fill the array using C-libraries, but beware that the array needs to have enough space reserved. Also note that object put here will still be deallocated by the Array using ~T(). The optional new_size parameter is used to update the size() value of the array, so it knows what is initialized and what is not. Leave it at numeric_limits<array_size_t>::max() to leave the array size unchanged. */
+template<class T, bool D, bool C, bool M> T* Array<T, D, C, M>::wdata(array_size_t new_size) {
     // Update the size if it's not the max already
-    if (new_size != std::numeric_limits<size_t>::max()) { this->length = new_size; }
+    if (new_size != std::numeric_limits<array_size_t>::max()) { this->length = new_size; }
     // Return the pointer
     return this->elements;
 }
