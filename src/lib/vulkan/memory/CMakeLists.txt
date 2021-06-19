@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanMemory STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MemoryPool.cpp)
+add_library(VulkanMemory STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MemoryPool.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Buffer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Image.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanMemory PUBLIC

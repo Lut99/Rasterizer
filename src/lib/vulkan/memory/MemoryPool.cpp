@@ -14,22 +14,22 @@
 **/
 
 #include <limits>
-#include <CppDebugger.hpp>
+#include "tools/CppDebugger.hpp"
 
-#include "ErrorCodes.hpp"
+#include "vulkan/ErrorCodes.hpp"
 #include "tools/Common.hpp"
 
 #include "MemoryPool.hpp"
 
 using namespace std;
-using namespace RayTracer;
-using namespace RayTracer::Compute;
+using namespace Rasterizer;
+using namespace Rasterizer::Vulkan;
 using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VKBufferCreateInfo struct. */
-void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
+static void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
     DENTER("populate_buffer_info");
 
     // Only set to default
@@ -47,7 +47,7 @@ void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n_bytes,
 }
 
 /* Populates a given VkImageCreateInfo struct. */
-void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D& image_size, VkFormat image_format, VkImageLayout image_layout, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
+static void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D& image_size, VkFormat image_format, VkImageLayout image_layout, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
     DENTER("populate_image_info");
 
     // Only set to default
@@ -77,7 +77,7 @@ void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D& image_
 }
 
 /* Populates a given VkMemoryAllocateInfo struct. */
-void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t memory_type, VkDeviceSize n_bytes) {
+static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t memory_type, VkDeviceSize n_bytes) {
     DENTER("populate_allocate_info");
 
     // Set to default & define the stryct type
@@ -93,203 +93,6 @@ void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t memory
     DRETURN;
 }
 
-/* Populates a given VkMappedMemoryRange struct. */
-void populate_memory_range(VkMappedMemoryRange& memory_range, VkDeviceMemory vk_memory, VkDeviceSize vk_memory_offset, VkDeviceSize vk_memory_size) {
-    DENTER("populate_memory_range");
-
-    // Set to default
-    memory_range = {};
-    memory_range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-
-    // Tell it the memory and which part of the device memory is used
-    memory_range.memory = vk_memory;
-    memory_range.offset = vk_memory_offset;
-    memory_range.size = vk_memory_size;
-
-    // Done, return
-    DRETURN;
-}
-
-
-
-
-
-/***** BUFFER CLASS *****/
-/* Private constructor for the Buffer class, which takes the buffer, the buffer's size and the properties of the pool's memory. */
-Buffer::Buffer(BufferHandle handle, VkBuffer buffer, VkBufferUsageFlags vk_usage_flags, VkSharingMode vk_sharing_mode, VkBufferCreateFlags vk_create_flags, VkDeviceMemory vk_memory, VkDeviceSize memory_offset, VkDeviceSize memory_size, VkDeviceSize req_memory_size, VkMemoryPropertyFlags memory_properties) :
-    vk_handle(handle),
-    vk_buffer(buffer),
-    vk_usage_flags(vk_usage_flags),
-    vk_sharing_mode(vk_sharing_mode),
-    vk_create_flags(vk_create_flags),
-    vk_memory(vk_memory),
-    vk_memory_offset(memory_offset),
-    vk_memory_size(memory_size),
-    vk_req_memory_size(req_memory_size),
-    vk_memory_properties(memory_properties)
-{}
-
-
-
-/* Sets n_bytes data to this buffer using an intermediate staging buffer. The staging buffer is copied using the given command buffer on the given queue. */
-void Buffer::set(const GPU& gpu, const Buffer& staging_buffer, const CommandBuffer& command_buffer, VkQueue vk_queue, void* data, uint32_t n_bytes) const {
-    DENTER("Compute::Buffer::set");
-
-    // First, map the staging buffer to an CPU-reachable area
-    void* mapped_area;
-    staging_buffer.map(gpu, &mapped_area);
-
-    // Next, copy the data to the buffer
-    memcpy(mapped_area, data, n_bytes);
-
-    // Flush and then unmap the staging buffer
-    staging_buffer.flush(gpu);
-    staging_buffer.unmap(gpu);
-
-    // Use the command buffer to copy the data around
-    staging_buffer.copyto(command_buffer, vk_queue, *this, (VkDeviceSize) n_bytes);
-
-    // Done
-    DRETURN;
-}
-
-/* Gets n_bytes data from this buffer using an intermediate staging buffer. The buffers are copied over using the given command buffer on the given queue. The result is put in the given pointer. */
-void Buffer::get(const GPU& gpu, const Buffer& staging_buffer, const CommandBuffer& command_buffer, VkQueue vk_queue, void* data, uint32_t n_bytes) const {
-    DENTER("Compute::Buffer::set");
-
-    // First, copy the data we have to the staging buffer
-    this->copyto(command_buffer, vk_queue, staging_buffer, (VkDeviceSize) n_bytes);
-
-    // Then, map the staging buffer to an CPU-reachable area
-    void* mapped_area;
-    staging_buffer.map(gpu, &mapped_area);
-
-    // Next, copy the data to a user-defined location
-    memcpy(data, mapped_area, n_bytes);
-
-    // Unmap the staging buffer. No need to flush cuz we didn't change anything
-    staging_buffer.unmap(gpu);
-
-    // Done
-    DRETURN;
-}
-
-
-
-/* Maps the buffer to host-memory so it can be written to. Only possible if the VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT is set for the memory of this buffer's pool. Note that the memory is NOT automatically unmapped if the Buffer object is destroyed. */
-void  Buffer::map(const GPU& gpu, void** mapped_memory) const {
-    DENTER("Compute::Buffer::map");
-
-    // If this buffer does not have the host bit set, then we stop immediatement
-    if (!(this->vk_memory_properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
-        DLOG(fatal, "Cannot map a buffer that is not visible by the CPU.");
-    }
-
-    // Now, we map the memory to a bit of host-side memory
-    VkResult vk_result;
-    if ((vk_result = vkMapMemory(gpu, this->vk_memory, this->vk_memory_offset, this->vk_req_memory_size, 0, mapped_memory)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not map buffer memory to CPU-memory: " + vk_error_map[vk_result]);
-    }
-
-    // Done
-    DRETURN;
-}
-
-/* Flushes all unflushed memory operations done on mapped memory. If the memory of this buffer has VK_MEMORY_PROPERTY_HOST_COHERENT_BIT set, then nothing is done as the memory is already automatically flushed. */
-void  Buffer::flush(const GPU& gpu) const {
-    DENTER("Compute::Buffer::flush");
-
-    // If this buffer is coherent, quite immediately
-    if (!(this->vk_memory_properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        DRETURN;
-    }
-
-    // Prepare the call to the flush function
-    VkMappedMemoryRange memory_range;
-    populate_memory_range(memory_range, this->vk_memory, this->vk_memory_offset, this->vk_req_memory_size);
-
-    // Do the flush call
-    VkResult vk_result;
-    if ((vk_result = vkFlushMappedMemoryRanges(gpu, 1, &memory_range)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not flush mapped buffer memory: " + vk_error_map[vk_result]);
-    }
-
-    // Done
-    DRETURN;
-}
-
-/* Unmaps buffer's memory. */
-void  Buffer::unmap(const GPU& gpu) const {
-    DENTER("Compute::Buffer::unmap");
-
-    // Simply call unmap, done
-    vkUnmapMemory(gpu, this->vk_memory);
-
-    DRETURN;
-}
-
-
-
-/* Copies this buffer's content to another given buffer. The given command pool (which must be a pool for the memory-enabled queue) is used to schedule the copy. Note that the given buffer needn't come from the same memory pool. */
-void Buffer::copyto(const CommandBuffer& command_buffer, VkQueue vk_queue, const Buffer& destination, VkDeviceSize n_bytes, VkDeviceSize target_offset, bool wait_queue_idle) const {
-    DENTER("Compute::Buffer::copyto");
-
-    // If the number of bytes to transfer is the max, default to the buffer size
-    if (n_bytes == numeric_limits<VkDeviceSize>::max()) {
-        n_bytes = this->vk_memory_size;
-    }
-
-    // First, check if the destination buffer is large enough
-    if (destination.vk_memory_size - target_offset < n_bytes) {
-        DLOG(fatal, "Cannot copy " + Tools::bytes_to_string(n_bytes) + " to buffer of only " + Tools::bytes_to_string(destination.vk_memory_size) + " (with offset=" + std::to_string(target_offset) + ").");
-    }
-
-    // Next, make sure they have the required flags
-    if (!(this->vk_usage_flags & VK_BUFFER_USAGE_TRANSFER_SRC_BIT)) {
-        DLOG(fatal, "Source buffer does not have VK_BUFFER_USAGE_TRANSFER_SRC_BIT-flag set.");
-    }
-    if (!(destination.vk_usage_flags & VK_BUFFER_USAGE_TRANSFER_DST_BIT)) {
-        DLOG(fatal, "Destination buffer does not have VK_BUFFER_USAGE_TRANSFER_DST_BIT-flag set.");
-    }
-
-    // Next, start recording the given command buffer, and we'll tell Vulkan we use this recording only once
-    command_buffer.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
-    // We schedule the copy by populating a struct
-    VkBufferCopy copy_region{};
-    copy_region.srcOffset = 0;
-    copy_region.dstOffset = target_offset;
-    copy_region.size = n_bytes;
-    vkCmdCopyBuffer(command_buffer, this->vk_buffer, destination.vk_buffer, 1, &copy_region);
-
-    // Since that's all, submit the queue. Note that we only return once the copy is 
-    command_buffer.end(vk_queue, wait_queue_idle);
-
-    DRETURN;
-}
-
-
-
-
-
-/***** IMAGE CLASS *****/
-/* Private constructor for the Buffer class, which takes the buffer, the buffer's size and the properties of the pool's memory. */
-Image::Image(ImageHandle handle, VkImage image, VkExtent2D vk_extent, VkFormat vk_format, VkImageLayout vk_layout, VkImageUsageFlags vk_usage_flags, VkSharingMode vk_sharing_mode, VkImageCreateFlags vk_create_flags, VkDeviceMemory vk_memory, VkDeviceSize memory_offset, VkDeviceSize memory_size, VkDeviceSize req_memory_size, VkMemoryPropertyFlags memory_properties) :
-    vk_handle(handle),
-    vk_image(image),
-    vk_extent(vk_extent),
-    vk_format(vk_format),
-    vk_layout(vk_layout),
-    vk_usage_flags(vk_usage_flags),
-    vk_sharing_mode(vk_sharing_mode),
-    vk_create_flags(vk_create_flags),
-    vk_memory(vk_memory),
-    vk_memory_offset(memory_offset),
-    vk_memory_size(memory_size),
-    vk_req_memory_size(req_memory_size),
-    vk_memory_properties(memory_properties)
-{}
-
 
 
 
@@ -303,7 +106,7 @@ MemoryPool::MemoryPool(const GPU& gpu, uint32_t memory_type, VkDeviceSize n_byte
     vk_memory_properties(memory_properties),
     vk_free_blocks({ MemoryPool::FreeBlock({ 0, this->vk_memory_size }) })
 {
-    DENTER("Compute::MemoryPool::MemoryPool");
+    DENTER("Vulkan::MemoryPool::MemoryPool");
     DLOG(info, "Initializing MemoryPool...");
     DINDENT;
 
@@ -353,7 +156,7 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
     vk_memory_properties(other.vk_memory_properties),
     vk_free_blocks({ MemoryPool::FreeBlock({ 0, this->vk_memory_size }) })
 {
-    DENTER("MemoryPool::MemoryPool(copy)");
+    DENTER("Vulkan::MemoryPool::MemoryPool(copy)");
 
     // Allocate a new block of memory that we shall use, with the proper size
     VkMemoryAllocateInfo allocate_info;
@@ -387,14 +190,14 @@ MemoryPool::MemoryPool(MemoryPool&& other):
 
 /* Destructor for the MemoryPool class. */
 MemoryPool::~MemoryPool() {
-    DENTER("Compute::MemoryPool::~MemoryPool");
+    DENTER("Vulkan::MemoryPool::~MemoryPool");
     DLOG(info, "Cleaning MemoryPool...");
     DINDENT;
 
     // Delete all buffers
     if (this->vk_used_blocks.size() > 0) {
         DLOG(info, "Deallocating buffers...");
-        for (const std::pair<MemoryHandle, UsedBlock*>& p : this->vk_used_blocks) {
+        for (const std::pair<memory_h, UsedBlock*>& p : this->vk_used_blocks) {
             // Either destroy the buffer or the image
             if (p.second->type == MemoryBlockType::buffer) {
                 vkDestroyBuffer(this->gpu, ((BufferBlock*) p.second)->vk_buffer, nullptr);
@@ -420,19 +223,19 @@ MemoryPool::~MemoryPool() {
 
 
 /* Private helper function that actually performs memory allocation. Returns a reference to a UsedBlock that describes the block allocated. */
-MemoryHandle MemoryPool::allocate_memory(MemoryBlockType type, VkDeviceSize n_bytes, const VkMemoryRequirements& mem_requirements) {
-    DENTER("allocate_memory");
+memory_h MemoryPool::allocate_memory(MemoryBlockType type, VkDeviceSize n_bytes, const VkMemoryRequirements& mem_requirements) {
+    DENTER("Vulkan::MemoryPool::allocate_memory");
 
     // Pick a suitable memory location for this block in the array of used blocks; either as a new block or use the location of a previously allocated one
-    MemoryHandle result = 0;
+    memory_h result = 0;
     bool unique = false;
     while (!unique) {
         unique = true;
-        for (const std::pair<MemoryHandle, UsedBlock*>& p : this->vk_used_blocks) {
+        for (const std::pair<memory_h, UsedBlock*>& p : this->vk_used_blocks) {
             if (result == MemoryPool::NullHandle || result == p.first) {
                 // If result is the maximum value, then throw an error
-                if (result == std::numeric_limits<MemoryHandle>::max()) {
-                    DLOG(fatal, "Buffer handle overflow; cannot allocate more buffers.");
+                if (result == std::numeric_limits<memory_h>::max()) {
+                    DLOG(fatal, "Memory handle overflow; cannot allocate more buffers.");
                 }
 
                 // Otherwise, increment and re-try
@@ -457,7 +260,7 @@ MemoryHandle MemoryPool::allocate_memory(MemoryBlockType type, VkDeviceSize n_by
     VkDeviceSize offset;
     VkDeviceSize total_free = 0;
     bool found = false;
-    for (size_t i = 0; i < this->vk_free_blocks.size(); i++) {
+    for (uint32_t i = 0; i < this->vk_free_blocks.size(); i++) {
         // Compute how many bytes of alignment we need to take into account when looking at where this block starts
         VkDeviceSize align_bytes = mem_requirements.alignment - this->vk_free_blocks[i].start % mem_requirements.alignment;
         if (align_bytes == mem_requirements.alignment) { align_bytes = 0; }
@@ -509,8 +312,8 @@ MemoryHandle MemoryPool::allocate_memory(MemoryBlockType type, VkDeviceSize n_by
 
 
 /* Tries to get a new buffer from the pool of the given size and with the given flags, returning only its handle. Applies extra checks if NDEBUG is not defined. */
-BufferHandle MemoryPool::allocate_buffer_h(VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags)  {
-    DENTER("Compute::MemoryPool::allocate_buffer_h");
+buffer_h MemoryPool::allocate_buffer_h(VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags)  {
+    DENTER("Vulkan::MemoryPool::allocate_buffer_h");
 
     // First, prepare the buffer info struct
     VkBufferCreateInfo buffer_info;
@@ -528,7 +331,7 @@ BufferHandle MemoryPool::allocate_buffer_h(VkDeviceSize n_bytes, VkBufferUsageFl
     vkGetBufferMemoryRequirements(this->gpu, buffer, &mem_requirements);
 
     // Use the helper function to do the allocation
-    BufferHandle result = this->allocate_memory(MemoryBlockType::buffer, n_bytes, mem_requirements);
+    buffer_h result = this->allocate_memory(MemoryBlockType::buffer, n_bytes, mem_requirements);
     BufferBlock* block = (BufferBlock*) this->vk_used_blocks.at(result);
 
     // With the block, bind the memory to the new buffer
@@ -547,8 +350,8 @@ BufferHandle MemoryPool::allocate_buffer_h(VkDeviceSize n_bytes, VkBufferUsageFl
 }
 
 /* Tries to get a new image from the pool of the given sizes and with the given flags, returning only its handle. Applies extra checks if NDEBUG is not defined. */
-ImageHandle MemoryPool::allocate_image_h(uint32_t width, uint32_t height, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    DENTER("Compute::MemoryPool::allocate_image_h");
+image_h MemoryPool::allocate_image_h(uint32_t width, uint32_t height, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
+    DENTER("Vulkan::MemoryPool::allocate_image_h");
 
     // First, define the width & height as a 3D extent
     VkExtent3D image_size = {};
@@ -572,7 +375,7 @@ ImageHandle MemoryPool::allocate_image_h(uint32_t width, uint32_t height, VkForm
     vkGetImageMemoryRequirements(this->gpu, image, &mem_requirements);
 
     // Next, allocate memory for the image
-    ImageHandle result = this->allocate_memory(MemoryBlockType::image, 3 * width * height * sizeof(uint8_t), mem_requirements);
+    image_h result = this->allocate_memory(MemoryBlockType::image, 3 * width * height * sizeof(uint8_t), mem_requirements);
     ImageBlock* block = (ImageBlock*) this->vk_used_blocks.at(result);
 
     // Bind that memory to the image
@@ -594,11 +397,11 @@ ImageHandle MemoryPool::allocate_image_h(uint32_t width, uint32_t height, VkForm
 }
 
 /* Deallocates the buffer or image with the given handle. Does not throw an error if the handle doesn't exist, unless NDEBUG is not defined. */
-void MemoryPool::deallocate(MemoryHandle handle) {
-    DENTER("Compute::MemoryPool::deallocate");
+void MemoryPool::deallocate(memory_h handle) {
+    DENTER("Vulkan::MemoryPool::deallocate");
 
     // First, try to fetch the given buffer
-    std::unordered_map<MemoryHandle, UsedBlock*>::iterator iter = this->vk_used_blocks.find(handle);
+    std::unordered_map<memory_h, UsedBlock*>::iterator iter = this->vk_used_blocks.find(handle);
     if (iter == this->vk_used_blocks.end()) {
         DLOG(fatal, "Object with handle '" + std::to_string(handle) + "' does not exist.");
     }
@@ -619,7 +422,7 @@ void MemoryPool::deallocate(MemoryHandle handle) {
 
     // Generate a new free block for the memory released by this buffer. We insert it sorted.
     bool inserted = false;
-    for (size_t i = 0; i < this->vk_free_blocks.size(); i++) {
+    for (uint32_t i = 0; i < this->vk_free_blocks.size(); i++) {
         // Get the start & offset for this free block
         VkDeviceSize free_start = this->vk_free_blocks[i].start;
         VkDeviceSize free_length = this->vk_free_blocks[i].length;
@@ -685,7 +488,7 @@ void MemoryPool::deallocate(MemoryHandle handle) {
             if (!inserted) {
                 // Not mergeable; insert a new block by moving all blocks to the right
                 this->vk_free_blocks.resize(this->vk_free_blocks.size() + 1);
-                for (size_t j = i; j < this->vk_free_blocks.size() - 1; j++) {
+                for (uint32_t j = i; j < this->vk_free_blocks.size() - 1; j++) {
                     this->vk_free_blocks[j + 1] = this->vk_free_blocks[j];
                 }
 
@@ -731,13 +534,13 @@ void MemoryPool::deallocate(MemoryHandle handle) {
 
 /* Defragements the entire pool, aligning all buffers next to each other in memory to create a maximally sized free block. Note that existing handles will remain valid. */
 void MemoryPool::defrag() {
-    DENTER("Compute::MemoryPool::defrag");
+    DENTER("Vulkan::MemoryPool::defrag");
 
     // We loop through all internal blocks
     VkResult vk_result;
     VkMemoryRequirements mem_requirements;
     VkDeviceSize offset = 0;
-    for (const std::pair<MemoryHandle, UsedBlock*>& p : this->vk_used_blocks) {
+    for (const std::pair<memory_h, UsedBlock*>& p : this->vk_used_blocks) {
         // Get a reference to the block
         UsedBlock* block = this->vk_used_blocks.at(p.first);
 
@@ -823,10 +626,10 @@ void MemoryPool::defrag() {
 
 
 /* Swap operator for the MemoryPool class. */
-void Compute::swap(MemoryPool& mp1, MemoryPool& mp2) {
+void Vulkan::swap(MemoryPool& mp1, MemoryPool& mp2) {
     using std::swap;
 
-    DENTER("Compute::swap(MemoryPool)");
+    DENTER("Vulkan::swap(MemoryPool)");
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
@@ -850,7 +653,7 @@ void Compute::swap(MemoryPool& mp1, MemoryPool& mp2) {
 
 /* Static function that helps users decide the best memory queue for buffers. */
 uint32_t MemoryPool::select_memory_type(const GPU& gpu, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags memory_properties, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    DENTER("Compute::MemoryPool::select_memory_type(buffer)");
+    DENTER("Vulkan::MemoryPool::select_memory_type(buffer)");
 
     // Get the available memory in the internal device
     VkPhysicalDeviceMemoryProperties gpu_properties;
@@ -888,7 +691,7 @@ uint32_t MemoryPool::select_memory_type(const GPU& gpu, VkBufferUsageFlags usage
 
 /* Static function that helps users decide the best memory queue for images. */
 uint32_t MemoryPool::select_memory_type(const GPU& gpu, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage_flags, VkMemoryPropertyFlags memory_properties, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    DENTER("Compute::MemoryPool::select_memory_type(image)");
+    DENTER("Vulkan::MemoryPool::select_memory_type(image)");
 
     // Get the available memory in the internal device
     VkPhysicalDeviceMemoryProperties gpu_properties;

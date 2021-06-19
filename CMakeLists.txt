@@ -58,8 +58,7 @@ target_include_directories(rasterizer PUBLIC "${INCLUDE_DIRS}")
 target_link_libraries(rasterizer PUBLIC
                       ${EXTRA_LIBS}
                       ${Vulkan_LIBRARIES}
-                      glfw
-                      cppdbg)
+                      glfw)
 
 
 

@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 14:39:16
  * Last edited:
- *   21/05/2021, 18:07:47
+ *   19/06/2021, 13:56:52
  * Auto updated?
  *   Yes
  *
@@ -17,69 +17,46 @@
 #ifndef COMPUTE_DESCRIPTOR_POOL_HPP
 #define COMPUTE_DESCRIPTOR_POOL_HPP
 
+#include <unordered_map>
 #include <vulkan/vulkan.h>
 
-#include "MemoryPool.hpp"
-#include "DescriptorSetLayout.hpp"
-#include "CommandPool.hpp"
+#include "vulkan/gpu/GPU.hpp"
+#include "vulkan/memory/MemoryPool.hpp"
+#include "vulkan/commandbuffers/CommandPool.hpp"
 #include "tools/Array.hpp"
 
-#include "GPU.hpp"
+#include "DescriptorSetLayout.hpp"
+#include "DescriptorSet.hpp"
 
-namespace RayTracer::Compute {
-    /* The DescriptorSet class, which represents a reference to a single VkDescriptorSet. */
-    class DescriptorSet {
-    private:
-        /* The VkDescriptorSet object that this class wraps. */
-        VkDescriptorSet vk_descriptor_set;
-
-        /* Constructor for the DescriptorSet class, which takes the vk_descriptor_set it wraps. */
-        DescriptorSet(VkDescriptorSet vk_descriptor_set);
-
-        /* Mark the DescriptorPool as friend. */
-        friend class DescriptorPool;
-
-    public:
-        /* Binds this descriptor set with the contents of a given buffer to the given bind index. */
-        void set(const GPU& gpu, VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<Buffer>& buffers) const;
-        /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-        void set(const GPU& gpu, VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const;
-        /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
-        void bind(const CommandBuffer& buffer, VkPipelineLayout pipeline_layout) const;
-
-        /* Explicity returns the internal VkDescriptorSet object. */
-        inline VkDescriptorSet descriptor_set() const { return this->vk_descriptor_set; }
-        /* Implicitly returns the internal VkDescriptorSet object. */
-        inline operator VkDescriptorSet() const { return this->vk_descriptor_set; }
-
-    };
-
-
-
+namespace Rasterizer::Vulkan {
     /* The DescriptorPool class, which is used to generate and manage descriptor(sets) for describing buffers. */
     class DescriptorPool {
     public:
         /* Constant reference to the GPU we allocate this pool on. */
-        const GPU& gpu;
+        const Vulkan::GPU& gpu;
 
     private:
         /* The internal pool used for allocating new pools. */
         VkDescriptorPool vk_descriptor_pool;
         /* Type of descriptors that can be allocated here and how many per type. */
-        Tools::Array<std::tuple<VkDescriptorType, uint32_t>> vk_descriptor_types;
+        Tools::Array<std::pair<VkDescriptorType, uint32_t>> vk_descriptor_types;
         /* The maximum number of sets allowed in this pool. */
         uint32_t vk_max_sets;
         /* The create flags used to initialize this pool. */
         VkDescriptorPoolCreateFlags vk_create_flags;
 
         /* Internal list of Descriptors. */
-        Tools::Array<VkDescriptorSet> vk_descriptor_sets;
+        std::unordered_map<descriptor_set_h, VkDescriptorSet> vk_descriptor_sets;
 
     public:
+        /* The null handle for the pool. */
+        const static constexpr descriptor_set_h NullHandle = 0;
+
+
         /* Constructor for the DescriptorPool class, which takes the GPU to create the pool on, the type of descriptors, the number of descriptors we want to allocate in the pool, the maximum number of descriptor sets that can be allocated and optionally custom create flags. */
-        DescriptorPool(const GPU& gpu, VkDescriptorType descriptor_type, uint32_t max_descriptors, uint32_t max_sets, VkDescriptorPoolCreateFlags flags = 0);
+        DescriptorPool(const Vulkan::GPU& gpu, const std::pair<VkDescriptorType, uint32_t>& descriptor_type, uint32_t max_sets, VkDescriptorPoolCreateFlags flags = 0);
         /* Constructor for the DescriptorPool class, which takes the GPU to create the pool on, a list of descriptor types and their counts, the maximum number of descriptor sets that can be allocated and optionally custom create flags. */
-        DescriptorPool(const GPU& gpu, const Tools::Array<std::tuple<VkDescriptorType, uint32_t>>& descriptor_types, uint32_t max_sets, VkDescriptorPoolCreateFlags flags = 0);
+        DescriptorPool(const Vulkan::GPU& gpu, const Tools::Array<std::pair<VkDescriptorType, uint32_t>>& descriptor_types, uint32_t max_sets, VkDescriptorPoolCreateFlags flags = 0);
         /* Copy constructor for the DescriptorPool. */
         DescriptorPool(const DescriptorPool& other);
         /* Move constructor for the DescriptorPool. */
@@ -87,14 +64,24 @@ namespace RayTracer::Compute {
         /* Destructor for the DescriptorPool. */
         ~DescriptorPool();
 
+        /* Returns a DescriptorSet from the given handle, which can be used as a CommandBuffer. Does not perform any checks on the handle validity. */
+        inline DescriptorSet deref(descriptor_set_h handle) const { return DescriptorSet(handle, this->vk_descriptor_sets.at(handle)); }
+
         /* Allocates a single descriptor set with the given layout. Will fail with errors if there's no more space. */
-        DescriptorSet allocate(const DescriptorSetLayout& descriptor_set_layout);
+        inline DescriptorSet allocate(const Vulkan::DescriptorSetLayout& descriptor_set_layout) { return this->deref(this->allocate_h(descriptor_set_layout)); }
+        /* Allocates a single descriptor set with the given layout and returns it by handle. Will fail with errors if there's no more space. */
+        descriptor_set_h allocate_h(const Vulkan::DescriptorSetLayout& descriptor_set_layout);
         /* Allocates multiple descriptor sets with the given layout, returning them as an Array. Will fail with errors if there's no more space. */
-        Tools::Array<DescriptorSet> nallocate(uint32_t n_sets, const Tools::Array<DescriptorSetLayout>& descriptor_set_layouts);
-        /* Deallocates the given descriptor set. */
-        void deallocate(const DescriptorSet& descriptor_set);
-        /* Deallocates an array of given descriptors set. */
+        Tools::Array<DescriptorSet> nallocate(uint32_t n_sets, const Tools::Array<Vulkan::DescriptorSetLayout>& descriptor_set_layouts);
+        /* Allocates multiple descriptor sets with the given layout, returning them as an Array of handles. Will fail with errors if there's no more space. */
+        Tools::Array<descriptor_set_h> nallocate_h(uint32_t n_sets, const Tools::Array<Vulkan::DescriptorSetLayout>& descriptor_set_layouts);
+
+        /* Deallocates the descriptor set with the given handle. */
+        void deallocate(descriptor_set_h set);
+        /* Deallocates an array of given descriptors sets. */
         void ndeallocate(const Tools::Array<DescriptorSet>& descriptor_sets);
+        /* Deallocates an array of given descriptors set handles. */
+        void ndeallocate(const Tools::Array<descriptor_set_h>& handles);
 
         /* Returns the current number of sets allocated in this pool. */
         inline size_t size() const { return this->vk_descriptor_sets.size(); }
@@ -102,7 +89,7 @@ namespace RayTracer::Compute {
         inline size_t capacity() const { return static_cast<size_t>(this->vk_max_sets); }
 
         /* Explicitly returns the internal VkDescriptorPool object. */
-        inline VkDescriptorPool descriptor_pool() const { return this->vk_descriptor_pool; }
+        inline const VkDescriptorPool& descriptor_pool() const { return this->vk_descriptor_pool; }
         /* Implicitly returns the internal VkDescriptorPool object. */
         inline operator VkDescriptorPool() const { return this->vk_descriptor_pool; }
 

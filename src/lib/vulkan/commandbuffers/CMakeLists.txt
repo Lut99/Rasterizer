@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanCommandBuffers STATIC ${CMAKE_CURRENT_SOURCE_DIR}/CommandPool.cpp)
+add_library(VulkanCommandBuffers STATIC ${CMAKE_CURRENT_SOURCE_DIR}/CommandPool.cpp ${CMAKE_CURRENT_SOURCE_DIR}/CommandBuffer.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanCommandBuffers PUBLIC

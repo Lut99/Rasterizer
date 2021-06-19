@@ -13,16 +13,48 @@
  *   destroying command buffers for a single device queue.
 **/
 
-#include <CppDebugger.hpp>
-
-#include "ErrorCodes.hpp"
+#include "tools/CppDebugger.hpp"
+#include "vulkan/ErrorCodes.hpp"
 
 #include "CommandPool.hpp"
 
 using namespace std;
-using namespace RayTracer;
-using namespace RayTracer::Compute;
+using namespace Rasterizer;
+using namespace Rasterizer::Vulkan;
 using namespace CppDebugger::SeverityValues;
+
+
+/***** HELPER FUNCTIONS *****/
+/* Given a map with handles as keys, finds the first free handle that is not the null handle. */
+static command_buffer_h find_handle(const std::unordered_map<command_buffer_h, VkCommandBuffer>& vk_command_buffers, command_buffer_h null_handle) {
+    DENTER("find_handle");
+
+    // Loop through the map and find the first free handle
+    command_buffer_h result = 0;
+    bool unique = false;
+    while (!unique) {
+        unique = true;
+        for (const std::pair<command_buffer_h, VkCommandBuffer>& p : vk_command_buffers) {
+            if (result == null_handle || result == p.first) {
+                // If result is the maximum value, then throw an error
+                if (result == std::numeric_limits<command_buffer_h>::max()) {
+                    DLOG(fatal, "command_buffer_h overflow; cannot allocate more buffers.");
+                }
+
+                // Otherwise, increment and re-try
+                ++result;
+                unique = false;
+                break;
+            }
+        }
+    }
+
+    // Return the result we found
+    DRETURN result;
+}
+
+
+
 
 
 /***** POPULATE FUNCTIONS *****/
@@ -65,122 +97,6 @@ static void populate_allocate_info(VkCommandBufferAllocateInfo& allocate_info, V
     DRETURN;
 }
 
-/* Function that populates a given VkCommandBufferBeginInfo struct with the given values. */
-static void populate_begin_info(VkCommandBufferBeginInfo& begin_info, VkCommandBufferUsageFlags usage_flags) {
-    DENTER("populate_begin_info");
-
-    // Set the deafult
-    begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-    // Set the flags
-    begin_info.flags = usage_flags;
-
-    // Done
-    DRETURN;
-}
-
-/* Function that populates a given VkSubmitINfo struct with the given values. */
-static void populate_submit_info(VkSubmitInfo& submit_info, const VkCommandBuffer& vk_command_buffer) {
-    DENTER("populate_submit_info");
-
-    // Set to default
-    submit_info = {};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    // Set the command buffer to submit
-    submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &vk_command_buffer;
-
-    // Make sure that there are no semaphores used
-    submit_info.signalSemaphoreCount = 0;
-    submit_info.waitSemaphoreCount = 0;
-
-    // Done
-    DRETURN;
-}
-
-
-
-
-
-/***** COMMANDBUFFER CLASS *****/
-/* Initializes the CommandBuffer to a default, unusable state. */
-CommandBuffer::CommandBuffer() :
-    vk_handle(0),
-    vk_command_buffer(nullptr)
-{}
-/* Private constructor for the CommandBuffer, which only takes the handle to this buffer and the VkCommandBuffer object to wrap. */
-CommandBuffer::CommandBuffer(CommandBufferHandle handle, VkCommandBuffer vk_command_buffer) :
-    vk_handle(handle),
-    vk_command_buffer(vk_command_buffer)
-{}
-
-
-
-/* Begins recording the command buffer. Overwrites whatever is already recorded here, for some reason. Takes optional usage flags for this recording. */
-void CommandBuffer::begin(VkCommandBufferUsageFlags usage_flags) const {
-    DENTER("Compute::CommandBuffer::begin");
-
-    // Populate the begin info struct
-    VkCommandBufferBeginInfo begin_info;
-    populate_begin_info(begin_info, usage_flags);
-
-    // Initialize the recording
-    VkResult vk_result;
-    if ((vk_result = vkBeginCommandBuffer(this->vk_command_buffer, &begin_info)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not begin recording command buffer: " + vk_error_map[vk_result]);
-    }
-
-    // Done
-    DRETURN;
-}
-
-/* Ends recording the command buffer, but does not yet submit to any queue unless one is given. If so, then you can optionally specify to wait or not to wait for the queue to become idle. */
-void CommandBuffer::end(VkQueue vk_queue, bool wait_queue_idle) const {
-    DENTER("Compute::CommandBuffer::end");
-
-    // Whatever the parameters, always call the stop recording
-    VkResult vk_result;
-    if ((vk_result = vkEndCommandBuffer(this->vk_command_buffer)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not finish recording command buffer: " + vk_error_map[vk_result]);
-    }
-
-    // If a queue is given, then submit the buffer to that queue
-    if (vk_queue != nullptr) {
-        // Populate the submit info struct
-        VkSubmitInfo submit_info;
-        populate_submit_info(submit_info, this->vk_command_buffer);
-
-        // Submit it to the queue
-        if ((vk_result = vkQueueSubmit(vk_queue, 1, &submit_info, VK_NULL_HANDLE)) != VK_SUCCESS) {
-            DLOG(fatal, "Could not submit command buffer to the given queue: " + vk_error_map[vk_result]);
-        }
-
-        // If we're told to wait, then do so
-        if (wait_queue_idle) {
-            if ((vk_result = vkQueueWaitIdle(vk_queue)) != VK_SUCCESS) {
-                DLOG(fatal, "Could not wait for queue to become idle: " + vk_error_map[vk_result]);
-            }
-        }
-    }
-
-    // Done
-    DRETURN;
-}
-
-/* Return the VkSubmitInfo for this command buffer. */
-VkSubmitInfo CommandBuffer::get_submit_info() const {
-    DENTER("Compute::CommandBuffer::get_submit_info");
-    
-    // Populate the submit info struct
-    VkSubmitInfo submit_info;
-    populate_submit_info(submit_info, this->vk_command_buffer);
-
-    // Done!
-    DRETURN submit_info;
-}
-
 
 
 
@@ -192,7 +108,7 @@ CommandPool::CommandPool(const GPU& gpu, uint32_t queue_index, VkCommandPoolCrea
     vk_queue_index(queue_index),
     vk_create_flags(create_flags)
 {
-    DENTER("Compute::CommandPool::CommandPool");
+    DENTER("Vulkan::CommandPool::CommandPool");
     DLOG(info, "Initializing CommandPool for queue " + std::to_string(this->vk_queue_index) + "...");
 
     // Start by populating the create info
@@ -215,7 +131,7 @@ CommandPool::CommandPool(const CommandPool& other) :
     vk_queue_index(other.vk_queue_index),
     vk_create_flags(other.vk_create_flags)
 {
-    DENTER("Compute::CommandPool::CommandPool(copy)");
+    DENTER("Vulkan::CommandPool::CommandPool(copy)");
 
     // Start by populating the create info
     VkCommandPoolCreateInfo command_pool_info;
@@ -243,13 +159,13 @@ CommandPool::CommandPool(CommandPool&& other) :
 
 /* Destructor for the CommandPool class. */
 CommandPool::~CommandPool() {
-    DENTER("Compute::CommandPool::~CommandPool");
+    DENTER("Vulkan::CommandPool::~CommandPool");
     DLOG(info, "Cleaning CommandPool for queue " + std::to_string(this->vk_queue_index) + "...");
     DINDENT;
 
     if (this->vk_command_buffers.size() > 0) {
         DLOG(info, "Cleaning command buffers...");
-        for (const std::pair<CommandBufferHandle, VkCommandBuffer>& p : this->vk_command_buffers) {
+        for (const std::pair<command_buffer_h, VkCommandBuffer>& p : this->vk_command_buffers) {
             vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &p.second);
         }
     }
@@ -265,39 +181,12 @@ CommandPool::~CommandPool() {
 
 
 
-/* Returns a CommandBuffer from the given handle, which can be used as a CommandBuffer. Does perform checks on the handle validity. */
-CommandBuffer CommandPool::at(CommandBufferHandle buffer) const {
-    DENTER("Compute::CommandPool::at");
-
-    // Check if the handle exists
-    std::unordered_map<CommandBufferHandle, VkCommandBuffer>::const_iterator iter = this->vk_command_buffers.find(buffer);
-    if (iter == this->vk_command_buffers.end()) {
-        DLOG(fatal, "Given handle does not exist.");
-    }
-
-    // If it does, return it
-    return CommandBuffer(buffer, (*iter).second);
-}
-
-
-
 /* Allocates a single, new command buffer of the given level. Returns by handle. */
-CommandBufferHandle CommandPool::allocate_h(VkCommandBufferLevel buffer_level) {
-    DENTER("Compute::CommandPool::allocate_h");
+command_buffer_h CommandPool::allocate_h(VkCommandBufferLevel buffer_level) {
+    DENTER("Vulkan::CommandPool::allocate_h");
 
     // Pick a suitable memory location for this buffer; either as a new buffer or a previously deallocated one
-    CommandBufferHandle result = 0;
-    bool unique = false;
-    while (!unique) {
-        unique = true;
-        for (const std::pair<CommandBufferHandle, VkCommandBuffer>& p : this->vk_command_buffers) {
-            if (result == p.first) {
-                ++result;
-                unique = false;
-                break;
-            }
-        }
-    }
+    command_buffer_h handle = find_handle(this->vk_command_buffers, CommandPool::NullHandle);
 
     // Then, prepare the create info
     VkCommandBufferAllocateInfo allocate_info;
@@ -311,23 +200,23 @@ CommandBufferHandle CommandPool::allocate_h(VkCommandBufferLevel buffer_level) {
     }
 
     // Inject the result in the map
-    this->vk_command_buffers.insert(std::make_pair(result, buffer));
+    this->vk_command_buffers.insert(std::make_pair(handle, buffer));
 
     // Done, return the handle
-    DRETURN result;
+    DRETURN handle;
 }
 
 /* Allocates a single, new command buffer of the given level. Returns new buffer objects. */
 Tools::Array<CommandBuffer> CommandPool::nallocate(uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
-    DENTER("Compute::CommandPool::nallocate");
+    DENTER("Vulkan::CommandPool::nallocate");
     
     // Allocate a list of handles
-    Tools::Array<CommandBufferHandle> handles = this->nallocate_h(n_buffers, buffer_level);
+    Tools::Array<command_buffer_h> handles = this->nallocate_h(n_buffers, buffer_level);
     // Create a list to return
     Tools::Array<CommandBuffer> to_return(handles.size());
     // Convert all of the handles to buffers
-    for (size_t i = 0; i < handles.size(); i++) {
-        to_return.push_back(this->operator[](handles[i]));
+    for (uint32_t i = 0; i < handles.size(); i++) {
+        to_return.push_back(this->deref(handles[i]));
     }
 
     // Done, return
@@ -335,24 +224,13 @@ Tools::Array<CommandBuffer> CommandPool::nallocate(uint32_t n_buffers, VkCommand
 }
 
 /* Allocates N new command buffers of the given level. Returns by handles. */
-Tools::Array<CommandBufferHandle> CommandPool::nallocate_h(uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
-    DENTER("Compute::CommandPool::nallocate_h");
+Tools::Array<command_buffer_h> CommandPool::nallocate_h(uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
+    DENTER("Vulkan::CommandPool::nallocate_h");
 
     // Pick n_buffers suitable memory locations for this buffer; either as a new buffer or a previously deallocated one
-    Tools::Array<CommandBufferHandle> result;
-    for (size_t i = 0; i < result.size(); i++) {
-        result[i] = 0;
-        bool unique = false;
-        while (!unique) {
-            unique = true;
-            for (const std::pair<CommandBufferHandle, VkCommandBuffer>& p : this->vk_command_buffers) {
-                if (result[i] == p.first) {
-                    ++result[i];
-                    unique = false;
-                    break;
-                }
-            }
-        }
+    Tools::Array<command_buffer_h> handles(n_buffers);
+    for (uint32_t i = 0; i < handles.size(); i++) {
+        handles.push_back(find_handle(this->vk_command_buffers, CommandPool::NullHandle));
     }
 
     // Prepare some temporary local space for the buffers
@@ -369,20 +247,22 @@ Tools::Array<CommandBufferHandle> CommandPool::nallocate_h(uint32_t n_buffers, V
     }
 
     // Inject each of the buffers into the map
-    for (size_t i = 0; i < buffers.size(); i++) {
-        this->vk_command_buffers.insert(std::make_pair(result[i], buffers[i]));
+    for (uint32_t i = 0; i < buffers.size(); i++) {
+        this->vk_command_buffers.insert(std::make_pair(handles[i], buffers[i]));
     }
 
     // Done, return the list of handles
-    DRETURN result;
+    DRETURN handles;
 }
 
+
+
 /* Deallocates the CommandBuffer behind the given handle. Note that all buffers are deallocated automatically when the CommandPool is destructed, but this could save you memory. */
-void CommandPool::deallocate(CommandBufferHandle buffer) {
-    DENTER("Compute::CommandPool::deallocate");
+void CommandPool::deallocate(command_buffer_h buffer) {
+    DENTER("Vulkan::CommandPool::deallocate");
 
     // Check if the handle exists
-    std::unordered_map<CommandBufferHandle, VkCommandBuffer>::iterator iter = this->vk_command_buffers.find(buffer);
+    std::unordered_map<command_buffer_h, VkCommandBuffer>::iterator iter = this->vk_command_buffers.find(buffer);
     if (iter == this->vk_command_buffers.end()) {
         DLOG(fatal, "Given handle does not exist.");
     }
@@ -397,11 +277,53 @@ void CommandPool::deallocate(CommandBufferHandle buffer) {
     DRETURN;
 }
 
+/* Deallocates an array of given command buffers. */
+void CommandPool::ndeallocate(const Tools::Array<CommandBuffer>& buffers) {
+    DENTER("CommandPool::ndeallocate(objects)");
+
+    // Convert the list of descriptor sets to handles
+    Tools::Array<command_buffer_h> handles(buffers.size());
+    for (uint32_t i = 0; i < buffers.size(); i++) {
+        handles.push_back(buffers[i].handle());
+    }
+
+    // Call the ndeallocate for handles
+    this->ndeallocate(handles);
+
+    DRETURN;
+}
+
+/* Deallocates an array of given command buffer handles. */
+void CommandPool::ndeallocate(const Tools::Array<command_buffer_h>& handles) {
+    DENTER("CommandPool::ndeallocate(handles)");
+
+    // First, we check if all handles exist
+    Tools::Array<VkCommandBuffer> to_remove(handles.size());
+    for (uint32_t i = 0; i < handles.size(); i++) {
+        // Do the check
+        std::unordered_map<command_buffer_h, VkCommandBuffer>::iterator iter = this->vk_command_buffers.find(handles[i]);
+        if (iter == this->vk_command_buffers.end()) {
+            DLOG(fatal, "Handle at index " + std::to_string(i) + " does not exist.");
+        }
+
+        // Mark the Vk object for removal
+        to_remove.push_back((*iter).second);
+
+        // Remove the item from the internal map
+        this->vk_command_buffers.erase(iter);
+    }
+
+    // All that's left is to actually remove the handles; do that
+    vkFreeCommandBuffers(this->gpu, this->vk_command_pool, to_remove.size(), to_remove.rdata());
+
+    // Done
+    DRETURN;
+}
 
 
 /* Swap operator for the CommandPool class. */
-void Compute::swap(CommandPool& cp1, CommandPool& cp2) {
-    DENTER("Compute::swap(CommandPool)");
+void Vulkan::swap(CommandPool& cp1, CommandPool& cp2) {
+    DENTER("Vulkan::swap(CommandPool)");
 
     using std::swap;
 
