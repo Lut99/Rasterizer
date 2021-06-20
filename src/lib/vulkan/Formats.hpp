@@ -4,7 +4,7 @@
  * Created:
  *   25/05/2021, 15:53:47
  * Last edited:
- *   05/06/2021, 15:10:23
+ *   20/06/2021, 15:08:24
  * Auto updated?
  *   Yes
  *
@@ -13,8 +13,8 @@
  *   representation of that format.
 **/
 
-#ifndef COMPUTE_FORMATS_HPP
-#define COMPUTE_FORMATS_HPP
+#ifndef VULKAN_FORMATS_HPP
+#define VULKAN_FORMATS_HPP
 
 #include <unordered_map>
 #include <string>
