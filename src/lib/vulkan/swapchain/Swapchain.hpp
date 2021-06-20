@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   11/06/2021, 18:20:14
+ *   20/06/2021, 12:24:54
  * Auto updated?
  *   Yes
  *
@@ -50,8 +50,12 @@ namespace Rasterizer::Vulkan {
 
         /* The images part of the swapchain. Will be variable in size. */
         Tools::Array<VkImage> vk_swapchain_images;
-        // /* Images views to the images created with the swapchain. */
-        // Tools::Array<VkImageView> vk_swapchain_views;
+        /* Image views to the images created with the swapchain. */
+        Tools::Array<VkImageView> vk_swapchain_views;
+
+
+        /* Private helper function that re-creates image views from the given list of images. */
+        void create_views(const Tools::Array<VkImage>& vk_image, const VkFormat& vk_format);
 
     public:
         /* Constructor for the Swapchain class, which takes the GPU where it will be constructed and the window to which it shall present. */
