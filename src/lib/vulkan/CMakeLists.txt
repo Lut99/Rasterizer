@@ -1,4 +1,6 @@
 # Add the subdirectories
+add_subdirectory(engine)
+add_subdirectory(synchronization)
 add_subdirectory(renderpass)
 add_subdirectory(pipeline)
 add_subdirectory(commandbuffers)

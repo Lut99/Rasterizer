@@ -75,8 +75,31 @@ static void populate_subpass(VkSubpassDescription& subpass, const Tools::Array<V
     DRETURN;
 }
 
+/* Populates the given VkSubpassDependency struct. */
+static void populate_dependency(VkSubpassDependency& dependency, uint32_t src_subpass, uint32_t dst_subpass, VkPipelineStageFlags src_stage, VkAccessFlags src_access, VkPipelineStageFlags dst_stage, VkAccessFlags dst_access) {
+    DENTER("populate_dependency");
+
+    // Set to default
+    dependency = {};
+    
+    // Set the subpasses in question
+    dependency.srcSubpass = src_subpass;
+    dependency.dstSubpass = dst_subpass;
+
+    // Set the source subpass's requirements
+    dependency.srcStageMask = src_stage;
+    dependency.srcAccessMask = src_access;
+
+    // Set the destination subpass's requirements
+    dependency.dstStageMask = dst_stage;
+    dependency.dstAccessMask = dst_access;
+
+    // Done
+    DRETURN;
+}
+
 /* Populates the given VkRenderPassCreateInfo struct. */
-static void populate_render_pass_info(VkRenderPassCreateInfo& render_pass_info, const Tools::Array<VkAttachmentDescription>& vk_attachments, const Tools::Array<VkSubpassDescription>& vk_subpasses) {
+static void populate_render_pass_info(VkRenderPassCreateInfo& render_pass_info, const Tools::Array<VkAttachmentDescription>& vk_attachments, const Tools::Array<VkSubpassDescription>& vk_subpasses, const Tools::Array<VkSubpassDependency>& vk_dependencies) {
     DENTER("populate_render_pass_info");
 
     // Set to default
@@ -90,6 +113,10 @@ static void populate_render_pass_info(VkRenderPassCreateInfo& render_pass_info, 
     // Attach the subpasses
     render_pass_info.subpassCount = vk_subpasses.size();
     render_pass_info.pSubpasses = vk_subpasses.rdata();
+
+    // Add dependencies, if any
+    render_pass_info.dependencyCount = vk_dependencies.size();
+    render_pass_info.pDependencies = vk_dependencies.rdata();
 
     // Done!
     DRETURN;
@@ -135,7 +162,8 @@ RenderPass::RenderPass(const Vulkan::GPU& gpu) :
 RenderPass::RenderPass(const RenderPass& other) :
     gpu(other.gpu),
     vk_attachments(other.vk_attachments),
-    vk_attachment_refs(other.vk_attachment_refs)
+    vk_attachment_refs(other.vk_attachment_refs),
+    vk_dependencies(other.vk_dependencies)
 {
     DENTER("Vulkan::RenderPass::RenderPass(copy)");
 
@@ -153,7 +181,7 @@ RenderPass::RenderPass(const RenderPass& other) :
     if (this->vk_render_pass != nullptr) {
         // Simply create the renderpass
         VkRenderPassCreateInfo render_pass_info;
-        populate_render_pass_info(render_pass_info, this->vk_attachments, this->vk_subpasses);
+        populate_render_pass_info(render_pass_info, this->vk_attachments, this->vk_subpasses, this->vk_dependencies);
 
         VkResult vk_result;
         if ((vk_result = vkCreateRenderPass(this->gpu, &render_pass_info, nullptr, &this->vk_render_pass)) != VK_SUCCESS) {
@@ -171,7 +199,8 @@ RenderPass::RenderPass(RenderPass&& other) :
     vk_render_pass(other.vk_render_pass),
     vk_subpasses(other.vk_subpasses),
     vk_attachments(other.vk_attachments),
-    vk_attachment_refs(other.vk_attachment_refs)
+    vk_attachment_refs(other.vk_attachment_refs),
+    vk_dependencies(other.vk_dependencies)
 {
     // Be sure that the other object does not allocate anything we need
     other.vk_render_pass = nullptr;
@@ -240,13 +269,27 @@ void RenderPass::add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayou
     DRETURN;
 }
 
+/* Adds a new dependency to the RenderPass. Needs the subpass before the barrier, the subpass after it, the stage of the subpass before it, the access mask of the stage before it, the stage of the subpass after it and the access mask of that stage. */
+void RenderPass::add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkPipelineStageFlags src_stage, VkAccessFlags src_access, VkPipelineStageFlags dst_stage, VkAccessFlags dst_access) {
+    DENTER("Vulkan::RenderPass::add_dependency");
+
+    // Prepare the dependency definition
+    VkSubpassDependency dependency;
+    populate_dependency(dependency, src_subpass, dst_subpass, src_stage, src_access, dst_stage, dst_access);
+
+    // Store internally
+    this->vk_dependencies.push_back(dependency);
+
+    DRETURN;
+}
+
 /* Finalizes the RenderPass. After this, no new subpasses can be defined without calling finalize() again. */
 void RenderPass::finalize() {
     DENTER("Vulkan::RenderPass::finalize");
 
     // Simply create the renderpass
     VkRenderPassCreateInfo render_pass_info;
-    populate_render_pass_info(render_pass_info, this->vk_attachments, this->vk_subpasses);
+    populate_render_pass_info(render_pass_info, this->vk_attachments, this->vk_subpasses, this->vk_dependencies);
 
     VkResult vk_result;
     if ((vk_result = vkCreateRenderPass(this->gpu, &render_pass_info, nullptr, &this->vk_render_pass)) != VK_SUCCESS) {
@@ -309,6 +352,7 @@ void Vulkan::swap(RenderPass& rp1, RenderPass& rp2) {
     swap(rp1.vk_subpasses, rp2.vk_subpasses);
     swap(rp1.vk_attachments, rp2.vk_attachments);
     swap(rp1.vk_attachment_refs, rp2.vk_attachment_refs);
+    swap(rp1.vk_dependencies, rp2.vk_dependencies);
 
     // Done
     DRETURN;

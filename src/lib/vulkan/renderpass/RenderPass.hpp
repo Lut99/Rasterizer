@@ -41,6 +41,8 @@ namespace Rasterizer::Vulkan {
         Tools::Array<VkAttachmentDescription> vk_attachments;
         /* List of attachment references used to re-create the subpasses. */
         Tools::Array<Tools::Array<VkAttachmentReference>> vk_attachment_refs;
+        /* List of subpass dependencies. */
+        Tools::Array<VkSubpassDependency> vk_dependencies;
 
     public:
         /* Constructor for the RenderPass class, which takes a GPU,  */
@@ -56,6 +58,8 @@ namespace Rasterizer::Vulkan {
         uint32_t add_attachment(VkFormat vk_swapchain_format, VkAttachmentLoadOp load_op, VkAttachmentStoreOp store_op, VkImageLayout initial_layout, VkImageLayout final_layout);
         /* Adds a new subpass to the RenderPass. The list of indices determines which color attachments to link to the subpass, and the list of image layouts determines the layout we like during the subpass for that attachment. Optionally takes another bindpoint than the graphics bind point. */
         void add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& attachment_refs, VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        /* Adds a new dependency to the RenderPass. Needs the subpass before the barrier, the subpass after it, the stage of the subpass before it, the access mask of the stage before it, the stage of the subpass after it and the access mask of that stage. */
+        void add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkPipelineStageFlags src_stage, VkAccessFlags src_access, VkPipelineStageFlags dst_stage, VkAccessFlags dst_access);
         /* Finalizes the RenderPass. After this, no new subpasses can be defined without calling finalize() again. */
         void finalize();
 

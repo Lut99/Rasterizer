@@ -4,7 +4,7 @@
  * Created:
  *   16/04/2021, 17:21:54
  * Last edited:
- *   11/06/2021, 18:04:57
+ *   27/06/2021, 16:48:58
  * Auto updated?
  *   Yes
  *
@@ -75,6 +75,9 @@ namespace Rasterizer::Vulkan {
         
         /* Returns the array that contains all queues of the given family. */
         inline const Tools::Array<VkQueue>& operator[](QueueFamily family) const { return this->vk_queues[family]; }
+
+        /* Blocks until the GPU is ready with its scheduled operations. */
+        inline void wait_for_idle() const { vkDeviceWaitIdle(this->vk_device); }
 
         /* Returns the name of the chosen GPU. */
         inline std::string name() const { return std::string(this->vk_physical_device_properties.deviceName); }
