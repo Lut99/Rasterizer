@@ -33,23 +33,23 @@ Rectangle::Rectangle(float x, float y, float w, float h) :
 Rectangle::Rectangle(float x, float y, const VkExtent2D& vk_extent):
     x(x),
     y(y),
-    w(vk_extent.width),
-    h(vk_extent.height)
+    w((float) vk_extent.width),
+    h((float) vk_extent.height)
 {}
 
 /* Constructor for the Rectangle class, which takes the position as a VkOffset2D but the size as two floats. */
 Rectangle::Rectangle(const VkOffset2D& vk_offset, float w, float h):
-    x(vk_offset.x),
-    y(vk_offset.y),
+    x((float) vk_offset.x),
+    y((float) vk_offset.y),
     w(w),
     h(h)
 {}
 
 /* Constructor for the Rectangle class, which takes the position and offset as a VkOffset2D and VkExtent2D, respectively. */
 Rectangle::Rectangle(const VkOffset2D& vk_offset, const VkExtent2D& vk_extent):
-    x(vk_offset.x),
-    y(vk_offset.y),
-    w(vk_extent.width),
-    h(vk_extent.height)
+    x((float) vk_offset.x),
+    y((float) vk_offset.y),
+    w((float) vk_extent.width),
+    h((float) vk_extent.height)
 {}
 

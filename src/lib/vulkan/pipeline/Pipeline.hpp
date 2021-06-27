@@ -23,6 +23,7 @@
 #include "vulkan/auxillary/BinaryString.hpp"
 #include "vulkan/gpu/GPU.hpp"
 #include "vulkan/descriptors/DescriptorSetLayout.hpp"
+#include "vulkan/renderpass/RenderPass.hpp"
 #include "Shader.hpp"
 
 namespace Rasterizer::Vulkan {
@@ -68,6 +69,8 @@ namespace Rasterizer::Vulkan {
         VkPipelineViewportStateCreateInfo vk_viewport_state_info;
         /* Describes how the rasterizer stage shall behave. */
         VkPipelineRasterizationStateCreateInfo vk_rasterizer_state_info;
+        /* Describes how the pipeline handles multisampling. */
+        VkPipelineMultisampleStateCreateInfo vk_multisample_state_info;
         /* Describes how the color blending works per output framebuffer. */
         Tools::Array<VkPipelineColorBlendAttachmentState> vk_color_blending;
         /* Describes how the general color blending works. */
@@ -101,6 +104,8 @@ namespace Rasterizer::Vulkan {
          * @param disable_rasterizer If set to TRUE, then discards the output of the rasterizer, disabling it in effect.
          */
         void init_rasterizer(VkCullModeFlags cull_mode, VkFrontFace front_face, VkBool32 depth_clamp = VK_FALSE, VkPolygonMode polygon_mode = VK_POLYGON_MODE_FILL, float line_width = 1.0f, VkBool32 disable_rasterizer = VK_FALSE);
+        /* Tells the pipeline how to handle multi-sampling. For now, perpetuably disabled. */
+        void init_multisampling();
         /* Tells the Pipeline how to blend the new, computed color of a pixel with the one already in the framebuffer. This is per output framebuffer, and may thus need to be called multiple times.
          *
          * @param framebuffer The index of the framebuffer for which these settings hold.
@@ -124,7 +129,7 @@ namespace Rasterizer::Vulkan {
         /* Initiates the pipeline layout based on the list of descriptor set layouts and on the list of push constants. The latter is a list of pairs, each describing the shader stages where they can be accessed and the size of each constant. */
         void init_pipeline_layout(const Tools::Array<DescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants);
         /* When called, completes the pipeline with the settings given by the other initialization functions. */
-        void finalize();
+        void finalize(const Vulkan::RenderPass& render_pass, uint32_t first_subpass);
 
         /* Expliticly returns the internal VkPipeline object. */
         inline const VkPipeline& pipeline() const { return this->vk_pipeline; }

@@ -32,7 +32,7 @@ static void flatten_specialization_map(const std::unordered_map<uint32_t, Binary
 
     // Create an array of mapentries, and then a single, unified data array
     uint32_t offset = 0;
-    map_entries.reserve(constant_map.size());
+    map_entries.reserve(static_cast<Tools::array_size_t>(constant_map.size()));
     for(const pair<uint32_t, BinaryString>& p : constant_map) {
         // Start to intialize a map entry
         VkSpecializationMapEntry map_entry{};
@@ -198,6 +198,26 @@ static void populate_rasterizer_state_info(VkPipelineRasterizationStateCreateInf
     DRETURN;
 }
 
+/* Populate sthe given VkPipelineMultisampleStateCreateInfo struct. */
+static void populate_multisample_state(VkPipelineMultisampleStateCreateInfo& multisample_state_info) {
+    DENTER("populate_multisample_state");
+
+    // Define the standard stuff
+    multisample_state_info = {};
+    multisample_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+
+    // For now, hardcode the multisampling to be off
+    multisample_state_info.sampleShadingEnable = VK_FALSE;
+    multisample_state_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisample_state_info.minSampleShading = 1.0f;
+    multisample_state_info.pSampleMask = nullptr;
+    multisample_state_info.alphaToCoverageEnable = VK_FALSE;
+    multisample_state_info.alphaToOneEnable = VK_FALSE;
+
+    // Done
+    DRETURN;
+}
+
 /* Populates the given VkPipelineColorBlendAttachmentState struct. */
 static void populate_color_attachment_state(VkPipelineColorBlendAttachmentState& color_attachment_state, VkBool32 enable_blending, VkBlendFactor src_color_factor, VkBlendFactor dst_color_factor, VkBlendOp color_op, VkBlendFactor src_alpha_factor, VkBlendFactor dst_alpha_factor, VkBlendOp alpha_op) {
     DENTER("populate_color_attachment_state");
@@ -307,6 +327,7 @@ Pipeline::Pipeline(const Pipeline& other) :
     vk_scissor(other.vk_scissor),
     vk_viewport_state_info(other.vk_viewport_state_info),
     vk_rasterizer_state_info(other.vk_rasterizer_state_info),
+    vk_multisample_state_info(other.vk_multisample_state_info),
     vk_color_blending(other.vk_color_blending),
     vk_color_state_info(other.vk_color_state_info)
 {
@@ -346,6 +367,7 @@ Pipeline::Pipeline(Pipeline&& other) :
     vk_scissor(other.vk_scissor),
     vk_viewport_state_info(other.vk_viewport_state_info),
     vk_rasterizer_state_info(other.vk_rasterizer_state_info),
+    vk_multisample_state_info(other.vk_multisample_state_info),
     vk_color_blending(other.vk_color_blending),
     vk_color_state_info(other.vk_color_state_info)
 {
@@ -417,7 +439,7 @@ void Pipeline::init_vertex_input() {
 }
 
 /* Tells the Pipeline what to do with the vertex we gave it. */
-void Pipeline::init_input_assembly(VkPrimitiveTopology topology, VkBool32 restart_enable = VK_FALSE) {
+void Pipeline::init_input_assembly(VkPrimitiveTopology topology, VkBool32 restart_enable) {
     DENTER("Vulkan::Pipeline::init_input_assembly");
 
     // Prepare the interal VkPipelineInputAssemblyStateCreateInfo struct
@@ -473,6 +495,20 @@ void Pipeline::init_rasterizer(VkCullModeFlags cull_mode, VkFrontFace front_face
 
     DINDENT;
     DLOG(info, "Initialized Pipeline rasterizer");
+    DDEDENT;
+    DRETURN;
+}
+
+/* Tells the pipeline how to handle multi-sampling. For now, perpetuably disabled. */
+void Pipeline::init_multisampling() {
+    DENTER("Vulkan::Pipeline::init_multisampling");
+
+    // Populate the struct
+    populate_multisample_state(this->vk_multisample_state_info);
+
+    // Done
+    DINDENT;
+    DLOG(info, "Initialized Pipeline multisampling");
     DDEDENT;
     DRETURN;
 }
@@ -570,14 +606,46 @@ void Pipeline::init_pipeline_layout(const Tools::Array<DescriptorSetLayout>& lay
     DRETURN;
 }
 
-
-
 /* When called, completes the pipeline with the settings given by the other initialization functions. */
-void Pipeline::finalize() {
+void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
     DENTER("Vulkan::Pipeline::finalize");
 
-    
+    // Finally, begin prepare the create info
+    VkGraphicsPipelineCreateInfo pipeline_info = {};
+    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
+    // First, attach the shaders
+    pipeline_info.stageCount = this->vk_shader_infos.size();
+    pipeline_info.pStages = this->vk_shader_infos.rdata();
+
+    // Next, attach the fixed-function structures
+    pipeline_info.pVertexInputState = &this->vk_vertex_state_info;
+    pipeline_info.pInputAssemblyState = &this->vk_assembly_state_info;
+    pipeline_info.pViewportState = &this->vk_viewport_state_info;
+    pipeline_info.pRasterizationState = &this->vk_rasterizer_state_info;
+    pipeline_info.pMultisampleState = &this->vk_multisample_state_info;
+    pipeline_info.pDepthStencilState = nullptr;
+    pipeline_info.pColorBlendState = &this->vk_color_state_info;
+    pipeline_info.pDynamicState = nullptr;
+
+    // We next set the pipeline layout
+    pipeline_info.layout = this->vk_pipeline_layout;
+
+    // Finally, set the renderpass and its first subpass
+    pipeline_info.renderPass = render_pass;
+    pipeline_info.subpass = first_subpass;
+
+    // Note: we won't use pipeline derivation for now
+    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+    pipeline_info.basePipelineIndex = -1;
+
+    // And that's it! Time to create it!
+    VkResult vk_result;
+    if ((vk_result = vkCreateGraphicsPipelines(this->gpu, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &this->vk_pipeline)) != VK_SUCCESS) {
+        DLOG(fatal, "Could not create graphics pipeline: " + vk_error_map[vk_result]);
+    }
+
+    // Done :)
     DRETURN;
 }
 
@@ -615,6 +683,7 @@ void Vulkan::swap(Pipeline& p1, Pipeline& p2) {
     swap(p1.vk_scissor, p2.vk_scissor);
     swap(p1.vk_viewport_state_info, p2.vk_viewport_state_info);
     swap(p1.vk_rasterizer_state_info, p2.vk_rasterizer_state_info);
+    swap(p1.vk_multisample_state_info, p2.vk_multisample_state_info);
     swap(p1.vk_color_blending, p2.vk_color_blending);
     swap(p1.vk_color_state_info, p2.vk_color_state_info);
 

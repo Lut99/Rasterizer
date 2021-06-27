@@ -36,3 +36,6 @@ build/
 
 # Everything vscode-setting related
 .vscode/*
+
+# All weird windows build stuff
+*.pdb
