@@ -31,6 +31,8 @@ namespace Rasterizer::Vulkan {
     private:
         /* The VkFramebuffer object we wrap. */
         VkFramebuffer vk_framebuffer;
+        /* The extent of the framebuffer. */
+        VkExtent2D vk_extent;
 
         /* The imageview we wrap around. */
         VkImageView vk_image_view;
@@ -51,6 +53,8 @@ namespace Rasterizer::Vulkan {
         /* Destructor for the Framebuffer class. */
         ~Framebuffer();
 
+        /* Returns the extent of the framebuffer. */
+        inline const VkExtent2D& extent() const { return this->vk_extent; }
         /* Expliticly returns the internal VkFramebuffer object. */
         inline const VkFramebuffer& framebuffer() const { return this->vk_framebuffer; }
         /* Implicitly returns the internal VkFramebuffer object. */

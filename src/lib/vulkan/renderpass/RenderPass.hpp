@@ -20,6 +20,8 @@
 #include <vulkan/vulkan.h>
 
 #include "vulkan/gpu/GPU.hpp"
+#include "vulkan/commandbuffers/CommandBuffer.hpp"
+#include "vulkan/swapchain/Framebuffer.hpp"
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Vulkan {
@@ -56,6 +58,11 @@ namespace Rasterizer::Vulkan {
         void add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& attachment_refs, VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
         /* Finalizes the RenderPass. After this, no new subpasses can be defined without calling finalize() again. */
         void finalize();
+
+        /* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and optionally a background colour for the image. */
+        void start_scheduling(const Vulkan::CommandBuffer& cmd, const Vulkan::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour = { 0.749f, 1.0f, 0.992f, 1.0f });
+        /* Finishes scheduling the RenderPass. */
+        void stop_scheduling(const Vulkan::CommandBuffer& cmd);
 
         /* Expliticly returns the internal VkRenderPass object. */
         inline const VkRenderPass& render_pass() const { return this->vk_render_pass; }

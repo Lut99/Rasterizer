@@ -651,6 +651,30 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
 
 
 
+/* Schedules the pipeline to be run and thus drawn in the given command buffer. Optionally takes another bind point. */
+void Pipeline::schedule(const Vulkan::CommandBuffer& cmd, VkPipelineBindPoint vk_bind_point) {
+    DENTER("Vulkan::Pipeline::schedule");
+
+    // Simply bind the pipeline at this point in the command buffer
+    vkCmdBindPipeline(cmd, vk_bind_point, this->vk_pipeline);
+
+    // We're done
+    DRETURN;
+}
+
+/* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
+void Pipeline::schedule_draw(const Vulkan::CommandBuffer& cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) {
+    DENTER("Vulkan::Pipeline::schedule_draw");
+
+    // Simply do the draw call
+    vkCmdDraw(cmd, vertex_count, instance_count, first_vertex, first_instance);
+
+    // We're done
+    DRETURN;
+}
+
+
+
 /* Swap operator for the Pipeline class. */
 void Vulkan::swap(Pipeline& p1, Pipeline& p2) {
     DENTER("Vulkan::swap(Pipeline)");

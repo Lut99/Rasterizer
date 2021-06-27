@@ -57,12 +57,13 @@ static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info,
 /* Constructor for the Framebuffer class, which takes a GPU to allocate it on, a renderpass to bind to, a VkImageView to wrap around and an extent describing the buffer's size. */
 Framebuffer::Framebuffer(const Vulkan::GPU& gpu, const VkRenderPass& vk_render_pass, const VkImageView& vk_image_view, const VkExtent2D& vk_extent) :
     gpu(gpu),
+    vk_extent(vk_extent),
     vk_image_view(vk_image_view)
 {
     DENTER("Vulkan::Framebuffer::Framebuffer");
 
     // Populate the create info
-    populate_framebuffer_info(this->vk_framebuffer_info, vk_render_pass, this->vk_image_view, vk_extent);
+    populate_framebuffer_info(this->vk_framebuffer_info, vk_render_pass, this->vk_image_view, this->vk_extent);
 
     // Use that to create the internal framebuffer
     VkResult vk_result;
@@ -77,6 +78,7 @@ Framebuffer::Framebuffer(const Vulkan::GPU& gpu, const VkRenderPass& vk_render_p
 /* Copy constructor for the Framebuffer class. */
 Framebuffer::Framebuffer(const Framebuffer& other) :
     gpu(other.gpu),
+    vk_extent(other.vk_extent),
     vk_image_view(other.vk_image_view),
     vk_framebuffer_info(other.vk_framebuffer_info)
 {
@@ -95,6 +97,7 @@ Framebuffer::Framebuffer(const Framebuffer& other) :
 Framebuffer::Framebuffer(Framebuffer&& other) :
     gpu(other.gpu),
     vk_framebuffer(other.vk_framebuffer),
+    vk_extent(other.vk_extent),
     vk_image_view(other.vk_image_view),
     vk_framebuffer_info(other.vk_framebuffer_info)
 {
@@ -129,6 +132,7 @@ void Vulkan::swap(Vulkan::Framebuffer& fb1, Vulkan::Framebuffer& fb2) {
     // Swap EVERYTHING but the GPU
     using std::swap;
     swap(fb1.vk_framebuffer, fb2.vk_framebuffer);
+    swap(fb1.vk_extent, fb2.vk_extent);
     swap(fb1.vk_image_view, fb2.vk_image_view);
     swap(fb1.vk_framebuffer_info, fb2.vk_framebuffer_info);
 

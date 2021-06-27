@@ -95,6 +95,31 @@ static void populate_render_pass_info(VkRenderPassCreateInfo& render_pass_info, 
     DRETURN;
 }
 
+/* Populates a given VkRenderPassBeginInfo struct. */
+static void populate_begin_info(VkRenderPassBeginInfo& begin_info, const VkRenderPass& vk_render_pass, const VkFramebuffer& vk_framebuffer, const VkRect2D& vk_render_area, const VkClearValue& clear_colour) {
+    DENTER("populate_begin_info");
+
+    // Set to default
+    begin_info = {};
+    begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+
+    // Attach the render pass
+    begin_info.renderPass = vk_render_pass;
+
+    // Attach the framebuffer
+    begin_info.framebuffer = vk_framebuffer;
+
+    // Define the area to render to
+    begin_info.renderArea = vk_render_area;
+
+    // Set the colour for the background
+    begin_info.clearValueCount = 1;
+    begin_info.pClearValues = &clear_colour;
+
+    // Done
+    DRETURN;
+}
+
 
 
 
@@ -229,6 +254,39 @@ void RenderPass::finalize() {
     }
 
     // Done
+    DRETURN;
+}
+
+
+
+/* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and a background colour for the image. */
+void RenderPass::start_scheduling(const Vulkan::CommandBuffer& cmd, const Vulkan::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour) {
+    DENTER("Vulkan::RenderPass::start_scheduling");
+
+    // First, create the rect that we shall render to
+    VkRect2D render_area = {};
+    render_area.offset.x = 0;
+    render_area.offset.y = 0;
+    render_area.extent = framebuffer.extent();
+
+    // Create the begin info and populate it
+    VkRenderPassBeginInfo begin_info;
+    populate_begin_info(begin_info, this->vk_render_pass, framebuffer.framebuffer(), render_area, vk_clear_colour);
+
+    // Schedule it in the command buffer (and tell it to schedule everything in the primary command buffers instead of secondary ones)
+    vkCmdBeginRenderPass(cmd, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Done
+    DRETURN;
+}
+
+/* Finishes scheduling the RenderPass. */
+void RenderPass::stop_scheduling(const Vulkan::CommandBuffer& cmd) {
+    DENTER("Vulkan::RenderPass::stop_scheduling");
+
+    // Simply call the stop
+    vkCmdEndRenderPass(cmd);
+
     DRETURN;
 }
 

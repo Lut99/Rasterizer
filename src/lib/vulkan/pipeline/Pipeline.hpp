@@ -24,6 +24,7 @@
 #include "vulkan/gpu/GPU.hpp"
 #include "vulkan/descriptors/DescriptorSetLayout.hpp"
 #include "vulkan/renderpass/RenderPass.hpp"
+#include "vulkan/commandbuffers/CommandBuffer.hpp"
 #include "Shader.hpp"
 
 namespace Rasterizer::Vulkan {
@@ -130,6 +131,11 @@ namespace Rasterizer::Vulkan {
         void init_pipeline_layout(const Tools::Array<DescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants);
         /* When called, completes the pipeline with the settings given by the other initialization functions. */
         void finalize(const Vulkan::RenderPass& render_pass, uint32_t first_subpass);
+
+        /* Schedules the pipeline to be run and thus drawn in the given command buffer. Optionally takes another bind point. */
+        void schedule(const Vulkan::CommandBuffer& cmd, VkPipelineBindPoint vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
+        void schedule_draw(const Vulkan::CommandBuffer& cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0);
 
         /* Expliticly returns the internal VkPipeline object. */
         inline const VkPipeline& pipeline() const { return this->vk_pipeline; }
