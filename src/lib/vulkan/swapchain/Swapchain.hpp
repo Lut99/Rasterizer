@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   20/06/2021, 12:24:54
+ *   27/06/2021, 14:34:32
  * Auto updated?
  *   Yes
  *
@@ -22,6 +22,8 @@
 
 #include "vulkan/gpu/GPU.hpp"
 #include "vulkan/gpu/Surface.hpp"
+#include "vulkan/renderpass/RenderPass.hpp"
+#include "Framebuffer.hpp"
 
 namespace Rasterizer::Vulkan {
     /* The Swapchain class, which wraps and manages the swapchain and all images related to it. */
@@ -69,6 +71,8 @@ namespace Rasterizer::Vulkan {
 
         /* Returns a the internal image at the given location. */
         inline VkImage operator[](uint32_t index) { return this->vk_swapchain_images[index]; }
+        /* Returns a framebuffer for the image at the given location and the given render pass. */
+        inline Vulkan::Framebuffer get_framebuffer(uint32_t index, const Vulkan::RenderPass& render_pass) { return Framebuffer(this->gpu, render_pass, this->vk_swapchain_views[index], this->vk_surface_extent); }
 
         /* Returns the number of images in the swapchain. */
         inline uint32_t size() const { return this->vk_actual_image_count; }

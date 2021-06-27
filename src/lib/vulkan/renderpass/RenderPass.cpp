@@ -169,13 +169,13 @@ RenderPass::~RenderPass() {
 
 
 
-/* Adds a new attachment to the RenderPass. Note that the ordering matters w.r.t. indexing, but just to be sure, this function returns the index of the attachment. Takes the swapchain to derive the image format from, the load operation for the buffer, the store operation, the initial layout and the final layout after the subpass. */
-uint32_t RenderPass::add_attachment(const Vulkan::Swapchain& swapchain, VkAttachmentLoadOp load_op, VkAttachmentStoreOp store_op, VkImageLayout initial_layout, VkImageLayout final_layout) {
+/* Adds a new attachment to the RenderPass. Note that the ordering matters w.r.t. indexing, but just to be sure, this function returns the index of the attachment. Takes the swapchain's image format, the load operation for the buffer, the store operation, the initial layout and the final layout after the subpass. */
+uint32_t RenderPass::add_attachment(VkFormat vk_swapchain_format, VkAttachmentLoadOp load_op, VkAttachmentStoreOp store_op, VkImageLayout initial_layout, VkImageLayout final_layout) {
     DENTER("Vulkan::RenderPass::add_attachment");
 
     // First, populate the attachmentdescription
     VkAttachmentDescription attachment;
-    populate_attachment(attachment, swapchain.format(), load_op, store_op, initial_layout, final_layout);
+    populate_attachment(attachment, vk_swapchain_format, load_op, store_op, initial_layout, final_layout);
 
     // Add it to the list
     uint32_t index = this->vk_attachments.size();

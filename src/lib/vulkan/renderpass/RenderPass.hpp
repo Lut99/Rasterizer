@@ -20,7 +20,6 @@
 #include <vulkan/vulkan.h>
 
 #include "vulkan/gpu/GPU.hpp"
-#include "vulkan/swapchain/Swapchain.hpp"
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Vulkan {
@@ -51,8 +50,8 @@ namespace Rasterizer::Vulkan {
         /* Destructor for the RenderPass class. */
         ~RenderPass();
 
-        /* Adds a new attachment to the RenderPass. Note that the ordering matters w.r.t. indexing, but just to be sure, this function returns the index of the attachment. Takes the swapchain to derive the image format from, the load operation for the buffer, the store operation, the initial layout and the final layout after the subpass. */
-        uint32_t add_attachment(const Vulkan::Swapchain& swapchain, VkAttachmentLoadOp load_op, VkAttachmentStoreOp store_op, VkImageLayout initial_layout, VkImageLayout final_layout);
+        /* Adds a new attachment to the RenderPass. Note that the ordering matters w.r.t. indexing, but just to be sure, this function returns the index of the attachment. Takes the swapchain's image format, the load operation for the buffer, the store operation, the initial layout and the final layout after the subpass. */
+        uint32_t add_attachment(VkFormat vk_swapchain_format, VkAttachmentLoadOp load_op, VkAttachmentStoreOp store_op, VkImageLayout initial_layout, VkImageLayout final_layout);
         /* Adds a new subpass to the RenderPass. The list of indices determines which color attachments to link to the subpass, and the list of image layouts determines the layout we like during the subpass for that attachment. Optionally takes another bindpoint than the graphics bind point. */
         void add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& attachment_refs, VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
         /* Finalizes the RenderPass. After this, no new subpasses can be defined without calling finalize() again. */
