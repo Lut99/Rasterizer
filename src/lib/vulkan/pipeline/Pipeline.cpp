@@ -4,7 +4,7 @@
  * Created:
  *   20/06/2021, 12:29:37
  * Last edited:
- *   20/06/2021, 12:29:37
+ *   28/06/2021, 22:28:47
  * Auto updated?
  *   Yes
  *
@@ -25,96 +25,7 @@ using namespace Rasterizer::Vulkan;
 using namespace CppDebugger::SeverityValues;
 
 
-/***** HELPER FUNCTIONS *****/
-/* Given an unordered map of constants, creates an array of VkSpecializationMapEntry's and a matching array of data as void*. */
-static void flatten_specialization_map(const std::unordered_map<uint32_t, BinaryString>& constant_map, Tools::Array<VkSpecializationMapEntry>& map_entries, Tools::Array<uint8_t>& data) {
-    DENTER("flatten_specialization_map");
-
-    // Create an array of mapentries, and then a single, unified data array
-    uint32_t offset = 0;
-    map_entries.reserve(static_cast<Tools::array_size_t>(constant_map.size()));
-    for(const std::pair<uint32_t, BinaryString>& p : constant_map) {
-        // Start to intialize a map entry
-        VkSpecializationMapEntry map_entry{};
-
-        // Set the constant ID for this entry
-        map_entry.constantID = p.first;
-
-        // Set the offset & size in the global constant array
-        map_entry.offset = offset;
-        map_entry.size = p.second.size;
-
-        // Add it to the array
-        map_entries.push_back(map_entry);
-
-        // Increment the offset
-        offset += p.second.size;
-    }
-
-    // The offset is now also the size. Use that to populate the data array
-    if (offset > 0) {
-        data.resize(offset);
-        offset = 0;
-        for (const std::pair<uint32_t, BinaryString>& p : constant_map) {
-            // Copy the element's data to the array
-            memcpy((void*) (data.rdata() + offset), p.second.data, p.second.size);
-
-            // Increment the offset once more
-            offset += p.second.size;
-        }
-    } else {
-        data.clear();
-    }
-
-    // Done
-    DRETURN;
-}
-
-
-
-
-
 /***** POPULATE FUNCTIONS *****/
-/* Function that populates a VkSpecializationInfo struct based on the given map of constant_ids to values. */
-static void populate_specialization_info(VkSpecializationInfo& specialization_info, const Tools::Array<VkSpecializationMapEntry>& map_entries, const Tools::Array<uint8_t>& data) {
-    DENTER("populate_specialization_info");
-
-    // Initialize to default
-    specialization_info = {};
-    
-    // Set the specialization map
-    specialization_info.mapEntryCount = map_entries.size();
-    specialization_info.pMapEntries = map_entries.rdata();
-
-    // Set the data array
-    specialization_info.dataSize = data.size();
-    specialization_info.pData = (void*) data.rdata();
-
-    // Done
-    DRETURN;
-}
-
-/* Populates the given VkPipelineShaderStageCreateInfo struct. */
-static void populate_shader_info(VkPipelineShaderStageCreateInfo& shader_info, VkShaderStageFlagBits vk_shader_stage, const Shader& shader, const VkSpecializationInfo& specialization_info) {
-    DENTER("populate_shader_info");
-
-    // Set to default
-    shader_info = {};
-    shader_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-
-    // Set the shader's stage
-    shader_info.stage = vk_shader_stage;
-
-    // Add the shader module and its entry function
-    shader_info.module = shader.shader_module();
-    shader_info.pName = shader.entry_function().c_str();
-
-    // Finally, set the specialization info for this shader
-    shader_info.pSpecializationInfo = &specialization_info;
-
-    DRETURN;
-}
-
 /* Populates the given VkPipelineVertexInputStateCreateInfo struct. */
 static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& vertex_state_info, const Tools::Array<VkVertexInputBindingDescription>& vk_binding_descriptions, const Tools::Array<VkVertexInputAttributeDescription>& vk_attribute_descriptions) {
     DENTER("populate_vertex_state_info");
@@ -320,10 +231,7 @@ Pipeline::Pipeline(const Pipeline& other) :
     vk_pipeline_layout(other.vk_pipeline_layout),
 
     shaders(other.shaders),
-    vk_specialization_entries(other.vk_specialization_entries),
-    vk_specialization_datas(other.vk_specialization_datas),
-    vk_specialization_infos(other.vk_specialization_infos),
-    vk_shader_infos(other.vk_shader_infos),
+    shader_stages(other.shader_stages),
 
     vk_vertex_state_info(other.vk_vertex_state_info),
     vk_assembly_state_info(other.vk_assembly_state_info),
@@ -360,10 +268,7 @@ Pipeline::Pipeline(Pipeline&& other) :
     vk_pipeline_layout(other.vk_pipeline_layout),
 
     shaders(other.shaders),
-    vk_specialization_entries(other.vk_specialization_entries),
-    vk_specialization_datas(other.vk_specialization_datas),
-    vk_specialization_infos(other.vk_specialization_infos),
-    vk_shader_infos(other.vk_shader_infos),
+    shader_stages(other.shader_stages),
 
     vk_vertex_state_info(other.vk_vertex_state_info),
     vk_assembly_state_info(other.vk_assembly_state_info),
@@ -403,28 +308,18 @@ Pipeline::~Pipeline() {
 
 
 /* Loads a shader in the given shader stage mask. */
-void Pipeline::init_shader_stage(VkShaderStageFlagBits vk_shader_stage, const Vulkan::Shader& shader, const std::unordered_map<uint32_t, BinaryString>& specialization_constants) {
+void Pipeline::init_shader_stage(const Vulkan::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, BinaryString>& specialization_constants) {
     DENTER("Vulkan::Pipeline::init_shader_stage");
 
     // Store the shader
     this->shaders.push_back(shader);
 
-    // Flatten the specialization map first
-    this->vk_specialization_entries.push_back(Tools::Array<VkSpecializationMapEntry>({}));
-    this->vk_specialization_datas.push_back(Tools::Array<uint8_t>({}));
-    flatten_specialization_map(specialization_constants, this->vk_specialization_entries.last(), this->vk_specialization_datas.last());
-    // Populate the relevant specialization info from the flattened map
-    this->vk_specialization_infos.push_back({});
-    populate_specialization_info(this->vk_specialization_infos.last(), this->vk_specialization_entries.last(), this->vk_specialization_datas.last());
-
-    // Spawn a new create info for this stage
-    this->vk_shader_infos.push_back({});
-    // Populate it with the shader
-    populate_shader_info(this->vk_shader_infos.last(), vk_shader_stage, shader, this->vk_specialization_infos.last());
+    // Create a new shader stage and store that
+    this->shader_stages.push_back(ShaderStage(shader, shader_stage, specialization_constants));
 
     // We're done
     DINDENT;
-    DLOG(info, "Initialized Pipeline shader for the " + vk_shader_stage_map[vk_shader_stage] + " stage");
+    DLOG(info, "Initialized Pipeline shader for the " + vk_shader_stage_map[shader_stage] + " stage");
     DDEDENT;
     DRETURN;
 }
@@ -619,8 +514,12 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
     pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
     // First, attach the shaders
-    pipeline_info.stageCount = this->vk_shader_infos.size();
-    pipeline_info.pStages = this->vk_shader_infos.rdata();
+    Tools::Array<VkPipelineShaderStageCreateInfo> vk_shader_stages(this->shader_stages.size());
+    for (uint32_t i = 0; i < this->shader_stages.size(); i++) {
+        vk_shader_stages.push_back(this->shader_stages[i].shader_stage());
+    }
+    pipeline_info.stageCount = vk_shader_stages.size();
+    pipeline_info.pStages = vk_shader_stages.rdata();
 
     // Next, attach the fixed-function structures
     pipeline_info.pVertexInputState = &this->vk_vertex_state_info;
@@ -702,10 +601,7 @@ void Vulkan::swap(Pipeline& p1, Pipeline& p2) {
     swap(p1.vk_pipeline_layout, p2.vk_pipeline_layout);
 
     swap(p1.shaders, p2.shaders);
-    swap(p1.vk_specialization_entries, p2.vk_specialization_entries);
-    swap(p1.vk_specialization_datas, p2.vk_specialization_datas);
-    swap(p1.vk_specialization_infos, p2.vk_specialization_infos);
-    swap(p1.vk_shader_infos, p2.vk_shader_infos);
+    swap(p1.shader_stages, p2.shader_stages);
 
     swap(p1.vk_vertex_state_info, p2.vk_vertex_state_info);
     swap(p1.vk_assembly_state_info, p2.vk_assembly_state_info);

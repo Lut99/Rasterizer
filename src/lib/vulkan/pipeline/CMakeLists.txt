@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanPipeline STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Pipeline.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Shader.cpp)
+add_library(VulkanPipeline STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Pipeline.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Shader.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ShaderStage.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanPipeline PUBLIC

@@ -4,7 +4,7 @@
  * Created:
  *   20/06/2021, 14:13:20
  * Last edited:
- *   20/06/2021, 14:13:20
+ *   28/06/2021, 21:50:08
  * Auto updated?
  *   Yes
  *
@@ -37,7 +37,7 @@ BinaryString::BinaryString(binary_size_t size, void* data) :
 
 /* Factory method for a new BinaryString, which automatically deduces the size based on the given type. */
 template <class T>
-static BinaryString BinaryString::to_string(T* obj) {
+BinaryString BinaryString::to_string(T* obj) {
     // Simply use sizeof to deduce the size
     return BinaryString(sizeof(T), (void*) obj);
 }

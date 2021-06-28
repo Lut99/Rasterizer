@@ -4,7 +4,7 @@
  * Created:
  *   27/06/2021, 15:05:32
  * Last edited:
- *   27/06/2021, 15:05:32
+ *   28/06/2021, 22:28:12
  * Auto updated?
  *   Yes
  *
@@ -139,8 +139,8 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
 
 
     // Prepare the shader part of the graphics pipeline
-    pipeline.init_shader_stage(VK_SHADER_STAGE_VERTEX_BIT, this->vertex_shader);
-    pipeline.init_shader_stage(VK_SHADER_STAGE_FRAGMENT_BIT, this->fragment_shader);
+    pipeline.init_shader_stage(this->vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
+    pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
 
     // Prepare the static part
     pipeline.init_vertex_input();

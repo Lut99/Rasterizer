@@ -4,7 +4,7 @@
  * Created:
  *   20/06/2021, 12:29:41
  * Last edited:
- *   20/06/2021, 12:29:41
+ *   28/06/2021, 22:26:49
  * Auto updated?
  *   Yes
  *
@@ -26,6 +26,7 @@
 #include "vulkan/renderpass/RenderPass.hpp"
 #include "vulkan/commandbuffers/CommandBuffer.hpp"
 #include "Shader.hpp"
+#include "ShaderStage.hpp"
 
 namespace Rasterizer::Vulkan {
     /* The Pipeline class, which functions a as a more convenient wrapper for the internal VkPipeline object. */
@@ -48,15 +49,9 @@ namespace Rasterizer::Vulkan {
         VkPipelineLayout vk_pipeline_layout;
 
         /* Lists all the shader modules that this pipeline uses. */
-        Tools::Array<Shader> shaders;
-        /* Lists all specialization map entries. */
-        Tools::Array<Tools::Array<VkSpecializationMapEntry>> vk_specialization_entries;
-        /* The constant datas that will be passed to the shader during compilation. */
-        Tools::Array<Tools::Array<uint8_t>> vk_specialization_datas;
-        /* The infos that describes the specialization for a shaders. */
-        Tools::Array<VkSpecializationInfo> vk_specialization_infos;
-        /* Create infos for all shader stages. */
-        Tools::Array<VkPipelineShaderStageCreateInfo> vk_shader_infos;
+        Tools::Array<Vulkan::Shader> shaders;
+        /* Lists all the shader stages that we have. */
+        Tools::Array<Vulkan::ShaderStage> shader_stages;
 
         /* Describes how the vertex input looks like. */
         VkPipelineVertexInputStateCreateInfo vk_vertex_state_info;
@@ -88,7 +83,7 @@ namespace Rasterizer::Vulkan {
         ~Pipeline();
 
         /* Loads a shader in the given shader stage mask. */
-        void init_shader_stage(VkShaderStageFlagBits vk_shader_stage, const Vulkan::Shader& shader, const std::unordered_map<uint32_t, BinaryString>& specialization_constants = {});
+        void init_shader_stage(const Vulkan::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, BinaryString>& specialization_constants = {});
         /* Tells the Pipeline how its vertex input looks like. */
         void init_vertex_input();
         /* Tells the Pipeline what to do with the vertex we gave it. The topology specifies the geometry of the vertices (i.e., draw points, lines, triangles), and restart_enable does something that is beyond my knowledge. */
