@@ -16,6 +16,7 @@
 
 #include "tools/CppDebugger.hpp"
 #include "vulkan/ErrorCodes.hpp"
+#include "vulkan/Formats.hpp"
 
 #include "RenderPass.hpp"
 
@@ -70,6 +71,8 @@ static void populate_subpass(VkSubpassDescription& subpass, const Tools::Array<V
     subpass.pColorAttachments = vk_attachment_refs.rdata();
 
     // In the future, more types of attachments may be given here
+    subpass.inputAttachmentCount = 0;
+    subpass.preserveAttachmentCount = 0;
 
     // Done
     DRETURN;
@@ -156,7 +159,11 @@ static void populate_begin_info(VkRenderPassBeginInfo& begin_info, const VkRende
 RenderPass::RenderPass(const Vulkan::GPU& gpu) :
     gpu(gpu),
     vk_render_pass(nullptr)
-{}
+{
+    DENTER("Vulkan::RenderPass::RenderPass");
+    DLOG(info, "Started RenderPass initialization.");
+    DLEAVE;
+}
 
 /* Copy constructor for the RenderPass class. */
 RenderPass::RenderPass(const RenderPass& other) :
@@ -236,6 +243,9 @@ uint32_t RenderPass::add_attachment(VkFormat vk_swapchain_format, VkAttachmentLo
     this->vk_attachments.push_back(attachment);
 
     // Return the index
+    DINDENT;
+    DLOG(info, "Added attachment with format " + vk_format_map[vk_swapchain_format] + " to the RenderPass.");
+    DDEDENT;
     DRETURN index;
 }
 
@@ -244,7 +254,8 @@ void RenderPass::add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayou
     DENTER("Vulkan::RenderPass::add_subpass");
 
     // Create the attachment references for each references attachment
-    Tools::Array<VkAttachmentReference> vk_attachment_refs(attachment_refs.size());
+    this->vk_attachment_refs.push_back({});
+    this->vk_attachment_refs.last().resize(attachment_refs.size());
     for (uint32_t i = 0; i < attachment_refs.size(); i++) {
         // Check if the noted attachment reference exists
         if (attachment_refs[i].first >= this->vk_attachments.size()) {
@@ -252,20 +263,22 @@ void RenderPass::add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayou
         }
 
         // Add it
-        vk_attachment_refs.push_back({});
-        vk_attachment_refs[i].attachment = attachment_refs[i].first;
-        vk_attachment_refs[i].layout = attachment_refs[i].second;
+        this->vk_attachment_refs.last()[i] = {};
+        this->vk_attachment_refs.last()[i].attachment = attachment_refs[i].first;
+        this->vk_attachment_refs.last()[i].layout = attachment_refs[i].second;
     }
 
     // When done, create a VkSubpassDescription for this shit
     VkSubpassDescription subpass;
-    populate_subpass(subpass, vk_attachment_refs, bind_point);
+    populate_subpass(subpass, this->vk_attachment_refs.last(), bind_point);
 
     // Store that and the list of references internally
     this->vk_subpasses.push_back(subpass);
-    this->vk_attachment_refs.push_back(vk_attachment_refs);
 
     // Done
+    DINDENT;
+    DLOG(info, "Added subpass to the RenderPass.");
+    DDEDENT;
     DRETURN;
 }
 
@@ -280,6 +293,9 @@ void RenderPass::add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkPi
     // Store internally
     this->vk_dependencies.push_back(dependency);
 
+    DINDENT;
+    DLOG(info, "Added dependency to the RenderPass.");
+    DDEDENT;
     DRETURN;
 }
 
@@ -297,6 +313,9 @@ void RenderPass::finalize() {
     }
 
     // Done
+    DINDENT;
+    DLOG(info, "Initialized RenderPass.");
+    DDEDENT;
     DRETURN;
 }
 

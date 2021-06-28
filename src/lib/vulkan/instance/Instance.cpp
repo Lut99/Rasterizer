@@ -185,12 +185,17 @@ Instance::Instance(const Tools::Array<const char*>& extensions, const Tools::Arr
         DLOG(fatal, "Could not create the Vulkan instance: " + vk_error_map[vk_result]);
     }
 
-    // If we were successfull, print which extensions
+    #ifndef NDEBUG
+    // If we were successfull, print which extensions & layers
     DINDENT;
     for (uint32_t i = 0; i < instance_extensions.size(); i++) {
         DLOG(info, std::string("Enabled extension '") + this->vk_extensions[i] + "'");
     }
+    for (uint32_t i = 0; i < instance_extensions.size(); i++) {
+        DLOG(info, std::string("Enabled layer '") + this->vk_layers[i] + "'");
+    }
     DDEDENT;
+    #endif
 
 
 

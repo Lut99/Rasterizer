@@ -4,7 +4,7 @@
  * Created:
  *   16/04/2021, 17:21:54
  * Last edited:
- *   27/06/2021, 16:48:58
+ *   28/06/2021, 20:06:29
  * Auto updated?
  *   Yes
  *
@@ -29,7 +29,7 @@
 namespace Rasterizer::Vulkan {
     /* The Vulkan device extensions we want to be enabled. */
     const Tools::Array<const char*> device_extensions({
-        // Nothing lmao
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
     });
 
 
@@ -72,12 +72,11 @@ namespace Rasterizer::Vulkan {
         inline bool operator==(const GPU& other) const { return this->vk_device == other.vk_device; }
         /* Allows the GPU to be (negated) compared with another GPU class. */
         inline bool operator!=(const GPU& other) const { return this->vk_device != other.vk_device; }
-        
-        /* Returns the array that contains all queues of the given family. */
-        inline const Tools::Array<VkQueue>& operator[](QueueFamily family) const { return this->vk_queues[family]; }
 
         /* Blocks until the GPU is ready with its scheduled operations. */
         inline void wait_for_idle() const { vkDeviceWaitIdle(this->vk_device); }
+        /* Returns the array that contains all queues of the given family. */
+        inline const Tools::Array<VkQueue>& queues(QueueType family) const { return this->vk_queues[static_cast<uint32_t>(family)]; }
 
         /* Returns the name of the chosen GPU. */
         inline std::string name() const { return std::string(this->vk_physical_device_properties.deviceName); }

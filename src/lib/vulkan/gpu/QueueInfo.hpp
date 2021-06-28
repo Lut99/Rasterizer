@@ -50,7 +50,7 @@ namespace Rasterizer::Vulkan {
 
     private:
         /* Maps the queue families to their respective queue type. */
-        std::unordered_map<QueueType, int64_t> queue_families;
+        std::unordered_map<QueueType, std::pair<int64_t, int64_t>> queue_families;
 
         /* A list that lists the indices of all queue families stored in the QueueInfo, in order. */
         Tools::Array<uint32_t> queue_indices;
@@ -67,9 +67,11 @@ namespace Rasterizer::Vulkan {
         void refresh(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface);
 
         /* Returns the queue family of the given type. */
-        inline uint32_t operator[](QueueType family) const { return static_cast<uint32_t>(this->queue_families.at(family)); }
+        inline uint32_t operator[](QueueType family) const { return static_cast<uint32_t>(this->queue_families.at(family).first); }
         /* Returns whether or not the given queue family exists. */
-        inline bool exists(QueueType family) const { return this->queue_families.at(family) >= 0; }
+        inline bool exists(QueueType family) const { return this->queue_families.at(family).first >= 0; }
+        /* Returns the number of queues supported for the given queue family. */
+        inline uint32_t max_queues(QueueType family) const { return static_cast<uint32_t>(this->queue_families.at(family).second); }
 
         /* Returns a list of all queue indices in the QueueInfo. */
         inline const Tools::Array<uint32_t>& queues() const { return this->queue_indices; }

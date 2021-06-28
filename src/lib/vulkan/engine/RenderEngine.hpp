@@ -84,8 +84,8 @@ namespace Rasterizer::Vulkan {
     public:
         /* Constructor for the RenderEngine class, which takes a GLFW window to render to. */
         RenderEngine(GLFWwindow* glfw_window);
-        // /* Copy constructor for the RenderEngine class, which is deleted. */
-        // RenderEngine(const RenderEngine& other) = delete;
+        /* Copy constructor for the RenderEngine class, which is deleted. */
+        RenderEngine(const RenderEngine& other) = delete;
         // /* Move constructor for the RenderEngine class. */
         // RenderEngine(RenderEngine&& other);
         // /* Destructor for the RenderEngine class. */
@@ -99,8 +99,8 @@ namespace Rasterizer::Vulkan {
         /* Waits for the used GPU to be idle again. */
         inline void wait_for_idle() const { this->gpu.wait_for_idle(); }
 
-        // /* Copy assignment operator for the RenderEngine class, which is deleted. */
-        // RenderEngine& operator=(const RenderEngine& other) = delete;
+        /* Copy assignment operator for the RenderEngine class, which is deleted. */
+        RenderEngine& operator=(const RenderEngine& other) = delete;
         // /* Move assignment operator for the RenderEngine class. */
         // inline RenderEngine& operator=(RenderEngine&& other) { if (this != &other) { swap(*this, other); } return *this; }
         // /* Swap operator for the RenderEngine class. */

@@ -46,7 +46,7 @@ static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, Vk
     swapchain_info.imageColorSpace = surface_format.colorSpace;
     swapchain_info.imageExtent = surface_extent;
     swapchain_info.imageArrayLayers = 1;
-    swapchain_info.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    swapchain_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     // Then, we select the sharing mode of the image. This is always exclusive, since we'll change ownership manually
     swapchain_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -106,7 +106,7 @@ static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& 
 /***** SELECTION FUNCTIONS *****/
 /* Given a list of supported formats, returns our most desireable one. */
 static VkSurfaceFormatKHR choose_swapchain_format(const Tools::Array<VkSurfaceFormatKHR>& formats) {
-    DENTER("choose_swapchain_formats");
+    DENTER("choose_swapchain_format");
 
     for (uint32_t i = 0; i < formats.size(); i++) {
         if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -179,7 +179,7 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
     gpu(gpu),
     surface(surface)
 {
-    DENTER("Compute::Swapchain::Swapchain(copy)");
+    DENTER("Compute::Swapchain::Swapchain");
     DLOG(info, "Initializing Swapchain...");
     DINDENT;
 
@@ -318,6 +318,7 @@ void Swapchain::create_views(const Tools::Array<VkImage>& vk_image, const VkForm
     DENTER("Vulkan::Swapchain::create_views");
 
     // Create new image views for these fellers
+    DLOG(info, "Creating swapchain image views...");
     this->vk_swapchain_views.resize(this->vk_swapchain_images.size());
     for (uint32_t i = 0; i < this->vk_swapchain_images.size(); i++) {
         // First, create the create info

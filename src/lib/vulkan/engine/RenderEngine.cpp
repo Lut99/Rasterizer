@@ -108,7 +108,7 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     render_pass(this->gpu),
     pipeline(this->gpu),
 
-    draw_cmd_pool(this->gpu, this->gpu.queue_info().compute().index),
+    draw_cmd_pool(this->gpu, this->gpu.queue_info().compute()),
 
     framebuffers(swapchain.size()),
 
@@ -150,7 +150,9 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     pipeline.init_pipeline_layout({}, {});
 
     // Finally, generate the pipeline itself
+    DLOG(info, "awesome");
     pipeline.finalize(this->render_pass, 0);
+    DLOG(info, "more awesome");
 
     DLEAVE;
 }
@@ -210,7 +212,7 @@ void RenderEngine::loop() {
 
     // Submit to the queue
     vkResetFences(this->gpu, 1, &frame_in_flight_fences[this->current_frame].fence());
-    Tools::Array<VkQueue> graphics_queues = this->gpu[this->gpu.queue_info().graphics()];
+    Tools::Array<VkQueue> graphics_queues = this->gpu.queues(QueueType::graphics);
     if ((vk_result = vkQueueSubmit(graphics_queues[0], 1, &submit_info, this->frame_in_flight_fences[this->current_frame])) != VK_SUCCESS) {
         DLOG(fatal, "Could not submit to queue: " + vk_error_map[vk_result]);
     }
@@ -223,7 +225,7 @@ void RenderEngine::loop() {
     populate_present_info(present_info, this->swapchain, swapchain_index, { this->render_ready_semaphores[swapchain_index] });
 
     // Present it using the queue present function
-    Tools::Array<VkQueue> present_queues = this->gpu[this->gpu.queue_info().present()];
+    Tools::Array<VkQueue> present_queues = this->gpu.queues(QueueType::present);
     if ((vk_result = vkQueuePresentKHR(present_queues[0], &present_info)) != VK_SUCCESS) {
         DLOG(fatal, "Could not present result: " + vk_error_map[vk_result]);
     }

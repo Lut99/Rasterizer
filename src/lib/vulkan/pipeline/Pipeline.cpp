@@ -416,7 +416,7 @@ void Pipeline::init_shader_stage(VkShaderStageFlagBits vk_shader_stage, const Vu
     // Spawn a new create info for this stage
     this->vk_shader_infos.push_back({});
     // Populate it with the shader
-    populate_shader_info(this->vk_shader_infos[this->vk_shader_infos.size() - 1], vk_shader_stage, shader, this->vk_specialization_infos.last());
+    populate_shader_info(this->vk_shader_infos.last(), vk_shader_stage, shader, this->vk_specialization_infos.last());
 
     // We're done
     DINDENT;
@@ -632,7 +632,7 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
     pipeline_info.layout = this->vk_pipeline_layout;
 
     // Finally, set the renderpass and its first subpass
-    pipeline_info.renderPass = render_pass;
+    pipeline_info.renderPass = render_pass.render_pass();
     pipeline_info.subpass = first_subpass;
 
     // Note: we won't use pipeline derivation for now
@@ -641,9 +641,11 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
 
     // And that's it! Time to create it!
     VkResult vk_result;
+    DLOG(info, "awesomer???");
     if ((vk_result = vkCreateGraphicsPipelines(this->gpu, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &this->vk_pipeline)) != VK_SUCCESS) {
         DLOG(fatal, "Could not create graphics pipeline: " + vk_error_map[vk_result]);
     }
+    DLOG(info, "awesomemest!");
 
     // Done :)
     DRETURN;

@@ -31,14 +31,8 @@ static void populate_queue_infos(Tools::Array<VkDeviceQueueCreateInfo>& queue_in
     DENTER("populate_queue_infos");
 
     // Loop to populate the create infos
+    queue_infos.resize(vk_queue_info.uqueues().size());
     for (uint32_t i = 0; i < vk_queue_info.uqueues().size(); i++) {
-        #ifndef NDEBUG
-        // First, check if the given amount of queues is legal
-        if (queue_counts[i] > vk_queue_info[vk_queue_info.uqueues()[i]]) {
-            DLOG(fatal, "Cannot create " + std::to_string(queue_counts[i]) + " queues for queue family " + std::to_string(i) + " (" + queue_type_names[(int) vk_queue_info[vk_queue_info.uqueues()[i]].type] + "): maximum is " + std::to_string(vk_queue_info[vk_queue_info.uqueues()[i]].n_queues) + " queues");
-        }
-        #endif
-
         // Set the meta properties of the struct
         queue_infos[i] = {};
         queue_infos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -145,7 +139,7 @@ static bool is_suitable_gpu(const VkPhysicalDevice& vk_physical_device, const Su
     bool supports_extensions = gpu_supports_extensions(vk_physical_device, device_extensions);
 
     // With those two, return it the GPU is suitable
-    DRETURN queue_info.graphics().supported && queue_info.compute().supported && queue_info.memory().supported && queue_info.present().supported && supports_extensions;
+    DRETURN queue_info.graphics() >= 0 && queue_info.compute() >= 0 && queue_info.memory() >= 0 && queue_info.present() >= 0 && supports_extensions;
 }
 
 /* Selects a suitable GPU from the ones that support Vulkan. */
@@ -206,6 +200,7 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
     // Next, get some of its properties, like the name & queue info
     vkGetPhysicalDeviceProperties(this->vk_physical_device, &this->vk_physical_device_properties);
     this->vk_queue_info = QueueInfo(this->vk_physical_device, surface);
+    this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, surface);
     DINDENT;
     DLOG(auxillary, std::string("Selected GPU: '") + this->vk_physical_device_properties.deviceName + "'");
     DDEDENT;
@@ -238,9 +233,9 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
     if ((vk_result = vkCreateDevice(this->vk_physical_device, &device_info, nullptr, &this->vk_device)) != VK_SUCCESS) {
         DLOG(fatal, "Could not create the logical device: " + vk_error_map[vk_result]);
     }
+    
 
-
-
+    
     #ifndef NDEBUG
     // For debugging purposes, print the extensions enabled
     DINDENT;
