@@ -51,6 +51,10 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer&
     submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
+    // Attach the command buffer
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &cmd.command_buffer();
+
     // Attach the data for which we wait
     submit_info.waitSemaphoreCount = wait_for_semaphores.size();
     submit_info.pWaitSemaphores = wait_for_semaphores.rdata();

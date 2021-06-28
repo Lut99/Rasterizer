@@ -69,7 +69,7 @@ namespace Rasterizer::Vulkan {
         /* Returns the queue family of the given type. */
         inline uint32_t operator[](QueueType family) const { return static_cast<uint32_t>(this->queue_families.at(family).first); }
         /* Returns whether or not the given queue family exists. */
-        inline bool exists(QueueType family) const { return this->queue_families.at(family).first >= 0; }
+        inline bool supports(QueueType family) const { return this->queue_families.at(family).first >= 0; }
         /* Returns the number of queues supported for the given queue family. */
         inline uint32_t max_queues(QueueType family) const { return static_cast<uint32_t>(this->queue_families.at(family).second); }
 

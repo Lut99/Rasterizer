@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   27/06/2021, 14:34:32
+ *   28/06/2021, 20:56:17
  * Auto updated?
  *   Yes
  *
@@ -57,7 +57,7 @@ namespace Rasterizer::Vulkan {
 
 
         /* Private helper function that re-creates image views from the given list of images. */
-        void create_views(const Tools::Array<VkImage>& vk_image, const VkFormat& vk_format);
+        void create_views(const Tools::Array<VkImage>& vk_images, const VkFormat& vk_format);
 
     public:
         /* Constructor for the Swapchain class, which takes the GPU where it will be constructed and the window to which it shall present. */

@@ -100,9 +100,9 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
     this->queue_indices.clear();
     this->queue_indices.reserve(QueueInfo::n_queues);
     for (uint32_t i = 0; i < QueueInfo::n_queues; i++) {
-        uint32_t index = static_cast<uint32_t>(this->queue_families.at(static_cast<QueueType>(i)).first);
+        int64_t index = this->queue_families.at(static_cast<QueueType>(i)).first;
         if (index >= 0) {
-            this->queue_indices.push_back(index);
+            this->queue_indices.push_back(static_cast<uint32_t>(index));
         }
     }
 

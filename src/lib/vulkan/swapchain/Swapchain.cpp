@@ -314,16 +314,16 @@ Swapchain::~Swapchain() {
 
 
 /* Private helper function that re-creates image views and frame buffers from the given list of images. */
-void Swapchain::create_views(const Tools::Array<VkImage>& vk_image, const VkFormat& vk_format) {
+void Swapchain::create_views(const Tools::Array<VkImage>& vk_images, const VkFormat& vk_format) {
     DENTER("Vulkan::Swapchain::create_views");
 
     // Create new image views for these fellers
     DLOG(info, "Creating swapchain image views...");
-    this->vk_swapchain_views.resize(this->vk_swapchain_images.size());
-    for (uint32_t i = 0; i < this->vk_swapchain_images.size(); i++) {
+    this->vk_swapchain_views.resize(vk_images.size());
+    for (uint32_t i = 0; i < vk_images.size(); i++) {
         // First, create the create info
         VkImageViewCreateInfo view_info;
-        populate_view_info(view_info, this->vk_swapchain_images[i], vk_format);
+        populate_view_info(view_info, vk_images[i], vk_format);
 
         // Create 'em
         VkResult vk_result;

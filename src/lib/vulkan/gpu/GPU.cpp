@@ -139,7 +139,7 @@ static bool is_suitable_gpu(const VkPhysicalDevice& vk_physical_device, const Su
     bool supports_extensions = gpu_supports_extensions(vk_physical_device, device_extensions);
 
     // With those two, return it the GPU is suitable
-    DRETURN queue_info.graphics() >= 0 && queue_info.compute() >= 0 && queue_info.memory() >= 0 && queue_info.present() >= 0 && supports_extensions;
+    DRETURN queue_info.supports(QueueType::graphics) && queue_info.supports(QueueType::compute) && queue_info.supports(QueueType::memory) && queue_info.supports(QueueType::present) && supports_extensions;
 }
 
 /* Selects a suitable GPU from the ones that support Vulkan. */
