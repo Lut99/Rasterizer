@@ -33,7 +33,7 @@ static void flatten_specialization_map(const std::unordered_map<uint32_t, Binary
     // Create an array of mapentries, and then a single, unified data array
     uint32_t offset = 0;
     map_entries.reserve(static_cast<Tools::array_size_t>(constant_map.size()));
-    for(const pair<uint32_t, BinaryString>& p : constant_map) {
+    for(const std::pair<uint32_t, BinaryString>& p : constant_map) {
         // Start to intialize a map entry
         VkSpecializationMapEntry map_entry{};
 
@@ -52,14 +52,18 @@ static void flatten_specialization_map(const std::unordered_map<uint32_t, Binary
     }
 
     // The offset is now also the size. Use that to populate the data array
-    data.resize(offset);
-    offset = 0;
-    for (const pair<uint32_t, BinaryString>& p : constant_map) {
-        // Copy the element's data to the array
-        memcpy((void*) (data.rdata() + offset), p.second.data, p.second.size);
+    if (offset > 0) {
+        data.resize(offset);
+        offset = 0;
+        for (const std::pair<uint32_t, BinaryString>& p : constant_map) {
+            // Copy the element's data to the array
+            memcpy((void*) (data.rdata() + offset), p.second.data, p.second.size);
 
-        // Increment the offset once more
-        offset += p.second.size;
+            // Increment the offset once more
+            offset += p.second.size;
+        }
+    } else {
+        data.clear();
     }
 
     // Done
