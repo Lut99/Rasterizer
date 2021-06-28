@@ -32,6 +32,7 @@
 *.app
 
 # The entire build folder lmao gottem
+bin/
 build/
 
 # Everything vscode-setting related

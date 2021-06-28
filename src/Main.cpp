@@ -12,6 +12,7 @@
  *   Entry point to the rasterizer executable
 **/
 
+#include <chrono>
 #include <GLFW/glfw3.h>
 
 #include "tools/CppDebugger.hpp"
@@ -43,8 +44,21 @@ int main(int argc, const char** argv) {
     Vulkan::RenderEngine render_engine(glfw_window);
 
     // Do the render
+    uint32_t fps = 0;
+    chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
     while (render_engine.open()) {
         render_engine.loop();
+
+        // Keep track of the fps
+        ++fps;
+        if (chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - last_fps_update).count() >= 1000) {
+            // Reset the timer
+            last_fps_update += chrono::milliseconds(1000);
+
+            // Show the FPS
+            glfwSetWindowTitle(glfw_window, ("Rasterizer (FPS: " + std::to_string(fps) + ")").c_str());
+            fps = 0;
+        }
     }
 
     // Wait for the GPU to be idle before we stop

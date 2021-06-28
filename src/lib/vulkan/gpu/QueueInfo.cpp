@@ -23,31 +23,17 @@ using namespace Rasterizer::Vulkan;
 using namespace CppDebugger::SeverityValues;
 
 
-/***** QUEUE FAMILY CLASS *****/
-/* Default constructor for the QueueFamily class, which simply initializes everything to 0. */
-QueueFamily::QueueFamily() :
-    type(QueueType::none),
-    index(0),
-    supported(false),
-    n_queues(0)
-{}
-
-
-
-
-
 /***** QUEUEINFO CLASS *****/
 /* Default constructor for the QueueInfo class, which initializes the info to nothing supported. Use ::refresh() to populate it normally. */
-QueueInfo::QueueInfo() {
-    DENTER("Vulkan::QueueInfo::QueueInfo");
-    
-    // Properly set the names of the internal queue families
-    for (size_t i = 0; i < this->n_queues; i++) {
-        this->queue_families[i].type = (QueueType) i;
-    }
-
-    DLEAVE;
-}
+QueueInfo::QueueInfo() :
+    queue_families({
+        { QueueType::graphics, -1 },
+        { QueueType::compute, -1 },
+        { QueueType::memory, -1 },
+        { QueueType::present, -1 },
+        { QueueType::none, -1 }
+    })
+{}
 
 /* Constructor for the QueueInfo class, which takes a Vulkan physical device and surface and uses that to set its own properties. */
 QueueInfo::QueueInfo(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface) :
@@ -98,15 +84,14 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
         }
 
         // Once that's done, check if we need to write this queue for any of the queue families
-        for (uint32_t i = 0; i < QueueInfo::n_queues; i++) {
-            if (capabilities[i] && (!this->queue_families[i].supported || n_specialties < best_specialities[i])) {
+        for (const std::pair<QueueType, int64_t>& p : this->queue_families) {
+            uint32_t cap_i = static_cast<uint32_t>(p.first);
+            if (capabilities[cap_i] && (p.second < 0 || n_specialties < best_specialities[cap_i])) {
                 // Update the graphics family
-                this->queue_families[i].index = i;
-                this->queue_families[i].n_queues = supported_queues[i].queueCount;
-                this->queue_families[i].supported = true;
-                
+                this->queue_families.at(p.first) = i;
+
                 // Update this family's best specialty measure
-                best_specialities[i] = n_specialties;
+                best_specialities[cap_i] = n_specialties;
             }
         }
     }
@@ -114,8 +99,9 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
     // Once we're done searching the queues, first populate the queue array
     this->queue_indices.clear();
     this->queue_indices.reserve(QueueInfo::n_queues);
-    for (uint32_t i = 0; i < QueueInfo::n_queues; i++) {
-        this->queue_indices.push_back(this->queue_families[i].index);
+    for (const std::pair<QueueType, int64_t>& p : this->queue_families) {
+        if (p.second == -1) { continue; }
+        this->queue_indices.push_back(p.second);
     }
 
     // Next, set the unique queue(count)

@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanSynchronization STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Semaphore.cpp)
+add_library(VulkanSynchronization STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Semaphore.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Fence.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanSynchronization PUBLIC

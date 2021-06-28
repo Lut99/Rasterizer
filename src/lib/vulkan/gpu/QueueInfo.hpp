@@ -17,6 +17,7 @@
 #define VULKAN_QUEUE_INFO_HPP
 
 #include <string>
+#include <unordered_map>
 #include <vulkan/vulkan.h>
 
 #include "tools/Array.hpp"
@@ -41,33 +42,6 @@ namespace Rasterizer::Vulkan {
 
 
 
-    /* The QueueFamily class, which describes a single queue family. */
-    class QueueFamily {
-    public:
-        /* The type of this family. */
-        QueueType type;
-        /* The GPU-relevant index of this family. */
-        uint32_t index;
-        /* Whether or not this family is supported on the chosen device. */
-        bool supported;
-        /* The number of queues that this family maximally supports. */
-        uint32_t n_queues;
-    
-    private:
-        /* Default constructor for the QueueFamily class, which simply initializes everything to 0. */
-        QueueFamily();
-
-        /* Mark the QueueInfo as our friend. */
-        friend class QueueInfo;
-
-    public:
-        /* Implicit conversion to the QueueFamily's index. */
-        inline operator uint32_t() const { return this->index; }
-
-    };
-
-
-
     /* The DeviceQueueInfo class, which describes the queues that a GPU supports. */
     class QueueInfo {
     public:
@@ -75,8 +49,9 @@ namespace Rasterizer::Vulkan {
         static const constexpr uint32_t n_queues = 4;
 
     private:
-        /* Lists all of the queue families. */
-        QueueFamily queue_families[n_queues];
+        /* Maps the queue families to their respective queue type. */
+        std::unordered_map<QueueType, int64_t> queue_families;
+
         /* A list that lists the indices of all queue families stored in the QueueInfo, in order. */
         Tools::Array<uint32_t> queue_indices;
         /* A list that lists the indices of all unique queue families stored in the QueueInfo, in order. */
@@ -92,9 +67,9 @@ namespace Rasterizer::Vulkan {
         void refresh(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface);
 
         /* Returns the queue family of the given type. */
-        inline const QueueFamily& operator[](QueueType family) const { return this->queue_families[(int) family]; }
-        /* Returns the queue family with the given queue family index. */
-        const QueueFamily& operator[](uint32_t family) const;
+        inline uint32_t operator[](QueueType family) const { return static_cast<uint32_t>(this->queue_families.at(family)); }
+        /* Returns whether or not the given queue family exists. */
+        inline bool exists(QueueType family) const { return this->queue_families.at(family) >= 0; }
 
         /* Returns a list of all queue indices in the QueueInfo. */
         inline const Tools::Array<uint32_t>& queues() const { return this->queue_indices; }
@@ -102,13 +77,13 @@ namespace Rasterizer::Vulkan {
         inline const Tools::Array<uint32_t>& uqueues() const { return this->uqueues_indices; }
 
         /* Returns the QueueFamily struct for the graphics queue. */
-        inline const QueueFamily& graphics() const { return this->queue_families[(int) QueueType::graphics]; }
+        inline uint32_t graphics() const { return (*this)[QueueType::graphics]; }
         /* Returns the QueueFamily struct for the compute queue. */
-        inline const QueueFamily& compute() const { return this->queue_families[(int) QueueType::compute]; }
+        inline uint32_t compute() const { return (*this)[QueueType::compute]; }
         /* Returns the QueueFamily struct for the memory queue. */
-        inline const QueueFamily& memory() const { return this->queue_families[(int) QueueType::memory]; }
+        inline uint32_t memory() const { return (*this)[QueueType::memory]; }
         /* Returns the QueueFamily struct for the present queue. */
-        inline const QueueFamily& present() const { return this->queue_families[(int) QueueType::present]; }
+        inline uint32_t present() const { return (*this)[QueueType::present]; }
 
     };
 }

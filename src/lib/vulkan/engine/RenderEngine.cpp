@@ -114,6 +114,8 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
 
     image_ready_semaphores(Semaphore(this->gpu), RenderEngine::max_frames_in_flight),
     render_ready_semaphores(Semaphore(this->gpu), RenderEngine::max_frames_in_flight),
+    frame_in_flight_fences(Fence(this->gpu, VK_FENCE_CREATE_SIGNALED_BIT), RenderEngine::max_frames_in_flight),
+    image_in_flight_fences((Fence*) nullptr, this->swapchain.size()),
 
     current_frame(0)
 {
@@ -173,12 +175,21 @@ void RenderEngine::loop() {
     // First, poll the GLFW events
     glfwPollEvents();
 
+    // Before we get the swapchain images, be sure to wait for the current frame to be available
+    vkWaitForFences(this->gpu, 1, &frame_in_flight_fences[this->current_frame].fence(), VK_TRUE, UINT64_MAX);
+
     // Next, try to get a new swapchain image
     uint32_t swapchain_index;
     VkResult vk_result;
     if ((vk_result = vkAcquireNextImageKHR(this->gpu, this->swapchain, UINT64_MAX, this->image_ready_semaphores[this->current_frame], VK_NULL_HANDLE, &swapchain_index)) != VK_SUCCESS) {
         DLOG(fatal, "Could not get image from swapchain: " + vk_error_map[vk_result]);
     }
+
+    // If another frame is already using this image, then wait for it to become available
+    if (this->image_in_flight_fences[swapchain_index] != (Fence*) nullptr) {
+        vkWaitForFences(this->gpu, 1, &this->image_in_flight_fences[swapchain_index]->fence(), VK_TRUE, UINT64_MAX);
+    }
+    this->image_in_flight_fences[swapchain_index] = &this->frame_in_flight_fences[this->current_frame];
 
 
 
@@ -198,8 +209,9 @@ void RenderEngine::loop() {
     populate_submit_info(submit_info, draw_cmd, { this->image_ready_semaphores[this->current_frame] },  wait_stages, { this->render_ready_semaphores[this->current_frame] });
 
     // Submit to the queue
+    vkResetFences(this->gpu, 1, &frame_in_flight_fences[this->current_frame].fence());
     Tools::Array<VkQueue> graphics_queues = this->gpu[this->gpu.queue_info().graphics()];
-    if ((vk_result = vkQueueSubmit(graphics_queues[0], 1, &submit_info, VK_NULL_HANDLE)) != VK_SUCCESS) {
+    if ((vk_result = vkQueueSubmit(graphics_queues[0], 1, &submit_info, this->frame_in_flight_fences[this->current_frame])) != VK_SUCCESS) {
         DLOG(fatal, "Could not submit to queue: " + vk_error_map[vk_result]);
     }
 

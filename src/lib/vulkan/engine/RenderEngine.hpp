@@ -29,6 +29,7 @@
 #include "vulkan/pipeline/Pipeline.hpp"
 #include "vulkan/commandbuffers/CommandPool.hpp"
 #include "vulkan/synchronization/Semaphore.hpp"
+#include "vulkan/synchronization/Fence.hpp"
 
 #include "tools/Array.hpp"
 
@@ -72,6 +73,10 @@ namespace Rasterizer::Vulkan {
         Tools::Array<Vulkan::Semaphore> image_ready_semaphores;
         /* Contains the semaphores that signal when a an image is done being rendered. */
         Tools::Array<Vulkan::Semaphore> render_ready_semaphores;
+        /* Contains the fences that are used to synchronize the CPU to be sure that we're not already using one of the frames that are in flight. */
+        Tools::Array<Vulkan::Fence> frame_in_flight_fences;
+        /* Contains the fences that are used to avoid using a swapchain image (not a conceptual frame) more than once at a time. Does not physically contain fences, but rather references existing ones from frame_in_flight_fences. */
+        Tools::Array<Vulkan::Fence*> image_in_flight_fences;
 
         /* Counter keeping track of which frame we should currently render to. */
         uint32_t current_frame;

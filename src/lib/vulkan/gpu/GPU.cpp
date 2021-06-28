@@ -34,7 +34,7 @@ static void populate_queue_infos(Tools::Array<VkDeviceQueueCreateInfo>& queue_in
     for (uint32_t i = 0; i < vk_queue_info.uqueues().size(); i++) {
         #ifndef NDEBUG
         // First, check if the given amount of queues is legal
-        if (queue_counts[i] > vk_queue_info[vk_queue_info.uqueues()[i]].n_queues) {
+        if (queue_counts[i] > vk_queue_info[vk_queue_info.uqueues()[i]]) {
             DLOG(fatal, "Cannot create " + std::to_string(queue_counts[i]) + " queues for queue family " + std::to_string(i) + " (" + queue_type_names[(int) vk_queue_info[vk_queue_info.uqueues()[i]].type] + "): maximum is " + std::to_string(vk_queue_info[vk_queue_info.uqueues()[i]].n_queues) + " queues");
         }
         #endif
