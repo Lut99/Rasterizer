@@ -82,6 +82,12 @@ namespace Rasterizer::Vulkan {
 
         /* Counter keeping track of which frame we should currently render to. */
         uint32_t current_frame;
+        /* Variable that indicates if the RenderEngine should resize or not. */
+        bool should_resize;
+
+
+        /* Callback for the GLFW window resize event. */
+        static void glfw_resize_callback(GLFWwindow* glfw_window, int width, int height);
     
     public:
         /* Constructor for the RenderEngine class, which takes a GLFW window to render to. */
@@ -97,6 +103,11 @@ namespace Rasterizer::Vulkan {
         inline bool open() { return !glfwWindowShouldClose(this->glfw_window); }
         /* Runs a single iteration of the game loop. */
         void loop();
+        
+        /* Resizes the window to the given size. Note that this is a pretty slow operation, as it requires the device to be idle. */
+        void resize(uint32_t new_width, uint32_t new_height);
+        /* Resizes the window to the size of the given window. Note that this is a pretty slow operation, as it requires the device to be idle. */
+        void resize(GLFWwindow* glfw_window);
 
         /* Waits for the used GPU to be idle again. */
         inline void wait_for_idle() const { this->gpu.wait_for_idle(); }

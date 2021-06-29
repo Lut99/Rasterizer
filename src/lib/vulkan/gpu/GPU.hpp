@@ -39,6 +39,8 @@ namespace Rasterizer::Vulkan {
     public:
         /* Constant reference to the instance where this GPU is declared with. */
         const Instance& instance;
+        /* Constant reference to the surface where we render to. */
+        const Surface& surface;
 
     private:
         /* The physical GPU this class references. */
@@ -77,6 +79,9 @@ namespace Rasterizer::Vulkan {
         inline void wait_for_idle() const { vkDeviceWaitIdle(this->vk_device); }
         /* Returns the array that contains all queues of the given family. */
         inline const Tools::Array<VkQueue>& queues(QueueType family) const { return this->vk_queues[static_cast<uint32_t>(family)]; }
+
+        /* Refreshes the swapchain info, based on the new surface. */
+        void refresh_swapchain_info();
 
         /* Returns the name of the chosen GPU. */
         inline std::string name() const { return std::string(this->vk_physical_device_properties.deviceName); }

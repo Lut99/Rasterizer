@@ -30,7 +30,7 @@ using namespace CppDebugger::SeverityValues;
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkSwapchainCreateInfo struct. */
-static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, VkSurfaceKHR vk_surface, const VkSurfaceCapabilitiesKHR& surface_capabilities, const VkSurfaceFormatKHR& surface_format, const VkPresentModeKHR& surface_present_mode, const VkExtent2D surface_extent, uint32_t image_count) {
+static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, VkSurfaceKHR vk_surface, const VkSurfaceCapabilitiesKHR& surface_capabilities, const VkSurfaceFormatKHR& surface_format, const VkPresentModeKHR& surface_present_mode, const VkExtent2D surface_extent, uint32_t image_count, VkSwapchainKHR old_swapchain = VK_NULL_HANDLE) {
     DENTER("populate_swapchain_info");
 
     // Set the standard stuff
@@ -61,7 +61,7 @@ static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, Vk
     swapchain_info.clipped = VK_TRUE;
 
     // FInally, set no old swapchain (for now, at least)
-    swapchain_info.oldSwapchain = VK_NULL_HANDLE;
+    swapchain_info.oldSwapchain = old_swapchain;
 
     // Done!
     DRETURN;
@@ -332,6 +332,75 @@ void Swapchain::create_views(const Tools::Array<VkImage>& vk_images, const VkFor
         }
     }
 
+    DRETURN;
+}
+
+
+
+/* Resizes the swapchain. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
+void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
+    DENTER("Vulkan::Swapchain::resize");
+    DLOG(info, "Re-creating swapchain...");
+    DINDENT;
+
+
+
+    // First, delete old stuff
+    DLOG(info, "Deallocating old swapchain...");
+    for (uint32_t i = 0; i < this->vk_swapchain_views.size(); i++) {
+        vkDestroyImageView(this->gpu, this->vk_swapchain_views[i], nullptr);
+    }
+    this->vk_swapchain_views.clear();
+    this->vk_swapchain_images.clear();
+    vkDestroySwapchainKHR(this->gpu, this->vk_swapchain, nullptr);
+
+
+
+    // We set the new extent
+    DLOG(info, "Re-creating new swapchain...");
+    DINDENT; DLOG(info, "New swapchain size: " + std::to_string(new_width) + "x" + std::to_string(new_height)); DDEDENT;
+    this->vk_surface_extent = VkExtent2D({ new_width, new_height });
+
+    // Populate the create info
+    VkSwapchainCreateInfoKHR swapchain_info;
+    populate_swapchain_info(swapchain_info, this->surface, this->gpu.swapchain_info().capabilities(), this->vk_surface_format, this->vk_surface_present_mode, this->vk_surface_extent, this->vk_desired_image_count);
+
+    // Use that to actually create the swapchain
+    VkResult vk_result;
+    if ((vk_result = vkCreateSwapchainKHR(this->gpu, &swapchain_info, nullptr, &this->vk_swapchain)) != VK_SUCCESS) {
+        DLOG(fatal, "Could not re-create swapchain: " + vk_error_map[vk_result]);
+    }
+
+
+
+    // Retrieve the images that are part of the swapchain
+    DLOG(info, "Retrieving new images...");
+    vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, nullptr);
+    this->vk_swapchain_images.reserve(this->vk_actual_image_count);
+    vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, this->vk_swapchain_images.wdata(this->vk_actual_image_count));
+    DINDENT;
+    DLOG(info, "Retrieved " + std::to_string(this->vk_actual_image_count) + " images");
+    DDEDENT;
+
+    // Also re-create the image views and framebuffers
+    this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
+
+
+
+    DDEDENT;
+    DRETURN;
+}
+
+/* Resizes the swapchain to the size of the given window. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
+void Swapchain::resize(GLFWwindow* glfw_window) {
+    DENTER("Vulkan::Swapchain::resize(window)");
+
+    // Fetch the new size from the window
+    VkExtent2D new_extent = choose_swapchain_extent(this->gpu.swapchain_info().capabilities(), glfw_window);
+    // Call the other resize to do the actual work
+    this->resize(new_extent.width, new_extent.height);
+
+    // Done
     DRETURN;
 }
 

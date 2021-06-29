@@ -68,5 +68,6 @@ int main(int argc, const char** argv) {
     render_engine.wait_for_idle();
 
     // We're done
+    glfwTerminate();
     DRETURN 0;
 }

@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   28/06/2021, 20:56:17
+ *   29/06/2021, 15:31:05
  * Auto updated?
  *   Yes
  *
@@ -73,6 +73,11 @@ namespace Rasterizer::Vulkan {
         inline VkImage operator[](uint32_t index) { return this->vk_swapchain_images[index]; }
         /* Returns a framebuffer for the image at the given location and the given render pass. */
         inline Vulkan::Framebuffer get_framebuffer(uint32_t index, const Vulkan::RenderPass& render_pass) { return Framebuffer(this->gpu, render_pass, this->vk_swapchain_views[index], this->vk_surface_extent); }
+
+        /* Resizes the swapchain to the given size. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
+        void resize(uint32_t new_width, uint32_t new_height);
+        /* Resizes the swapchain to the size of the given window. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
+        void resize(GLFWwindow* glfw_window);
 
         /* Returns the number of images in the swapchain. */
         inline uint32_t size() const { return this->vk_actual_image_count; }

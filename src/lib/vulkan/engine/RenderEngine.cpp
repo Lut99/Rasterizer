@@ -122,7 +122,8 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     frame_in_flight_fences(Fence(this->gpu, VK_FENCE_CREATE_SIGNALED_BIT), RenderEngine::max_frames_in_flight),
     image_in_flight_fences((Fence*) nullptr, this->swapchain.size()),
 
-    current_frame(0)
+    current_frame(0),
+    should_resize(false)
 {
     DENTER("Vulkan::RenderEngine::RenderEngine");
 
@@ -165,7 +166,6 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     /* COMMAND BUFFERS */
     // We can already record the command buffers for each framebuffer
     this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
-    Tools::Array<VkCommandBuffer> temp(this->draw_cmds.size());
     for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
         // Record it
         this->draw_cmds[i].begin();
@@ -178,9 +178,32 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
 
 
 
+    /* WINDOW */
+    // Before we quit, we'll add our own handler to glfw window s.t. we can explicitly detect window resizes
+    // Note that we overwrite the user pointer; if any other library did this, that'd be bad
+    glfwSetWindowUserPointer(glfw_window, (void*) this);
+    glfwSetFramebufferSizeCallback(glfw_window, RenderEngine::glfw_resize_callback);
+
+
+
     /* DONE */
     DLOG(info, "Initialized RenderEngine.");
     DLEAVE;
+}
+
+
+
+/* Callback for the GLFW window resize. */
+void RenderEngine::glfw_resize_callback(GLFWwindow* glfw_window, int width, int height) {
+    DENTER("glfw_resize_callback");
+
+    // First, get the RenderEngine back
+    RenderEngine* render_engine = (RenderEngine*) glfwGetWindowUserPointer(glfw_window);
+    // Mark that we need to resize at the new opportunity
+    render_engine->should_resize = true;
+
+    // Done
+    DRETURN;
 }
 
 
@@ -198,8 +221,15 @@ void RenderEngine::loop() {
 
     // Next, try to get a new swapchain image
     uint32_t swapchain_index;
-    VkResult vk_result;
-    if ((vk_result = vkAcquireNextImageKHR(this->gpu, this->swapchain, UINT64_MAX, this->image_ready_semaphores[this->current_frame], VK_NULL_HANDLE, &swapchain_index)) != VK_SUCCESS) {
+    VkResult vk_result = vkAcquireNextImageKHR(this->gpu, this->swapchain, UINT64_MAX, this->image_ready_semaphores[this->current_frame], VK_NULL_HANDLE, &swapchain_index);
+    if (vk_result == VK_ERROR_OUT_OF_DATE_KHR || vk_result == VK_SUBOPTIMAL_KHR) {
+        // The swapchain is outdated or suboptimal (probably a resize); we resize to fit again
+        this->resize(this->glfw_window);
+        this->should_resize = false;
+
+        // Next, we early quit, to make sure that the proper images are acquired
+        DRETURN;
+    } else if (vk_result != VK_SUCCESS) {
         DLOG(fatal, "Could not get image from swapchain: " + vk_error_map[vk_result]);
     }
 
@@ -233,7 +263,12 @@ void RenderEngine::loop() {
 
     // Present it using the queue present function
     Tools::Array<VkQueue> present_queues = this->gpu.queues(QueueType::present);
-    if ((vk_result = vkQueuePresentKHR(present_queues[0], &present_info)) != VK_SUCCESS) {
+    vk_result = vkQueuePresentKHR(present_queues[0], &present_info);
+    if (this->should_resize || vk_result == VK_ERROR_OUT_OF_DATE_KHR || vk_result == VK_SUBOPTIMAL_KHR) {
+        // The swapchain is outdated or suboptimal (probably a resize); we resize to fit again
+        this->resize(this->glfw_window);
+        this->should_resize = false;
+    } else if (vk_result != VK_SUCCESS) {
         DLOG(fatal, "Could not present result: " + vk_error_map[vk_result]);
     }
 
@@ -241,5 +276,101 @@ void RenderEngine::loop() {
 
     // Done with this iteration
     this->current_frame = (this->current_frame + 1) % RenderEngine::max_frames_in_flight;
+    DRETURN;
+}
+
+
+
+/* Resizes the window to the given size. Note that this is a pretty slow operation, as it requires the device to be idle. */
+void RenderEngine::resize(uint32_t new_width, uint32_t new_height) {
+    DENTER("Vulkan::RenderEngine::resize");
+
+    // If the user minimized the application, then we shall wait until the window has a size again
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(this->glfw_window, &width, &height);
+    if (width == 0 || height == 0) {
+        DLOG(info, "Window minimized");
+        while (width == 0 || height == 0) {
+            glfwGetFramebufferSize(this->glfw_window, &width, &height);
+            // Use the blocking event call to let the thread sleepy sleepy
+            glfwWaitEvents();
+        }
+    }
+
+    // Wait until the device is idle
+    this->gpu.wait_for_idle();
+
+    // Then, resize the swapchain (which also updates the image views)
+    this->gpu.refresh_swapchain_info();
+    this->swapchain.resize(new_width, new_height);
+
+    // Also fetch a new list of framebuffers
+    this->framebuffers.clear();
+    this->framebuffers.reserve(this->swapchain.size());
+    for (uint32_t i = 0; i < this->swapchain.size(); i++) {
+        this->framebuffers.push_back(this->swapchain.get_framebuffer(i, this->render_pass));
+    }
+
+    // Then, re-create the command buffers
+    this->draw_cmd_pool.ndeallocate(this->draw_cmds);
+    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
+    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
+        // Record it
+        this->draw_cmds[i].begin();
+        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
+        this->pipeline.schedule(this->draw_cmds[i]);
+        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
+        this->render_pass.stop_scheduling(this->draw_cmds[i]);
+        this->draw_cmds[i].end();
+    }
+
+    // Done, we can resume rendering
+    DRETURN;
+}
+
+/* Resizes the window to the size of the given window. Note that this is a pretty slow operation, as it requires the device to be idle. */
+void RenderEngine::resize(GLFWwindow* glfw_window) {
+    DENTER("Vulkan::RenderEngine::resize(window)");
+
+    // If the user minimized the application, then we shall wait until the window has a size again
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(this->glfw_window, &width, &height);
+    if (width == 0 || height == 0) {
+        DLOG(info, "Window minimized");
+        while (width == 0 || height == 0) {
+            glfwGetFramebufferSize(this->glfw_window, &width, &height);
+            // Use the blocking event call to let the thread sleepy sleepy
+            glfwWaitEvents();
+        }
+    }
+
+    // Wait until the device is idle
+    this->gpu.wait_for_idle();
+
+    // Then, resize the swapchain (which also updates the image views)
+    this->gpu.refresh_swapchain_info();
+    this->swapchain.resize(glfw_window);
+
+    // Also fetch a new list of framebuffers
+    this->framebuffers.clear();
+    this->framebuffers.reserve(this->swapchain.size());
+    for (uint32_t i = 0; i < this->swapchain.size(); i++) {
+        this->framebuffers.push_back(this->swapchain.get_framebuffer(i, this->render_pass));
+    }
+
+    // Then, re-create the command buffers
+    this->draw_cmd_pool.ndeallocate(this->draw_cmds);
+    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
+    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
+        // Record it
+        this->draw_cmds[i].begin();
+        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
+        this->pipeline.schedule(this->draw_cmds[i]);
+        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
+        this->render_pass.stop_scheduling(this->draw_cmds[i]);
+        this->draw_cmds[i].end();
+    }
+
+    // Done, we can resume rendering
     DRETURN;
 }

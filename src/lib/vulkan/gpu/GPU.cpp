@@ -183,6 +183,7 @@ static VkPhysicalDevice select_gpu(const Instance& instance, const Surface& surf
 /* Constructor for the GPU class, which takes a Vulkan instance, the target surface and a list of required extensions to enable on the GPU. */
 GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<uint32_t>& queue_counts, const Tools::Array<const char*>& extensions) :
     instance(instance),
+    surface(surface),
     vk_extensions(extensions)
 {
     DENTER("Vulkan::GPU::GPU");
@@ -195,12 +196,12 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
     DLOG(info, "Choosing physical device...");
 
     // Start by selecting a proper one
-    this->vk_physical_device = select_gpu(this->instance, surface, this->vk_extensions);
+    this->vk_physical_device = select_gpu(this->instance, this->surface, this->vk_extensions);
 
     // Next, get some of its properties, like the name & queue info
     vkGetPhysicalDeviceProperties(this->vk_physical_device, &this->vk_physical_device_properties);
-    this->vk_queue_info = QueueInfo(this->vk_physical_device, surface);
-    this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, surface);
+    this->vk_queue_info = QueueInfo(this->vk_physical_device, this->surface);
+    this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, this->surface);
     DINDENT;
     DLOG(auxillary, std::string("Selected GPU: '") + this->vk_physical_device_properties.deviceName + "'");
     DDEDENT;
@@ -266,6 +267,7 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
 /* Copy constructor for the GPU class. */
 GPU::GPU(const GPU& other) :
     instance(other.instance),
+    surface(other.surface),
     vk_physical_device(other.vk_physical_device),
     vk_physical_device_properties(other.vk_physical_device_properties),
     vk_queue_info(other.vk_queue_info),
@@ -317,6 +319,7 @@ GPU::GPU(const GPU& other) :
 /* Move constructor for the GPU class. */
 GPU::GPU(GPU&& other) :
     instance(other.instance),
+    surface(other.surface),
     vk_physical_device(other.vk_physical_device),
     vk_physical_device_properties(other.vk_physical_device_properties),
     vk_queue_info(other.vk_queue_info),
@@ -354,6 +357,18 @@ GPU::~GPU() {
 
 
 
+/* Refreshes the swapchain info, based on the new surface. */
+void GPU::refresh_swapchain_info() {
+    DENTER("Vulkan::GPU::refresh_swapchain_info");
+
+    // Simply generate a new one based on the physical device and the surface
+    this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, this->surface.surface());
+
+    DRETURN;
+}
+
+
+
 /* Swap operator for the GPU class. */
 void Vulkan::swap(GPU& g1, GPU& g2) {
     DENTER("Vulkan::swap(GPU)");
@@ -362,6 +377,10 @@ void Vulkan::swap(GPU& g1, GPU& g2) {
     // Check if the instances are actually the same
     if (g1.instance != g2.instance) {
         DLOG(fatal, "Cannot swap gpus with different instances");
+    }
+    // And also check the surfaces
+    if (g1.surface != g2.surface) {
+        DLOG(fatal, "Cannot swap gpus with different surfaces");
     }
     #endif
 
