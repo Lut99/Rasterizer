@@ -31,6 +31,8 @@
 #include "vulkan/synchronization/Semaphore.hpp"
 #include "vulkan/synchronization/Fence.hpp"
 
+#include "loaders/models/Formats.hpp"
+
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Vulkan {
@@ -94,10 +96,9 @@ namespace Rasterizer::Vulkan {
         RenderEngine(GLFWwindow* glfw_window);
         /* Copy constructor for the RenderEngine class, which is deleted. */
         RenderEngine(const RenderEngine& other) = delete;
-        // /* Move constructor for the RenderEngine class. */
-        // RenderEngine(RenderEngine&& other);
-        // /* Destructor for the RenderEngine class. */
-        // ~RenderEngine();
+
+        /* Loads a new object file with the given format. */
+        void load_model(const std::string& path, Loaders::ModelFormat format = Loaders::ModelFormat::obj);
 
         /* Returns whether or not the render engine should stop due to the window being closed. */
         inline bool open() { return !glfwWindowShouldClose(this->glfw_window); }
@@ -114,10 +115,6 @@ namespace Rasterizer::Vulkan {
 
         /* Copy assignment operator for the RenderEngine class, which is deleted. */
         RenderEngine& operator=(const RenderEngine& other) = delete;
-        // /* Move assignment operator for the RenderEngine class. */
-        // inline RenderEngine& operator=(RenderEngine&& other) { if (this != &other) { swap(*this, other); } return *this; }
-        // /* Swap operator for the RenderEngine class. */
-        // friend void swap(RenderEngine& re1, RenderEngine& re2);
 
     };
 };

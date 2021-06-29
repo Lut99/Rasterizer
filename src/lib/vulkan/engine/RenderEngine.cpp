@@ -107,8 +107,8 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     gpu(this->instance, this->surface),
     swapchain(this->gpu, this->glfw_window, this->surface),
 
-    vertex_shader(this->gpu, "bin/shaders/vert.spv"),
-    fragment_shader(this->gpu, "bin/shaders/frag.spv"),
+    vertex_shader(this->gpu, "bin/shaders/vertex_v2.spv"),
+    fragment_shader(this->gpu, "bin/shaders/frag_v1.spv"),
 
     render_pass(this->gpu),
     pipeline(this->gpu),
