@@ -42,9 +42,11 @@ int main(int argc, const char** argv) {
 
     // Initialize the engine
     Vulkan::RenderEngine render_engine(glfw_window);
+    DLOG(auxillary, "");
 
     // Do the render
     uint32_t fps = 0;
+    DLOG(info, "Entering game loop...");
     chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
     while (render_engine.open()) {
         render_engine.loop();
@@ -62,6 +64,7 @@ int main(int argc, const char** argv) {
     }
 
     // Wait for the GPU to be idle before we stop
+    DLOG(info, "Cleaning up...");
     render_engine.wait_for_idle();
 
     // We're done

@@ -65,6 +65,8 @@ namespace Rasterizer::Vulkan {
 
         /* The command pool for the draw calls. */
         Vulkan::CommandPool draw_cmd_pool;
+        /* Handles for the command buffer to use. */
+        Tools::Array<CommandBuffer> draw_cmds;
 
         /* List of framebuffers we'll draw to. */
         Tools::Array<Vulkan::Framebuffer> framebuffers;

@@ -14,6 +14,7 @@
  *   iteration-for-iteration.
 **/
 
+#include <chrono>
 #include "tools/CppDebugger.hpp"
 #include "vulkan/ErrorCodes.hpp"
 
@@ -44,7 +45,7 @@ static Tools::Array<const char*> get_glfw_extensions() {
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSubmitInfo struct. */
-static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer& cmd, const Tools::Array<VkSemaphore>& wait_for_semaphores,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Tools::Array<VkSemaphore>& signal_after_semaphores) {
+static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer& cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
     DENTER("populate_submit_info");
 
     // Set to default
@@ -56,20 +57,20 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer&
     submit_info.pCommandBuffers = &cmd.command_buffer();
 
     // Attach the data for which we wait
-    submit_info.waitSemaphoreCount = wait_for_semaphores.size();
-    submit_info.pWaitSemaphores = wait_for_semaphores.rdata();
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = &wait_for_semaphore.semaphore();
     submit_info.pWaitDstStageMask = wait_for_stages.rdata();
 
     // Attach the semaphores which we signal when done
-    submit_info.signalSemaphoreCount = signal_after_semaphores.size();
-    submit_info.pSignalSemaphores = signal_after_semaphores.rdata();
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = &signal_after_semaphore.semaphore();
 
     // Done
     DRETURN;
 }
 
 /* Populates the given VkPresentInfo struct. */
-static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchain& swapchain, const uint32_t& swapchain_index, const Tools::Array<VkSemaphore>& wait_for_semaphores) {
+static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchain& swapchain, const uint32_t& swapchain_index, const Semaphore& wait_for_semaphore) {
     DENTER("populate_present_info");
 
     // Set to default
@@ -82,8 +83,8 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
     present_info.pImageIndices = &swapchain_index;
     
     // Set the semaphore count
-    present_info.waitSemaphoreCount = wait_for_semaphores.size();
-    present_info.pWaitSemaphores = wait_for_semaphores.rdata();
+    present_info.waitSemaphoreCount = 1;
+    present_info.pWaitSemaphores = &wait_for_semaphore.semaphore();
 
     // Also set the results validation handlers to not needed, since we only have one swapchain
     present_info.pResults = nullptr;
@@ -112,9 +113,9 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     render_pass(this->gpu),
     pipeline(this->gpu),
 
-    draw_cmd_pool(this->gpu, this->gpu.queue_info().compute()),
+    draw_cmd_pool(this->gpu, this->gpu.queue_info().graphics()),
 
-    framebuffers(swapchain.size()),
+    framebuffers(this->swapchain.size()),
 
     image_ready_semaphores(Semaphore(this->gpu), RenderEngine::max_frames_in_flight),
     render_ready_semaphores(Semaphore(this->gpu), RenderEngine::max_frames_in_flight),
@@ -125,10 +126,11 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
 {
     DENTER("Vulkan::RenderEngine::RenderEngine");
 
-    // Prepare the render engine
-    this->render_pass.add_attachment(this->swapchain.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    this->render_pass.add_subpass({ std::make_pair(0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) });
-    this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+    /* RENDER PASS */
+    // Prepare the render pass
+    uint32_t index = this->render_pass.add_attachment(this->swapchain.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    this->render_pass.add_subpass({ std::make_pair(index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) });
+    this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, index, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
     this->render_pass.finalize();
 
     // Fetch the framebuffers of the swapchain
@@ -138,6 +140,7 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
 
 
 
+    /* PIPELINE */
     // Prepare the shader part of the graphics pipeline
     pipeline.init_shader_stage(this->vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
     pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -146,30 +149,39 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     pipeline.init_vertex_input();
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->swapchain.extent()), Rectangle(0.0, 0.0, this->swapchain.extent()));
-    pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
     pipeline.init_multisampling();
+    pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
     pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
     
     // Add the pipeline layout
     pipeline.init_pipeline_layout({}, {});
 
     // Finally, generate the pipeline itself
-    DLOG(info, "awesome");
     pipeline.finalize(this->render_pass, 0);
-    DLOG(info, "more awesome");
 
+
+
+    /* COMMAND BUFFERS */
+    // We can already record the command buffers for each framebuffer
+    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
+    Tools::Array<VkCommandBuffer> temp(this->draw_cmds.size());
+    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
+        // Record it
+        this->draw_cmds[i].begin();
+        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
+        this->pipeline.schedule(this->draw_cmds[i]);
+        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
+        this->render_pass.stop_scheduling(this->draw_cmds[i]);
+        this->draw_cmds[i].end();
+    }
+
+
+
+    /* DONE */
+    DLOG(info, "Initialized RenderEngine.");
     DLEAVE;
 }
-
-// /* Move constructor for the RenderEngine class. */
-// RenderEngine::RenderEngine(RenderEngine&& other) :
-//     instance(std::move(other.instance)),
-//     gpu(std::move(other.gpu)),
-//     surface(std::move(other.surface))
-// {}
-
-// /* Destructor for the RenderEngine class. */
-// RenderEngine::~RenderEngine() {}
 
 
 
@@ -200,19 +212,10 @@ void RenderEngine::loop() {
 
 
     /* RENDERING */
-    // Next, record the command buffer
-    CommandBuffer draw_cmd = this->draw_cmd_pool.allocate();
-    draw_cmd.begin();
-    this->render_pass.start_scheduling(draw_cmd, this->framebuffers[swapchain_index]);
-    this->pipeline.schedule(draw_cmd);
-    this->pipeline.schedule_draw(draw_cmd, 3, 1);
-    this->render_pass.stop_scheduling(draw_cmd);
-    draw_cmd.end();
-
     // Prepare to submit the command buffer
     Tools::Array<VkPipelineStageFlags> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     VkSubmitInfo submit_info;
-    populate_submit_info(submit_info, draw_cmd, { this->image_ready_semaphores[this->current_frame] },  wait_stages, { this->render_ready_semaphores[this->current_frame] });
+    populate_submit_info(submit_info, this->draw_cmds[swapchain_index], this->image_ready_semaphores[this->current_frame], wait_stages, this->render_ready_semaphores[this->current_frame]);
 
     // Submit to the queue
     vkResetFences(this->gpu, 1, &frame_in_flight_fences[this->current_frame].fence());
@@ -226,7 +229,7 @@ void RenderEngine::loop() {
     /* PRESENTING */
     // Prepare the present info
     VkPresentInfoKHR present_info;
-    populate_present_info(present_info, this->swapchain, swapchain_index, { this->render_ready_semaphores[swapchain_index] });
+    populate_present_info(present_info, this->swapchain, swapchain_index, this->render_ready_semaphores[this->current_frame]);
 
     // Present it using the queue present function
     Tools::Array<VkQueue> present_queues = this->gpu.queues(QueueType::present);
@@ -240,10 +243,3 @@ void RenderEngine::loop() {
     this->current_frame = (this->current_frame + 1) % RenderEngine::max_frames_in_flight;
     DRETURN;
 }
-
-
-
-// /* Swap operator for the RenderEngine class. */
-// void Vulkan::swap(RenderEngine& re1, RenderEngine& re2) {
-
-// }

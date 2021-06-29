@@ -33,7 +33,7 @@ namespace Rasterizer::Vulkan {
         const Shader& shader;
 
         /* Struct describing all the specialization constants together. */
-        VkSpecializationInfo vk_specialization_info;
+        VkSpecializationInfo* vk_specialization_info;
         /* Map entries for the specialization constants. */
         VkSpecializationMapEntry* specialization_entries;
         /* The number of entries. */

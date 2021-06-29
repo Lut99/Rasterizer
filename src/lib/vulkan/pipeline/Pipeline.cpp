@@ -544,11 +544,9 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
 
     // And that's it! Time to create it!
     VkResult vk_result;
-    DLOG(info, "awesomer???");
     if ((vk_result = vkCreateGraphicsPipelines(this->gpu, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &this->vk_pipeline)) != VK_SUCCESS) {
         DLOG(fatal, "Could not create graphics pipeline: " + vk_error_map[vk_result]);
     }
-    DLOG(info, "awesomemest!");
 
     // Done :)
     DRETURN;

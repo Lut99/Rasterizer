@@ -122,7 +122,7 @@ static void populate_shader_info(VkPipelineShaderStageCreateInfo& shader_info, c
 ShaderStage::ShaderStage(const Vulkan::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, Vulkan::BinaryString>& specialization_constants) :
     shader(shader),
     specialization_entries(new VkSpecializationMapEntry[specialization_constants.size()]),
-    n_entries(specialization_constants.size())
+    n_entries(static_cast<uint32_t>(specialization_constants.size()))
 {
     DENTER("Vulkan::ShaderStage::ShaderStage");
 
@@ -133,10 +133,11 @@ ShaderStage::ShaderStage(const Vulkan::Shader& shader, VkShaderStageFlagBits sha
     copy_specialization_data(specialization_constants, this->specialization_data);
 
     // Next, use that data to populate the specialization info
-    populate_specialization_info(this->vk_specialization_info, this->specialization_entries, this->n_entries, this->specialization_data, this->specialization_data_size);
+    this->vk_specialization_info = new VkSpecializationInfo();
+    populate_specialization_info(*this->vk_specialization_info, this->specialization_entries, this->n_entries, this->specialization_data, this->specialization_data_size);
 
     // With the specialization info in the pocket, prepare the shader stage
-    populate_shader_info(this->vk_shader_stage, this->shader, shader_stage, this->vk_specialization_info);
+    populate_shader_info(this->vk_shader_stage, this->shader, shader_stage, *this->vk_specialization_info);
 
     // Done with this one
     DLEAVE;
@@ -146,7 +147,7 @@ ShaderStage::ShaderStage(const Vulkan::Shader& shader, VkShaderStageFlagBits sha
 ShaderStage::ShaderStage(const ShaderStage& other) :
     vk_shader_stage(other.vk_shader_stage),
     shader(other.shader),
-    vk_specialization_info(other.vk_specialization_info),
+    vk_specialization_info(new VkSpecializationInfo(*other.vk_specialization_info)),
     specialization_entries(new VkSpecializationMapEntry[other.n_entries]),
     n_entries(other.n_entries),
     specialization_data(new uint8_t[other.specialization_data_size]),
@@ -159,11 +160,11 @@ ShaderStage::ShaderStage(const ShaderStage& other) :
     memcpy(this->specialization_data, other.specialization_data, this->specialization_data_size * sizeof(uint8_t));
 
     // Next, update the specialization struct to include the new pointers to everything
-    this->vk_specialization_info.pMapEntries = this->specialization_entries;
-    this->vk_specialization_info.pData = this->specialization_data;
+    this->vk_specialization_info->pMapEntries = this->specialization_entries;
+    this->vk_specialization_info->pData = this->specialization_data;
 
     // Finally, also update the shader stage info itself
-    this->vk_shader_stage.pSpecializationInfo = &this->vk_specialization_info;
+    this->vk_shader_stage.pSpecializationInfo = this->vk_specialization_info;
 
     // Done
     DLEAVE;
@@ -182,6 +183,7 @@ ShaderStage::ShaderStage(ShaderStage&& other) :
     // Mark the deallocatabel stuff as 'do-not-touch'
     other.specialization_entries = nullptr;
     other.specialization_data = nullptr;
+    other.vk_specialization_info = nullptr;
 }
 
 /* Destructor for the ShaderStage. */
@@ -189,6 +191,9 @@ ShaderStage::~ShaderStage() {
     DENTER("Vulkan::ShaderStage::~ShaderStage");
 
     // Deallocate the data if we need to
+    if (this->vk_specialization_info != nullptr) {
+        delete this->vk_specialization_info;
+    }
     if (this->specialization_data != nullptr) {
         delete[] this->specialization_data;
     }

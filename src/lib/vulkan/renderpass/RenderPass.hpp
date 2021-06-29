@@ -24,6 +24,8 @@
 #include "vulkan/swapchain/Framebuffer.hpp"
 #include "tools/Array.hpp"
 
+#include "Subpass.hpp"
+
 namespace Rasterizer::Vulkan {
     /* The RenderPass class, which wraps a VkRenderPass object. Also used to define subpasses for this render pass. */
     class RenderPass {
@@ -36,11 +38,9 @@ namespace Rasterizer::Vulkan {
         VkRenderPass vk_render_pass;
 
         /* List of the subpasses generated with the VkRenderPass class. */
-        Tools::Array<VkSubpassDescription> vk_subpasses;
+        Tools::Array<Vulkan::Subpass> subpasses;
         /* List of the attachments used in the renderpass. */
         Tools::Array<VkAttachmentDescription> vk_attachments;
-        /* List of attachment references used to re-create the subpasses. */
-        Tools::Array<Tools::Array<VkAttachmentReference>> vk_attachment_refs;
         /* List of subpass dependencies. */
         Tools::Array<VkSubpassDependency> vk_dependencies;
 

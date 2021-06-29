@@ -213,9 +213,9 @@ Tools::Array<CommandBuffer> CommandPool::nallocate(uint32_t n_buffers, VkCommand
     // Allocate a list of handles
     Tools::Array<command_buffer_h> handles = this->nallocate_h(n_buffers, buffer_level);
     // Create a list to return
-    Tools::Array<CommandBuffer> to_return(handles.size());
+    Tools::Array<CommandBuffer> to_return(n_buffers);
     // Convert all of the handles to buffers
-    for (uint32_t i = 0; i < handles.size(); i++) {
+    for (uint32_t i = 0; i < n_buffers; i++) {
         to_return.push_back(this->deref(handles[i]));
     }
 
@@ -229,8 +229,12 @@ Tools::Array<command_buffer_h> CommandPool::nallocate_h(uint32_t n_buffers, VkCo
 
     // Pick n_buffers suitable memory locations for this buffer; either as a new buffer or a previously deallocated one
     Tools::Array<command_buffer_h> handles(n_buffers);
-    for (uint32_t i = 0; i < handles.size(); i++) {
+    for (uint32_t i = 0; i < n_buffers; i++) {
+        // Find a new handle
         handles.push_back(find_handle(this->vk_command_buffers, CommandPool::NullHandle));
+
+        // Add it to the internal map of elements so that the handle gets registered
+        this->vk_command_buffers.insert(std::make_pair(handles[i], nullptr));
     }
 
     // Prepare some temporary local space for the buffers
@@ -246,9 +250,9 @@ Tools::Array<command_buffer_h> CommandPool::nallocate_h(uint32_t n_buffers, VkCo
         DLOG(fatal, "Could not allocate command buffers: " + vk_error_map[vk_result]);
     }
 
-    // Inject each of the buffers into the map
-    for (uint32_t i = 0; i < buffers.size(); i++) {
-        this->vk_command_buffers.insert(std::make_pair(handles[i], buffers[i]));
+    // Update the map with the new buffer elements
+    for (uint32_t i = 0; i < n_buffers; i++) {
+        this->vk_command_buffers.at(handles[i]) = buffers[i];
     }
 
     // Done, return the list of handles

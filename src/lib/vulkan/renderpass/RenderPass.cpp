@@ -56,28 +56,6 @@ static void populate_attachment(VkAttachmentDescription& attachment, VkFormat vk
     DRETURN;
 }
 
-/* Populates the given VkSubpassDescription struct. */
-static void populate_subpass(VkSubpassDescription& subpass, const Tools::Array<VkAttachmentReference>& vk_attachment_refs, VkPipelineBindPoint vk_bind_point) {
-    DENTER("populate_subpass");
-
-    // Set to default
-    subpass = {};
-
-    // Set the bindpoint
-    subpass.pipelineBindPoint = vk_bind_point;
-
-    // Set the color attachments
-    subpass.colorAttachmentCount = vk_attachment_refs.size();
-    subpass.pColorAttachments = vk_attachment_refs.rdata();
-
-    // In the future, more types of attachments may be given here
-    subpass.inputAttachmentCount = 0;
-    subpass.preserveAttachmentCount = 0;
-
-    // Done
-    DRETURN;
-}
-
 /* Populates the given VkSubpassDependency struct. */
 static void populate_dependency(VkSubpassDependency& dependency, uint32_t src_subpass, uint32_t dst_subpass, VkPipelineStageFlags src_stage, VkAccessFlags src_access, VkPipelineStageFlags dst_stage, VkAccessFlags dst_access) {
     DENTER("populate_dependency");
@@ -169,30 +147,25 @@ RenderPass::RenderPass(const Vulkan::GPU& gpu) :
 RenderPass::RenderPass(const RenderPass& other) :
     gpu(other.gpu),
     vk_attachments(other.vk_attachments),
-    vk_attachment_refs(other.vk_attachment_refs),
     vk_dependencies(other.vk_dependencies)
 {
     DENTER("Vulkan::RenderPass::RenderPass(copy)");
 
-    // First, re-create the subpasses since they have pointer dependencies
-    for (uint32_t i = 0; i < other.vk_subpasses.size(); i++) {
-        // Create a new subpass with the given properties
-        VkSubpassDescription subpass;
-        populate_subpass(subpass, this->vk_attachment_refs[i], other.vk_subpasses[i].pipelineBindPoint);
-
-        // Store it internally
-        this->vk_subpasses.push_back(subpass);
-    }
-
     // Re-create the render pass, if needed
     if (this->vk_render_pass != nullptr) {
+        // Convert the list of subpasses to their vulkan counterpart
+        Tools::Array<VkSubpassDescription> vk_subpasses(this->subpasses.size());
+        for (uint32_t i = 0; i < this->subpasses.size(); i++) {
+            vk_subpasses.push_back(this->subpasses[i]);
+        }
+
         // Simply create the renderpass
         VkRenderPassCreateInfo render_pass_info;
-        populate_render_pass_info(render_pass_info, this->vk_attachments, this->vk_subpasses, this->vk_dependencies);
+        populate_render_pass_info(render_pass_info, this->vk_attachments, vk_subpasses, this->vk_dependencies);
 
         VkResult vk_result;
         if ((vk_result = vkCreateRenderPass(this->gpu, &render_pass_info, nullptr, &this->vk_render_pass)) != VK_SUCCESS) {
-            DLOG(fatal, "Could not create render pass: " + vk_error_map[vk_result]);
+            DLOG(fatal, "Could not re-create render pass: " + vk_error_map[vk_result]);
         }
     }
 
@@ -204,9 +177,8 @@ RenderPass::RenderPass(const RenderPass& other) :
 RenderPass::RenderPass(RenderPass&& other) :
     gpu(other.gpu),
     vk_render_pass(other.vk_render_pass),
-    vk_subpasses(other.vk_subpasses),
+    subpasses(other.subpasses),
     vk_attachments(other.vk_attachments),
-    vk_attachment_refs(other.vk_attachment_refs),
     vk_dependencies(other.vk_dependencies)
 {
     // Be sure that the other object does not allocate anything we need
@@ -253,27 +225,8 @@ uint32_t RenderPass::add_attachment(VkFormat vk_swapchain_format, VkAttachmentLo
 void RenderPass::add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& attachment_refs, VkPipelineBindPoint bind_point) {
     DENTER("Vulkan::RenderPass::add_subpass");
 
-    // Create the attachment references for each references attachment
-    this->vk_attachment_refs.push_back({});
-    this->vk_attachment_refs.last().resize(attachment_refs.size());
-    for (uint32_t i = 0; i < attachment_refs.size(); i++) {
-        // Check if the noted attachment reference exists
-        if (attachment_refs[i].first >= this->vk_attachments.size()) {
-            DLOG(fatal, "No attachment exists with index " + std::to_string(attachment_refs[i].first));
-        }
-
-        // Add it
-        this->vk_attachment_refs.last()[i] = {};
-        this->vk_attachment_refs.last()[i].attachment = attachment_refs[i].first;
-        this->vk_attachment_refs.last()[i].layout = attachment_refs[i].second;
-    }
-
-    // When done, create a VkSubpassDescription for this shit
-    VkSubpassDescription subpass;
-    populate_subpass(subpass, this->vk_attachment_refs.last(), bind_point);
-
     // Store that and the list of references internally
-    this->vk_subpasses.push_back(subpass);
+    this->subpasses.push_back(Subpass(attachment_refs, bind_point));
 
     // Done
     DINDENT;
@@ -303,9 +256,15 @@ void RenderPass::add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkPi
 void RenderPass::finalize() {
     DENTER("Vulkan::RenderPass::finalize");
 
+    // Convert the list of subpasses to their vulkan counterpart
+    Tools::Array<VkSubpassDescription> vk_subpasses(this->subpasses.size());
+    for (uint32_t i = 0; i < this->subpasses.size(); i++) {
+        vk_subpasses.push_back(this->subpasses[i]);
+    }
+
     // Simply create the renderpass
     VkRenderPassCreateInfo render_pass_info;
-    populate_render_pass_info(render_pass_info, this->vk_attachments, this->vk_subpasses, this->vk_dependencies);
+    populate_render_pass_info(render_pass_info, this->vk_attachments, vk_subpasses, this->vk_dependencies);
 
     VkResult vk_result;
     if ((vk_result = vkCreateRenderPass(this->gpu, &render_pass_info, nullptr, &this->vk_render_pass)) != VK_SUCCESS) {
@@ -368,9 +327,8 @@ void Vulkan::swap(RenderPass& rp1, RenderPass& rp2) {
     // Swap EVERYTHING but the GPU
     using std::swap;
     swap(rp1.vk_render_pass, rp2.vk_render_pass);
-    swap(rp1.vk_subpasses, rp2.vk_subpasses);
+    swap(rp1.subpasses, rp2.subpasses);
     swap(rp1.vk_attachments, rp2.vk_attachments);
-    swap(rp1.vk_attachment_refs, rp2.vk_attachment_refs);
     swap(rp1.vk_dependencies, rp2.vk_dependencies);
 
     // Done
