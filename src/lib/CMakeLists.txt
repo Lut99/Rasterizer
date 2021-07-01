@@ -1,6 +1,6 @@
 # Add the subdirectories
 
-add_subdirectory(vulkan)
+add_subdirectory(render_engine)
 add_subdirectory(tools)
 
 # Carry the list to the parent scope

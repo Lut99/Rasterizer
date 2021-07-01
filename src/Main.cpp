@@ -16,7 +16,7 @@
 #include <GLFW/glfw3.h>
 
 #include "tools/CppDebugger.hpp"
-#include "vulkan/engine/RenderEngine.hpp"
+#include "render_engine/RenderEngine.hpp"
 
 using namespace std;
 using namespace Rasterizer;
@@ -41,7 +41,7 @@ int main(int argc, const char** argv) {
     GLFWwindow* glfw_window = glfwCreateWindow(800, 600, "Rasterizer", NULL, NULL);
 
     // Initialize the engine
-    Vulkan::RenderEngine render_engine(glfw_window);
+    Rendering::RenderEngine render_engine(glfw_window);
     DLOG(auxillary, "");
 
     // Do the render
