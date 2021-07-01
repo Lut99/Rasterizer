@@ -27,7 +27,7 @@ using namespace CppDebugger::SeverityValues;
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkPipelineVertexInputStateCreateInfo struct. */
-static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& vertex_state_info, const Tools::Array<VkVertexInputBindingDescription>& vk_binding_descriptions, const Tools::Array<VkVertexInputAttributeDescription>& vk_attribute_descriptions) {
+static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& vertex_state_info, const VkVertexInputBindingDescription& vk_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_attribute_descriptions) {
     DENTER("populate_vertex_state_info");
 
     // Set to default
@@ -35,8 +35,8 @@ static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& ver
     vertex_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
     // Set the bindings
-    vertex_state_info.vertexBindingDescriptionCount = vk_binding_descriptions.size();
-    vertex_state_info.pVertexBindingDescriptions = vk_binding_descriptions.rdata();
+    vertex_state_info.vertexBindingDescriptionCount = 1;
+    vertex_state_info.pVertexBindingDescriptions = &vk_binding_description;
     
     // Set the attributes
     vertex_state_info.vertexAttributeDescriptionCount = vk_attribute_descriptions.size();
@@ -324,12 +324,12 @@ void Pipeline::init_shader_stage(const Rendering::Shader& shader, VkShaderStageF
     DRETURN;
 }
 
-/* Tells the Pipeline how its vertex input looks like. */
-void Pipeline::init_vertex_input() {
+/* Tells the Pipeline how its vertex input looks like. Takes struct describing how it looks like. */
+void Pipeline::init_vertex_input(const VkVertexInputBindingDescription& vk_input_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_input_attribute_descriptions) {
     DENTER("Rendering::Pipeline::init_vertex_input");
 
     // Prepare the interal VkPipelineVertexInputStateCreateInfo struct
-    populate_vertex_state_info(this->vk_vertex_state_info, Tools::Array<VkVertexInputBindingDescription>({}), Tools::Array<VkVertexInputAttributeDescription>({}));
+    populate_vertex_state_info(this->vk_vertex_state_info, vk_input_binding_description, vk_input_attribute_descriptions);
 
     DINDENT;
     DLOG(info, "Initialized Pipeline vertex input");

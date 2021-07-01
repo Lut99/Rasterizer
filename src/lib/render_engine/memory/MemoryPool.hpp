@@ -21,6 +21,7 @@
 
 #include "render_engine/gpu/GPU.hpp"
 #include "render_engine/commandbuffers/CommandBuffer.hpp"
+#include "tools/Freelist.hpp"
 #include "tools/Array.hpp"
 
 #include "MemoryHandle.hpp"
@@ -90,13 +91,6 @@ namespace Rasterizer::Rendering {
             /* Constructor for the ImageBlock struct. */
             ImageBlock(): UsedBlock(MemoryBlockType::image) {}
         };
-        /* Internal struct used to keep track of free memory blocks. */
-        struct FreeBlock {
-            /* Pointer to the start of the block. */
-            VkDeviceSize start;
-            /* Length of the free block, in bytes. */
-            VkDeviceSize length;  
-        };
 
         /* The allocated memory on the GPU. */
         VkDeviceMemory vk_memory;
@@ -109,8 +103,8 @@ namespace Rasterizer::Rendering {
 
         /* List of all allocated buffers in this pool. */
         std::unordered_map<memory_h, UsedBlock*> vk_used_blocks;
-        /* List of pointers to each free memory block in the allocated space. */
-        Tools::Array<FreeBlock> vk_free_blocks;
+        /* Keeps track of the free blocks in the array of allocated memory */
+        Tools::Freelist free_list;
 
 
         /* Private helper function that takes a BufferBlock, and uses it to initialize the given buffer. */
@@ -144,10 +138,14 @@ namespace Rasterizer::Rendering {
         inline Buffer allocate_buffer(VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkBufferCreateFlags create_flags = 0) { return this->deref_buffer(this->allocate_buffer_h(n_bytes, usage_flags, sharing_mode, create_flags)); }
         /* Allocates a new buffer that has the same specifications as the given Buffer object. Note that the given Buffer needn't be allocated with the same pool as this one. */
         inline Buffer allocate_buffer(const Buffer& buffer) { return this->allocate_buffer(buffer.vk_memory_size, buffer.vk_usage_flags, buffer.vk_sharing_mode, buffer.vk_create_flags); }
+        /* Allocates a new buffer that has the same specifications as the given Buffer handle. Note that the buffer has to be allocated with this memory pool. */
+        inline Buffer allocate_buffer(buffer_h buffer) { return this->allocate_buffer(this->deref_buffer(buffer)); }
         /* Tries to get a new buffer from the pool of the given size and with the given flags, returning only its handle. Applies extra checks if NDEBUG is not defined. */
         buffer_h allocate_buffer_h(VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkBufferCreateFlags create_flags = 0);
         /* Allocates a new buffer that has the same specifications as the given Buffer object, but we return only its handle. Note that the given Buffer needn't be allocated with the same pool as this one. */
         inline buffer_h allocate_buffer_h(const Buffer& buffer) { return this->allocate_buffer_h(buffer.vk_memory_size, buffer.vk_usage_flags, buffer.vk_sharing_mode, buffer.vk_create_flags); }
+        /* Allocates a new buffer that has the same specifications as the given Buffer handle,returning another handle. Note that the buffer has to be allocated with this memory pool. */
+        inline buffer_h allocate_buffer_h(buffer_h buffer) { return this->allocate_buffer_h(this->deref_buffer(buffer)); }
         /* Tries to get a new image from the pool of the given sizes and with the given flags. Applies extra checks if NDEBUG is not defined. */
         inline Image allocate_image(uint32_t width, uint32_t height, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkImageCreateFlags create_flags = 0) { return this->deref_image(this->allocate_image_h(width, height, image_format, image_layout, usage_flags, sharing_mode, create_flags)); }
         /* Allocates a new image that has the same specifications as the given Image object. Note that the given Image needn't be allocated with the same pool as this one. */

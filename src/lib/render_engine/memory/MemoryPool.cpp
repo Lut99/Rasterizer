@@ -104,7 +104,7 @@ MemoryPool::MemoryPool(const GPU& gpu, uint32_t memory_type, VkDeviceSize n_byte
     vk_memory_type(memory_type),
     vk_memory_size(n_bytes),
     vk_memory_properties(memory_properties),
-    vk_free_blocks({ MemoryPool::FreeBlock({ 0, this->vk_memory_size }) })
+    free_list(this->vk_memory_size)
 {
     DENTER("Rendering::MemoryPool::MemoryPool");
     DLOG(info, "Initializing MemoryPool...");
@@ -154,7 +154,7 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
     vk_memory_type(other.vk_memory_type),
     vk_memory_size(other.vk_memory_size),
     vk_memory_properties(other.vk_memory_properties),
-    vk_free_blocks({ MemoryPool::FreeBlock({ 0, this->vk_memory_size }) })
+    free_list(this->vk_memory_size)
 {
     DENTER("Rendering::MemoryPool::MemoryPool(copy)");
 
@@ -180,8 +180,8 @@ MemoryPool::MemoryPool(MemoryPool&& other):
     vk_memory_type(other.vk_memory_type),
     vk_memory_size(other.vk_memory_size),
     vk_memory_properties(other.vk_memory_properties),
-    vk_used_blocks(std::move(other.vk_used_blocks)),
-    vk_free_blocks(std::move(other.vk_free_blocks))
+    vk_used_blocks(other.vk_used_blocks),
+    free_list(other.free_list)
 {
     // Set the other's memory to nullptr to avoid deallocation
     other.vk_memory = nullptr;
@@ -256,49 +256,10 @@ memory_h MemoryPool::allocate_memory(MemoryBlockType type, VkDeviceSize n_bytes,
     }
     #endif
 
-    // Next, we find the first free block available of at least the required size
-    VkDeviceSize offset;
-    VkDeviceSize total_free = 0;
-    bool found = false;
-    for (uint32_t i = 0; i < this->vk_free_blocks.size(); i++) {
-        // Compute how many bytes of alignment we need to take into account when looking at where this block starts
-        VkDeviceSize align_bytes = mem_requirements.alignment - this->vk_free_blocks[i].start % mem_requirements.alignment;
-        if (align_bytes == mem_requirements.alignment) { align_bytes = 0; }
-
-        // Check if this block (aligned) is large enough
-        if (this->vk_free_blocks[i].length >= align_bytes + mem_requirements.size) {
-            // This block has enough memory; mark its starting position as the used one
-            offset = align_bytes + this->vk_free_blocks[i].start;
-
-            // Shrink the block to mark this spot as used
-            this->vk_free_blocks[i].start += align_bytes + mem_requirements.size;
-            this->vk_free_blocks[i].length -= align_bytes + mem_requirements.size;
-
-            // If the resulting space is no bytes, then remove the free block
-            if (this->vk_free_blocks[i].length == 0) {
-                this->vk_free_blocks.erase(i);
-            }
-
-            // Done
-            found = true;
-            break;
-        }
-
-        // Keep track of how many free bytes there are in total
-        total_free += this->vk_free_blocks[i].length;
-    }
-    if (!found) {
-        // No memory was available; is this due to memory or to bad fragmentation?
-        #ifdef NDEBUG
-        DLOG(fatal, "Could not allocate new buffer");
-        #else
-        if (mem_requirements.size > total_free) {
-            DLOG(fatal, "Could not allocate new buffer: not enough space left in pool (need " + std::to_string(mem_requirements.size) + " bytes, but " + std::to_string(total_free) + " bytes free)");
-        } else {
-            DLOG(fatal, "Could not allocate new buffer: no large enough block found, but we do have enough memory available; call defrag() first");
-        }
-        #endif
-    }
+    // Next, find the first free block
+    VkDeviceSize offset = this->free_list.reserve(mem_requirements.size, mem_requirements.alignment);
+    if (offset == std::numeric_limits<freelist_size_t>::max()) { DLOG(fatal, "Could not allocate new buffer: not enough space left in pool (need " + Tools::bytes_to_string(mem_requirements.size) + ", but " + Tools::bytes_to_string(this->free_list.capacity() - this->free_list.size()) + " free)"); }
+    else if (offset == std::numeric_limits<freelist_size_t>::max() - 1) { DLOG(fatal, "Could not allocate new buffer: no large enough block found, but we do have enough memory available; call defrag() first"); }
 
     // Store the chosen parameters in the buffer for easy re-creation
     block->start = offset;
@@ -406,9 +367,9 @@ void MemoryPool::deallocate(memory_h handle) {
         DLOG(fatal, "Object with handle '" + std::to_string(handle) + "' does not exist.");
     }
 
-    // Copy the block...
+    // Keep the block reference...
     UsedBlock* block = (*iter).second;
-    // ...then safely delete it from the list
+    // ...so we can safely delete it from the list
     if (block->type == MemoryBlockType::buffer) {
         vkDestroyBuffer(this->gpu, ((BufferBlock*) block)->vk_buffer, nullptr);
     } else if (block->type == MemoryBlockType::image) {
@@ -416,112 +377,115 @@ void MemoryPool::deallocate(memory_h handle) {
     }
     this->vk_used_blocks.erase(iter);
 
-    // Get the start & offset of the buffer
-    VkDeviceSize buffer_start = block->start;
-    VkDeviceSize buffer_length = block->req_length;
+    // Next, release the block memory in our free list
+    this->free_list.release(block->start);
 
-    // Generate a new free block for the memory released by this buffer. We insert it sorted.
-    bool inserted = false;
-    for (uint32_t i = 0; i < this->vk_free_blocks.size(); i++) {
-        // Get the start & offset for this free block
-        VkDeviceSize free_start = this->vk_free_blocks[i].start;
-        VkDeviceSize free_length = this->vk_free_blocks[i].length;
+    // // Get the start & offset of the buffer
+    // VkDeviceSize buffer_start = block->start;
+    // VkDeviceSize buffer_length = block->req_length;
 
-        #ifndef NDEBUG
-        // Sanity check
-        if (free_start == buffer_start) {
-            DLOG(fatal, "Free block " + std::to_string(i) + " has same offset as previously allocated buffer");
-        }
-        #endif
+    // // Generate a new free block for the memory released by this buffer. We insert it sorted.
+    // bool inserted = false;
+    // for (uint32_t i = 0; i < this->vk_free_blocks.size(); i++) {
+    //     // Get the start & offset for this free block
+    //     VkDeviceSize free_start = this->vk_free_blocks[i].start;
+    //     VkDeviceSize free_length = this->vk_free_blocks[i].length;
 
-        // Check if we should insert it here
-        if (free_start > buffer_start) {
-            // It should become the new i'th block
+    //     #ifndef NDEBUG
+    //     // Sanity check
+    //     if (free_start == buffer_start) {
+    //         DLOG(fatal, "Free block " + std::to_string(i) + " has same offset as previously allocated buffer");
+    //     }
+    //     #endif
 
-            #ifndef NDEBUG
+    //     // Check if we should insert it here
+    //     if (free_start > buffer_start) {
+    //         // It should become the new i'th block
 
-            // Couple of more sanity checks
-            if (i > 0) {
-                // Sanity check the previous buffer as well
-                VkDeviceSize free_m1_start = this->vk_free_blocks[i - 1].start;
-                VkDeviceSize free_m1_length = this->vk_free_blocks[i - 1].length;
+    //         #ifndef NDEBUG
 
-                if (i > 0 && free_m1_start + free_m1_length > buffer_start) {
-                    DLOG(fatal, "Free block " + std::to_string(i - 1) + " overlaps with previously allocated buffer (previous neighbour)");
-                } else if (i > 0 && free_m1_start + free_m1_length > free_start) {
-                    DLOG(fatal, "Free blocks " + std::to_string(i - 1) + " and " + std::to_string(i) + " overlap");
-                }
-            }
-            // Sanity check the current buffer
-            if (buffer_start + buffer_length > free_start) {
-                DLOG(fatal, "Free block " + std::to_string(i) + " overlaps with previously allocated buffer (next neighbour)");
-            } 
+    //         // Couple of more sanity checks
+    //         if (i > 0) {
+    //             // Sanity check the previous buffer as well
+    //             VkDeviceSize free_m1_start = this->vk_free_blocks[i - 1].start;
+    //             VkDeviceSize free_m1_length = this->vk_free_blocks[i - 1].length;
+
+    //             if (i > 0 && free_m1_start + free_m1_length > buffer_start) {
+    //                 DLOG(fatal, "Free block " + std::to_string(i - 1) + " overlaps with previously allocated buffer (previous neighbour)");
+    //             } else if (i > 0 && free_m1_start + free_m1_length > free_start) {
+    //                 DLOG(fatal, "Free blocks " + std::to_string(i - 1) + " and " + std::to_string(i) + " overlap");
+    //             }
+    //         }
+    //         // Sanity check the current buffer
+    //         if (buffer_start + buffer_length > free_start) {
+    //             DLOG(fatal, "Free block " + std::to_string(i) + " overlaps with previously allocated buffer (next neighbour)");
+    //         } 
             
-            #endif
+    //         #endif
 
-            // However, first check if it makes more sense to merge with its neighbours first
-            if (i > 0) {
-                VkDeviceSize free_m1_start = this->vk_free_blocks[i - 1].start;
-                VkDeviceSize free_m1_length = this->vk_free_blocks[i - 1].length;
+    //         // However, first check if it makes more sense to merge with its neighbours first
+    //         if (i > 0) {
+    //             VkDeviceSize free_m1_start = this->vk_free_blocks[i - 1].start;
+    //             VkDeviceSize free_m1_length = this->vk_free_blocks[i - 1].length;
 
-                if (free_m1_start + free_m1_length == buffer_start && buffer_start + buffer_length == free_start) {
-                    // The buffer happens to precisely fill the gap between two blocks; merge all memory into one free block
-                    this->vk_free_blocks[i - 1].length += buffer_length + free_length;
-                    this->vk_free_blocks.erase(i);
-                    inserted = true;
-                } else if (free_m1_start + free_m1_length == buffer_start) {
-                    // The buffer is only mergeable with the previous block
-                    this->vk_free_blocks[i - 1].length += buffer_length;
-                    inserted = true;
-                }
-            }
+    //             if (free_m1_start + free_m1_length == buffer_start && buffer_start + buffer_length == free_start) {
+    //                 // The buffer happens to precisely fill the gap between two blocks; merge all memory into one free block
+    //                 this->vk_free_blocks[i - 1].length += buffer_length + free_length;
+    //                 this->vk_free_blocks.erase(i);
+    //                 inserted = true;
+    //             } else if (free_m1_start + free_m1_length == buffer_start) {
+    //                 // The buffer is only mergeable with the previous block
+    //                 this->vk_free_blocks[i - 1].length += buffer_length;
+    //                 inserted = true;
+    //             }
+    //         }
 
-            // Examine the next block in its onesy 
-            if (buffer_start + buffer_length == free_start) {
-                // The buffer is only mergeable with the next block
-                this->vk_free_blocks[i].start -= buffer_length;
-                this->vk_free_blocks[i].length += buffer_length;
-                inserted = true;
-            }
+    //         // Examine the next block in its onesy 
+    //         if (buffer_start + buffer_length == free_start) {
+    //             // The buffer is only mergeable with the next block
+    //             this->vk_free_blocks[i].start -= buffer_length;
+    //             this->vk_free_blocks[i].length += buffer_length;
+    //             inserted = true;
+    //         }
             
-            // If not yet inserted, then we want to add a new free block
-            if (!inserted) {
-                // Not mergeable; insert a new block by moving all blocks to the right
-                this->vk_free_blocks.resize(this->vk_free_blocks.size() + 1);
-                for (uint32_t j = i; j < this->vk_free_blocks.size() - 1; j++) {
-                    this->vk_free_blocks[j + 1] = this->vk_free_blocks[j];
-                }
+    //         // If not yet inserted, then we want to add a new free block
+    //         if (!inserted) {
+    //             // Not mergeable; insert a new block by moving all blocks to the right
+    //             this->vk_free_blocks.resize(this->vk_free_blocks.size() + 1);
+    //             for (uint32_t j = i; j < this->vk_free_blocks.size() - 1; j++) {
+    //                 this->vk_free_blocks[j + 1] = this->vk_free_blocks[j];
+    //             }
 
-                // With space created, insert it
-                this->vk_free_blocks[i] = MemoryPool::FreeBlock({ buffer_start, buffer_length });
-                inserted = true;
-            }
+    //             // With space created, insert it
+    //             this->vk_free_blocks[i] = MemoryPool::FreeBlock({ buffer_start, buffer_length });
+    //             inserted = true;
+    //         }
 
-            // We always want to stop, though
-            break;
-        }
-    }
+    //         // We always want to stop, though
+    //         break;
+    //     }
+    // }
 
-    // If we did not insert, then append it as a free block at the end
-    if (!inserted) {
-        // If there is a previous block and its mergeable, do that
-        if (this->vk_free_blocks.size() > 0) {
-            VkDeviceSize free_start = this->vk_free_blocks[this->vk_free_blocks.size() - 1].start;
-            VkDeviceSize free_length = this->vk_free_blocks[this->vk_free_blocks.size() - 1].length;
+    // // If we did not insert, then append it as a free block at the end
+    // if (!inserted) {
+    //     // If there is a previous block and its mergeable, do that
+    //     if (this->vk_free_blocks.size() > 0) {
+    //         VkDeviceSize free_start = this->vk_free_blocks[this->vk_free_blocks.size() - 1].start;
+    //         VkDeviceSize free_length = this->vk_free_blocks[this->vk_free_blocks.size() - 1].length;
 
-            if (free_start + free_length == buffer_start) {
-                // It matches; merge the old block
-                this->vk_free_blocks[this->vk_free_blocks.size() - 1].length += buffer_length;
-                inserted = true;
-            }
-        }
+    //         if (free_start + free_length == buffer_start) {
+    //             // It matches; merge the old block
+    //             this->vk_free_blocks[this->vk_free_blocks.size() - 1].length += buffer_length;
+    //             inserted = true;
+    //         }
+    //     }
 
-        // If we didn't merge it, append it as a new block
-        if (!inserted) {
-            this->vk_free_blocks.push_back(MemoryPool::FreeBlock({ buffer_start, buffer_length }));
-            inserted = true;
-        }
-    }
+    //     // If we didn't merge it, append it as a new block
+    //     if (!inserted) {
+    //         this->vk_free_blocks.push_back(MemoryPool::FreeBlock({ buffer_start, buffer_length }));
+    //         inserted = true;
+    //     }
+    // }
 
     // Deallocate the block itself
     delete block;
@@ -536,10 +500,13 @@ void MemoryPool::deallocate(memory_h handle) {
 void MemoryPool::defrag() {
     DENTER("Rendering::MemoryPool::defrag");
 
+    // First, reset the free list
+    this->free_list.clear();
+
     // We loop through all internal blocks
+    VkDeviceSize offset = 0;
     VkResult vk_result;
     VkMemoryRequirements mem_requirements;
-    VkDeviceSize offset = 0;
     for (const std::pair<memory_h, UsedBlock*>& p : this->vk_used_blocks) {
         // Get a reference to the block
         UsedBlock* block = this->vk_used_blocks.at(p.first);
@@ -564,10 +531,9 @@ void MemoryPool::defrag() {
             // Get the memory requirements for this new buffer
             vkGetBufferMemoryRequirements(this->gpu, bblock->vk_buffer, &mem_requirements);
 
-            // Be sure that we still make it; due to aligning we might get a different size
-            if (offset + mem_requirements.size > this->vk_memory_size) {
-                DLOG(fatal, "Could not defrag buffer: memory requirements changed (need " + std::to_string(mem_requirements.size) + " bytes, but " + std::to_string(this->vk_memory_size) + " bytes free)");
-            }
+            // Try to reserve space for it in the freelist
+            offset = this->free_list.reserve(mem_requirements.size, mem_requirements.alignment);
+            if (offset == std::numeric_limits<freelist_size_t>::max()) { DLOG(fatal, "Could not defrag buffer: memory requirements changed (need " + Tools::bytes_to_string(mem_requirements.size) + ", but " + Tools::bytes_to_string(this->free_list.capacity() - this->free_list.size()) + " free)"); }
 
             // Bind new memory for, at the start of this index.
             if ((vk_result = vkBindBufferMemory(this->gpu, bblock->vk_buffer, this->vk_memory, offset)) != VK_SUCCESS) {
@@ -593,10 +559,9 @@ void MemoryPool::defrag() {
             // Get the memory requirements for this new image
             vkGetImageMemoryRequirements(this->gpu, iblock->vk_image, &mem_requirements);
 
-            // Be sure that we still make it; due to aligning we might get a different size
-            if (offset + mem_requirements.size > this->vk_memory_size) {
-                DLOG(fatal, "Could not defrag image: memory requirements changed (need " + std::to_string(mem_requirements.size) + " bytes, but " + std::to_string(this->vk_memory_size) + " bytes free)");
-            }
+            // Try to reserve space for it in the freelist
+            offset = this->free_list.reserve(mem_requirements.size, mem_requirements.alignment);
+            if (offset == std::numeric_limits<freelist_size_t>::max()) { DLOG(fatal, "Could not defrag image: memory requirements changed (need " + Tools::bytes_to_string(mem_requirements.size) + ", but " + Tools::bytes_to_string(this->free_list.capacity() - this->free_list.size()) + " free)"); }
 
             // Bind new memory for, at the start of this index.
             if ((vk_result = vkBindImageMemory(this->gpu, iblock->vk_image, this->vk_memory, offset)) != VK_SUCCESS) {
@@ -611,12 +576,6 @@ void MemoryPool::defrag() {
 
         // Increment the offset for the next buffer
         offset += mem_requirements.size;
-    }
-
-    // Once done, re-initialize the list of free blocks
-    this->vk_free_blocks.clear();
-    if (offset < this->vk_memory_size) {
-        this->vk_free_blocks.push_back(MemoryPool::FreeBlock({ offset, this->vk_memory_size - offset }));
     }
 
     // Done
@@ -644,7 +603,7 @@ void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
     swap(mp1.vk_memory_size, mp2.vk_memory_size);
     swap(mp1.vk_memory_properties, mp2.vk_memory_properties),
     swap(mp1.vk_used_blocks, mp2.vk_used_blocks);
-    swap(mp1.vk_free_blocks, mp2.vk_free_blocks);
+    swap(mp1.free_list, mp2.free_list);
 
     DRETURN;
 }

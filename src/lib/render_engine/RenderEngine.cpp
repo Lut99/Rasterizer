@@ -98,8 +98,8 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
 
 /***** RENDERENGINE CLASS *****/
-/* Constructor for the RenderEngine class, which takes a GLFW window to render to. */
-RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
+/* Constructor for the RenderEngine class, which takes a GLFW window to render to and a ModelManager object to load the models to render from. */
+RenderEngine::RenderEngine(GLFWwindow* glfw_window, const Models::ModelManager& model_manager) :
     glfw_window(glfw_window),
 
     instance(instance_extensions + get_glfw_extensions()),
@@ -147,7 +147,7 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window) :
     pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
 
     // Prepare the static part
-    pipeline.init_vertex_input();
+    pipeline.init_vertex_input(model_manager.input_binding_description(), model_manager.input_attribute_descriptions());
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->swapchain.extent()), Rectangle(0.0, 0.0, this->swapchain.extent()));
     pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);

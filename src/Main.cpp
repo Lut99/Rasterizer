@@ -49,6 +49,7 @@ int main(int argc, const char** argv) {
     DLOG(info, "Entering game loop...");
     chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
     while (render_engine.open()) {
+        // Run the render engine
         render_engine.loop();
 
         // Keep track of the fps

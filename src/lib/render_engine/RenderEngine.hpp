@@ -20,6 +20,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "model_manager/ModelManager.hpp"
+
 #include "render_engine/instance/Instance.hpp"
 #include "render_engine/gpu/Surface.hpp"
 #include "render_engine/gpu/GPU.hpp"
@@ -90,8 +92,8 @@ namespace Rasterizer::Rendering {
         static void glfw_resize_callback(GLFWwindow* glfw_window, int width, int height);
     
     public:
-        /* Constructor for the RenderEngine class, which takes a GLFW window to render to. */
-        RenderEngine(GLFWwindow* glfw_window);
+        /* Constructor for the RenderEngine class, which takes a GLFW window to render to and a ModelManager object to load the models to render from. */
+        RenderEngine(GLFWwindow* glfw_window, const Models::ModelManager& model_manager);
         /* Copy constructor for the RenderEngine class, which is deleted. */
         RenderEngine(const RenderEngine& other) = delete;
 
