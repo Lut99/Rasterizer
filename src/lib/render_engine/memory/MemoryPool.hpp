@@ -4,7 +4,7 @@
  * Created:
  *   25/04/2021, 11:36:35
  * Last edited:
- *   01/07/2021, 13:43:30
+ *   02/07/2021, 12:54:08
  * Auto updated?
  *   Yes
  *
@@ -108,7 +108,7 @@ namespace Rasterizer::Rendering {
 
 
         /* Private helper function that takes a BufferBlock, and uses it to initialize the given buffer. */
-        inline static Buffer init_buffer(buffer_h handle, BufferBlock* block, VkDeviceMemory vk_memory, VkMemoryPropertyFlags memory_properties) { return Buffer(handle, block->vk_buffer, block->vk_usage_flags, block->vk_sharing_mode, block->vk_create_flags, vk_memory, block->start, block->length, block->req_length, memory_properties); }
+        inline static Buffer init_buffer(const Rendering::GPU& gpu, buffer_h handle, BufferBlock* block, VkDeviceMemory vk_memory, VkMemoryPropertyFlags memory_properties) { return Buffer(gpu, handle, block->vk_buffer, block->vk_usage_flags, block->vk_sharing_mode, block->vk_create_flags, vk_memory, block->start, block->length, block->req_length, memory_properties); }
         /* Private helper function that takes a UsedBlock, and uses it to initialize the given buffer. */
         inline static Image init_image(image_h handle, ImageBlock* block, VkDeviceMemory vk_memory, VkMemoryPropertyFlags memory_properties) { return Image(handle, block->vk_image, VkExtent2D({ block->vk_extent.width, block->vk_extent.height }), block->vk_format, block->vk_layout, block->vk_usage_flags, block->vk_sharing_mode, block->vk_create_flags, vk_memory, block->start, block->length, block->req_length, memory_properties); }
 
@@ -130,7 +130,7 @@ namespace Rasterizer::Rendering {
         ~MemoryPool();
 
         /* Returns a reference to the internal buffer with the given handle. Always performs out-of-bounds checking. */
-        inline Buffer deref_buffer(buffer_h buffer) const { return init_buffer(buffer, (BufferBlock*) this->vk_used_blocks.at(buffer), this->vk_memory, this->vk_memory_properties); }
+        inline Buffer deref_buffer(buffer_h buffer) const { return init_buffer(this->gpu, buffer, (BufferBlock*) this->vk_used_blocks.at(buffer), this->vk_memory, this->vk_memory_properties); }
         /* Returns a reference to the internal image with the given handle. Always performs out-of-bounds checking. */
         inline Image deref_image(image_h image) const { return init_image(image, (ImageBlock*) this->vk_used_blocks.at(image), this->vk_memory, this->vk_memory_properties); }
 

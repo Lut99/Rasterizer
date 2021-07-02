@@ -17,9 +17,11 @@
 #define MODELS_MODEL_MANAGER_HPP
 
 #include <string>
+#include <unordered_map>
 #include <vulkan/vulkan.h>
 
 #include "render_engine/memory/MemoryPool.hpp"
+#include "render_engine/commandbuffers/CommandPool.hpp"
 #include "render_engine/memory/Buffer.hpp"
 #include "render_engine/commandbuffers/CommandBuffer.hpp"
 #include "Vertex.hpp"
@@ -29,25 +31,47 @@ namespace Rasterizer::Models {
     /* The ModelManager class, which is in charge of handling all models in the rasterizer. */
     class ModelManager {
     public:
+        /* Reference to the CommandPool we use for scheduling memory operations. */
+        Rendering::CommandPool& cmd_pool;
         /* Reference to the MemoryPool we use for the vertex buffer. */
-        Rendering::MemoryPool& memory_pool;
+        Rendering::MemoryPool& draw_pool;
+        /* Reference to the MemoryPool we use for staging buffers. */
+        Rendering::MemoryPool& stage_pool;
 
     private:
+        /* Internal struct used to describe a single model. */
+        struct Model {
+            /* The offset of the model in the list of vertices. */
+            uint32_t offset;
+            /* The number of vertices belonging to this model. */
+            uint32_t size;
+        };
+
+
+        /* The command buffer used to draw to. */
+        Rendering::command_buffer_h copy_cmd_h;
+
         /* The buffer that will be used to store the vertices. */
         Rendering::buffer_h vertex_buffer_h;
         /* Keeps track of how many vertices we loaded. */
-        uint64_t n_vertices;
+        uint32_t n_vertices;
         /* Keeps track of how much space we have. */
-        uint64_t max_vertices;
+        uint32_t max_vertices;
+
+        /* Buffer used for sending data to and from the GPU. */
+        Rendering::buffer_h stage_buffer_h;
 
         /* Description for the Vulkan input binding. */
         VkVertexInputBindingDescription vk_input_binding_description;
         /* Descriptions for the Vulkan input attributes. */
         Tools::Array<VkVertexInputAttributeDescription> vk_input_attribute_descriptions;
 
+        /* Keeps track of the models allocated in the ModelManager. */
+        std::unordered_map<std::string, Model> models;
+
     public:
-        /* Constructor for the ModelManager class, which takes a memory pool to allocate a new vertex buffer from, optionally the size of the buffer and optionally the index for the array in the shaders. */
-        ModelManager(Rendering::MemoryPool& memory_pool, VkDeviceSize max_vertices = 1000000, uint32_t binding_index = 0);
+        /* Constructor for the ModelManager class, which takes a command pool for memory operations, a memory pool to allocate a new vertex buffer from, a another memory pool used to allocate staging buffers, optionally the size of the buffer and optionally the index for the array in the shaders. */
+        ModelManager(Rendering::CommandPool& cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, VkDeviceSize max_vertices = 1000000, uint32_t binding_index = 0);
         /* Copy constructor for the ModelManager class. */
         ModelManager(const ModelManager& other);
         /* Move constructor for the ModelManager class. */
