@@ -1,5 +1,6 @@
 # Add the subdirectories
 add_subdirectory(model_manager)
+add_subdirectory(window)
 add_subdirectory(render_engine)
 add_subdirectory(tools)
 

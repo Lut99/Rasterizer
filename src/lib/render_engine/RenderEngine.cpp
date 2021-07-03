@@ -26,23 +26,6 @@ using namespace Rasterizer::Rendering;
 using namespace CppDebugger::SeverityValues;
 
 
-/***** HELPER FUNCTIONS *****/
-/* Returns a Tools::Array with the required extensions for GLFW. */
-static Tools::Array<const char*> get_glfw_extensions() {
-    DENTER("get_glfw_extensions");
-
-    // We first collect a list of GLFW extensions
-    uint32_t n_extensions = 0;
-    const char** raw_extensions = glfwGetRequiredInstanceExtensions(&n_extensions);
-
-    // Return them as an array
-    DRETURN Tools::Array<const char*>(raw_extensions, n_extensions);
-}
-
-
-
-
-
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSubmitInfo struct. */
 static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer& cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
@@ -98,45 +81,39 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
 
 /***** RENDERENGINE CLASS *****/
-/* Constructor for the RenderEngine class, which takes a GLFW window to render to and a ModelManager object to load the models to render from. */
-RenderEngine::RenderEngine(GLFWwindow* glfw_window, const Models::ModelManager& model_manager) :
-    glfw_window(glfw_window),
+/* Constructor for the RenderEngine class, which takes a Window to render to, the Vertex binding description and the attribute descriptions. */
+RenderEngine::RenderEngine(Window& window, const VkVertexInputBindingDescription& binding_description, const Tools::Array<VkVertexInputAttributeDescription>& attribute_descriptions) :
+    window(window),
 
-    instance(instance_extensions + get_glfw_extensions()),
-    surface(this->instance, this->glfw_window),
-    gpu(this->instance, this->surface),
-    swapchain(this->gpu, this->glfw_window, this->surface),
+    vertex_shader(this->window.gpu(), "bin/shaders/vertex_v2.spv"),
+    fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
 
-    vertex_shader(this->gpu, "bin/shaders/vertex_v2.spv"),
-    fragment_shader(this->gpu, "bin/shaders/frag_v1.spv"),
+    render_pass(this->window.gpu()),
+    pipeline(this->window.gpu()),
 
-    render_pass(this->gpu),
-    pipeline(this->gpu),
+    draw_cmd_pool(this->window.gpu(), this->window.gpu().queue_info().graphics()),
 
-    draw_cmd_pool(this->gpu, this->gpu.queue_info().graphics()),
+    framebuffers(this->window.swapchain().size()),
 
-    framebuffers(this->swapchain.size()),
+    image_ready_semaphores(Semaphore(this->window.gpu()), RenderEngine::max_frames_in_flight),
+    render_ready_semaphores(Semaphore(this->window.gpu()), RenderEngine::max_frames_in_flight),
+    frame_in_flight_fences(Fence(this->window.gpu(), VK_FENCE_CREATE_SIGNALED_BIT), RenderEngine::max_frames_in_flight),
+    image_in_flight_fences((Fence*) nullptr, this->window.swapchain().size()),
 
-    image_ready_semaphores(Semaphore(this->gpu), RenderEngine::max_frames_in_flight),
-    render_ready_semaphores(Semaphore(this->gpu), RenderEngine::max_frames_in_flight),
-    frame_in_flight_fences(Fence(this->gpu, VK_FENCE_CREATE_SIGNALED_BIT), RenderEngine::max_frames_in_flight),
-    image_in_flight_fences((Fence*) nullptr, this->swapchain.size()),
-
-    current_frame(0),
-    should_resize(false)
+    current_frame(0)
 {
     DENTER("Rendering::RenderEngine::RenderEngine");
 
     /* RENDER PASS */
     // Prepare the render pass
-    uint32_t index = this->render_pass.add_attachment(this->swapchain.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    uint32_t index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     this->render_pass.add_subpass({ std::make_pair(index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) });
     this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, index, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
     this->render_pass.finalize();
 
     // Fetch the framebuffers of the swapchain
-    for (uint32_t i = 0; i < this->swapchain.size(); i++) {
-        this->framebuffers.push_back(this->swapchain.get_framebuffer(i, this->render_pass));
+    for (uint32_t i = 0; i < this->window.swapchain().size(); i++) {
+        this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass));
     }
 
 
@@ -147,9 +124,9 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window, const Models::ModelManager& 
     pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
 
     // Prepare the static part
-    pipeline.init_vertex_input(model_manager.input_binding_description(), model_manager.input_attribute_descriptions());
+    pipeline.init_vertex_input(binding_description, attribute_descriptions);
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->swapchain.extent()), Rectangle(0.0, 0.0, this->swapchain.extent()));
+    pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
     pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
     pipeline.init_multisampling();
     pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
@@ -178,14 +155,6 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window, const Models::ModelManager& 
 
 
 
-    /* WINDOW */
-    // Before we quit, we'll add our own handler to glfw window s.t. we can explicitly detect window resizes
-    // Note that we overwrite the user pointer; if any other library did this, that'd be bad
-    glfwSetWindowUserPointer(glfw_window, (void*) this);
-    glfwSetFramebufferSizeCallback(glfw_window, RenderEngine::glfw_resize_callback);
-
-
-
     /* DONE */
     DLOG(info, "Initialized RenderEngine.");
     DLEAVE;
@@ -193,49 +162,66 @@ RenderEngine::RenderEngine(GLFWwindow* glfw_window, const Models::ModelManager& 
 
 
 
-/* Callback for the GLFW window resize. */
-void RenderEngine::glfw_resize_callback(GLFWwindow* glfw_window, int width, int height) {
-    DENTER("glfw_resize_callback");
+/* Private helper function that actually performs the RenderEngine part of a resize. */
+void RenderEngine::_resize() {
+    DENTER("Rendering::RenderEngine::_resize");
 
-    // First, get the RenderEngine back
-    RenderEngine* render_engine = (RenderEngine*) glfwGetWindowUserPointer(glfw_window);
-    // Mark that we need to resize at the new opportunity
-    render_engine->should_resize = true;
+    // Fetch a new list of framebuffers
+    this->framebuffers.clear();
+    this->framebuffers.reserve(this->window.swapchain().size());
+    for (uint32_t i = 0; i < this->window.swapchain().size(); i++) {
+        this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass));
+    }
 
-    // Done
+    // Then, re-create the command buffers
+    this->draw_cmd_pool.ndeallocate(this->draw_cmds);
+    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
+    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
+        // Record it
+        this->draw_cmds[i].begin();
+        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
+        this->pipeline.schedule(this->draw_cmds[i]);
+        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
+        this->render_pass.stop_scheduling(this->draw_cmds[i]);
+        this->draw_cmds[i].end();
+    }
+
+    // Done ez pz lemon sqzy
     DRETURN;
 }
 
 
 
-/* Runs a single iteration of the game loop. */
-void RenderEngine::loop() {
+/* Runs a single iteration of the game loop. Returns whether or not the RenderEngine allows the window to continue (true) or not because it's closed (false). */
+bool RenderEngine::loop() {
     DENTER("Rendering::RenderEngine::loop");
 
     /* PREPARATION */
-    // First, poll the GLFW events
-    glfwPollEvents();
+    // First, do the window
+    bool can_continue = this->window.loop();
+    if (!can_continue) {
+        DRETURN false;
+    }
 
     // Before we get the swapchain images, be sure to wait for the current frame to be available
-    vkWaitForFences(this->gpu, 1, &frame_in_flight_fences[this->current_frame].fence(), VK_TRUE, UINT64_MAX);
+    vkWaitForFences(this->window.gpu(), 1, &frame_in_flight_fences[this->current_frame].fence(), VK_TRUE, UINT64_MAX);
 
     // Next, try to get a new swapchain image
     uint32_t swapchain_index;
-    VkResult vk_result = vkAcquireNextImageKHR(this->gpu, this->swapchain, UINT64_MAX, this->image_ready_semaphores[this->current_frame], VK_NULL_HANDLE, &swapchain_index);
+    VkResult vk_result = vkAcquireNextImageKHR(this->window.gpu(), this->window.swapchain(), UINT64_MAX, this->image_ready_semaphores[this->current_frame], VK_NULL_HANDLE, &swapchain_index);
     if (vk_result == VK_ERROR_OUT_OF_DATE_KHR || vk_result == VK_SUBOPTIMAL_KHR) {
         // The swapchain is outdated or suboptimal (probably a resize); we resize to fit again
-        this->resize(this->glfw_window);
-        this->should_resize = false;
+        this->resize();
 
         // Next, we early quit, to make sure that the proper images are acquired
-        DRETURN;
+        DRETURN true;
     } else if (vk_result != VK_SUCCESS) {
         DLOG(fatal, "Could not get image from swapchain: " + vk_error_map[vk_result]);
     }
 
     // If another frame is already using this image, then wait for it to become available
     if (this->image_in_flight_fences[swapchain_index] != (Fence*) nullptr) {
-        vkWaitForFences(this->gpu, 1, &this->image_in_flight_fences[swapchain_index]->fence(), VK_TRUE, UINT64_MAX);
+        vkWaitForFences(this->window.gpu(), 1, &this->image_in_flight_fences[swapchain_index]->fence(), VK_TRUE, UINT64_MAX);
     }
     this->image_in_flight_fences[swapchain_index] = &this->frame_in_flight_fences[this->current_frame];
 
@@ -248,8 +234,8 @@ void RenderEngine::loop() {
     populate_submit_info(submit_info, this->draw_cmds[swapchain_index], this->image_ready_semaphores[this->current_frame], wait_stages, this->render_ready_semaphores[this->current_frame]);
 
     // Submit to the queue
-    vkResetFences(this->gpu, 1, &frame_in_flight_fences[this->current_frame].fence());
-    Tools::Array<VkQueue> graphics_queues = this->gpu.queues(QueueType::graphics);
+    vkResetFences(this->window.gpu(), 1, &frame_in_flight_fences[this->current_frame].fence());
+    Tools::Array<VkQueue> graphics_queues = this->window.gpu().queues(QueueType::graphics);
     if ((vk_result = vkQueueSubmit(graphics_queues[0], 1, &submit_info, this->frame_in_flight_fences[this->current_frame])) != VK_SUCCESS) {
         DLOG(fatal, "Could not submit to queue: " + vk_error_map[vk_result]);
     }
@@ -259,15 +245,14 @@ void RenderEngine::loop() {
     /* PRESENTING */
     // Prepare the present info
     VkPresentInfoKHR present_info;
-    populate_present_info(present_info, this->swapchain, swapchain_index, this->render_ready_semaphores[this->current_frame]);
+    populate_present_info(present_info, this->window.swapchain(), swapchain_index, this->render_ready_semaphores[this->current_frame]);
 
     // Present it using the queue present function
-    Tools::Array<VkQueue> present_queues = this->gpu.queues(QueueType::present);
+    Tools::Array<VkQueue> present_queues = this->window.gpu().queues(QueueType::present);
     vk_result = vkQueuePresentKHR(present_queues[0], &present_info);
-    if (this->should_resize || vk_result == VK_ERROR_OUT_OF_DATE_KHR || vk_result == VK_SUBOPTIMAL_KHR) {
+    if (this->window.needs_resize() || vk_result == VK_ERROR_OUT_OF_DATE_KHR || vk_result == VK_SUBOPTIMAL_KHR) {
         // The swapchain is outdated or suboptimal (probably a resize); we resize to fit again
-        this->resize(this->glfw_window);
-        this->should_resize = false;
+        this->resize();
     } else if (vk_result != VK_SUCCESS) {
         DLOG(fatal, "Could not present result: " + vk_error_map[vk_result]);
     }
@@ -276,100 +261,34 @@ void RenderEngine::loop() {
 
     // Done with this iteration
     this->current_frame = (this->current_frame + 1) % RenderEngine::max_frames_in_flight;
-    DRETURN;
+    DRETURN true;
 }
 
 
 
-/* Resizes the window to the given size. Note that this is a pretty slow operation, as it requires the device to be idle. */
-void RenderEngine::resize(uint32_t new_width, uint32_t new_height) {
+/* Resizes the window to the size of the given window. Note that this is a pretty slow operation, as it requires the device to be idle. */
+void RenderEngine::resize() {
     DENTER("Rendering::RenderEngine::resize");
 
-    // If the user minimized the application, then we shall wait until the window has a size again
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(this->glfw_window, &width, &height);
-    if (width == 0 || height == 0) {
-        DLOG(info, "Window minimized");
-        while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(this->glfw_window, &width, &height);
-            // Use the blocking event call to let the thread sleepy sleepy
-            glfwWaitEvents();
-        }
-    }
+    // Resize the window first
+    this->window.resize();
 
-    // Wait until the device is idle
-    this->gpu.wait_for_idle();
-
-    // Then, resize the swapchain (which also updates the image views)
-    this->gpu.refresh_swapchain_info();
-    this->swapchain.resize(new_width, new_height);
-
-    // Also fetch a new list of framebuffers
-    this->framebuffers.clear();
-    this->framebuffers.reserve(this->swapchain.size());
-    for (uint32_t i = 0; i < this->swapchain.size(); i++) {
-        this->framebuffers.push_back(this->swapchain.get_framebuffer(i, this->render_pass));
-    }
-
-    // Then, re-create the command buffers
-    this->draw_cmd_pool.ndeallocate(this->draw_cmds);
-    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
-    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
-        // Record it
-        this->draw_cmds[i].begin();
-        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
-        this->pipeline.schedule(this->draw_cmds[i]);
-        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
-        this->render_pass.stop_scheduling(this->draw_cmds[i]);
-        this->draw_cmds[i].end();
-    }
+    // Do our own part too
+    this->_resize();
 
     // Done, we can resume rendering
     DRETURN;
 }
 
-/* Resizes the window to the size of the given window. Note that this is a pretty slow operation, as it requires the device to be idle. */
-void RenderEngine::resize(GLFWwindow* glfw_window) {
-    DENTER("Rendering::RenderEngine::resize(window)");
+/* Resizes the window to the given size. Note that this is a pretty slow operation, as it requires the device to be idle. */
+void RenderEngine::resize(uint32_t new_width, uint32_t new_height) {
+    DENTER("Rendering::RenderEngine::resize(width, height)");
 
-    // If the user minimized the application, then we shall wait until the window has a size again
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(this->glfw_window, &width, &height);
-    if (width == 0 || height == 0) {
-        DLOG(info, "Window minimized");
-        while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(this->glfw_window, &width, &height);
-            // Use the blocking event call to let the thread sleepy sleepy
-            glfwWaitEvents();
-        }
-    }
+    // First, resize the window to that size
+    this->window.resize(new_width, new_height);
 
-    // Wait until the device is idle
-    this->gpu.wait_for_idle();
-
-    // Then, resize the swapchain (which also updates the image views)
-    this->gpu.refresh_swapchain_info();
-    this->swapchain.resize(glfw_window);
-
-    // Also fetch a new list of framebuffers
-    this->framebuffers.clear();
-    this->framebuffers.reserve(this->swapchain.size());
-    for (uint32_t i = 0; i < this->swapchain.size(); i++) {
-        this->framebuffers.push_back(this->swapchain.get_framebuffer(i, this->render_pass));
-    }
-
-    // Then, re-create the command buffers
-    this->draw_cmd_pool.ndeallocate(this->draw_cmds);
-    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
-    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
-        // Record it
-        this->draw_cmds[i].begin();
-        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
-        this->pipeline.schedule(this->draw_cmds[i]);
-        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
-        this->render_pass.stop_scheduling(this->draw_cmds[i]);
-        this->draw_cmds[i].end();
-    }
+    // Do our own part too
+    this->_resize();
 
     // Done, we can resume rendering
     DRETURN;

@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   01/07/2021, 13:43:30
+ *   03/07/2021, 16:49:12
  * Auto updated?
  *   Yes
  *
@@ -70,9 +70,9 @@ namespace Rasterizer::Rendering {
         ~Swapchain();
 
         /* Returns a the internal image at the given location. */
-        inline VkImage operator[](uint32_t index) { return this->vk_swapchain_images[index]; }
+        inline VkImage operator[](uint32_t index) const { return this->vk_swapchain_images[index]; }
         /* Returns a framebuffer for the image at the given location and the given render pass. */
-        inline Rendering::Framebuffer get_framebuffer(uint32_t index, const Rendering::RenderPass& render_pass) { return Framebuffer(this->gpu, render_pass, this->vk_swapchain_views[index], this->vk_surface_extent); }
+        inline Rendering::Framebuffer get_framebuffer(uint32_t index, const Rendering::RenderPass& render_pass) const { return Framebuffer(this->gpu, render_pass, this->vk_swapchain_views[index], this->vk_surface_extent); }
 
         /* Resizes the swapchain to the given size. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
         void resize(uint32_t new_width, uint32_t new_height);
