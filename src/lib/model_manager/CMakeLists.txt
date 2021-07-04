@@ -1,5 +1,5 @@
 # Add the RenderEngine itself
-add_library(ModelManager STATIC ${CMAKE_CURRENT_SOURCE_DIR}/ModelManager.cpp)
+add_library(ModelManager STATIC ${CMAKE_CURRENT_SOURCE_DIR}/ModelManager.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Vertex.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(ModelManager PUBLIC
@@ -9,7 +9,7 @@ target_include_directories(ModelManager PUBLIC
 list(APPEND EXTRA_LIBS ModelManager)
 
 # Add the subdirectories
-# add_subdirectory(synchronization)
+add_subdirectory(formats)
 
 # Carry the list to the parent scope
 set(EXTRA_LIBS "${EXTRA_LIBS}" PARENT_SCOPE)

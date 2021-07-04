@@ -21,6 +21,7 @@
 #include <GLFW/glfw3.h>
 
 #include "window/Window.hpp"
+#include "model_manager/ModelManager.hpp"
 
 #include "render_engine/renderpass/RenderPass.hpp"
 #include "render_engine/pipeline/Shader.hpp"
@@ -40,6 +41,8 @@ namespace Rasterizer::Rendering {
 
         /* The Window object managing and carrying the Instance, Surface, GPU and Swapchain. */
         Window& window;
+        /* The model manager that is used to draw. */
+        const Models::ModelManager& model_manager;
 
     private:
         /* The vertex shader we use. */
@@ -77,14 +80,16 @@ namespace Rasterizer::Rendering {
         void _resize();
     
     public:
-        /* Constructor for the RenderEngine class, which takes a Window to render to, the Vertex binding description and the attribute descriptions. */
-        RenderEngine(Window& window, const VkVertexInputBindingDescription& binding_description, const Tools::Array<VkVertexInputAttributeDescription>& attribute_descriptions);
+        /* Constructor for the RenderEngine class, which takes a Window to render to and a model manager to load models from. */
+        RenderEngine(Window& window, const Models::ModelManager& model_manager);
         /* Copy constructor for the RenderEngine class, which is deleted. */
         RenderEngine(const RenderEngine& other) = delete;
 
         /* Runs a single iteration of the game loop. Returns whether or not the RenderEngine allows the window to continue (true) or not because it's closed (false). */
         bool loop();
         
+        /* Refreshes the RenderEngine by re-drawing the command buffers. Can optionally skip waiting for the device to be idle. */
+        void refresh(bool wait_for_idle = true);
         /* Resizes the window to the size of the given window. Note that this is a pretty slow operation, as it requires the device to be idle. */
         void resize();
         /* Resizes the window to the given size. Note that this is a pretty slow operation, as it requires the device to be idle. */

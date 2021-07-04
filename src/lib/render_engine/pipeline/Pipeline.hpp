@@ -132,6 +132,8 @@ namespace Rasterizer::Rendering {
         /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
         void schedule_draw(const Rendering::CommandBuffer& cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0);
 
+        /* Explicitly returns the internal VkPipelineLayout object. */
+        inline const VkPipelineLayout& layout() const { return this->vk_pipeline_layout; }
         /* Expliticly returns the internal VkPipeline object. */
         inline const VkPipeline& pipeline() const { return this->vk_pipeline; }
         /* Implicitly returns the internal VkPipeline object. */

@@ -29,7 +29,7 @@ using namespace CppDebugger::SeverityValues;
 
 /***** MODELMANAGER CLASS *****/
 /* Constructor for the ModelManager class, which takes a command pool for memory operations, a memory pool to allocate a new vertex buffer from, a another memory pool used to allocate staging buffers, optionally the size of the buffer and optionally the index for the array in the shaders. */
-ModelManager::ModelManager(Rendering::CommandPool& cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, VkDeviceSize max_vertices, uint32_t binding_index) :
+ModelManager::ModelManager(Rendering::CommandPool& cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, uint32_t max_vertices, uint32_t binding_index) :
     cmd_pool(cmd_pool),
     draw_pool(draw_pool),
     stage_pool(stage_pool),
@@ -234,34 +234,36 @@ void ModelManager::unload_model(const std::string& uid) {
     }
     const Model& model = (*iter).second;
 
+    // Fetch the vertex list and the command buffer
+    Rendering::CommandBuffer copy_cmd = this->cmd_pool.deref(this->copy_cmd_h);
+    Rendering::Buffer vertex_buffer = this->draw_pool.deref_buffer(this->vertex_buffer_h);
+
+    // Fetch the list of vertices in a staging buffer, but only from it and up
+    uint32_t n_vertices = this->max_vertices - model.offset;
+    Rendering::Buffer stage_buffer = this->stage_pool.allocate_buffer(n_vertices * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    vertex_buffer.copyto(stage_buffer, n_vertices * sizeof(Vertex), model.offset, 0, copy_cmd);
+
+    // Map the staging buffer to CPU memory
+    void* stage_memory;
+    stage_buffer.map(&stage_memory);
+
+    // Set the deleted vertices to 0.0
+    memset((void*) ((uint8_t*) stage_memory + model.offset), 0, model.size * sizeof(Vertex));
     // If the model is not at the end of the list, get the list from the GPU and move the rest of the vertices forward
     if (model.offset + model.size < this->n_vertices) {
-        // Fetch the vertex list and the command buffer
-        Rendering::CommandBuffer copy_cmd = this->cmd_pool.deref(this->copy_cmd_h);
-        Rendering::Buffer vertex_buffer = this->draw_pool.deref_buffer(this->vertex_buffer_h);
-
-        // Fetch the list of vertices in a staging buffer, but only from it and up
-        uint32_t n_vertices = this->max_vertices - model.offset;
-        Rendering::Buffer stage_buffer = this->stage_pool.allocate_buffer(n_vertices * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-        vertex_buffer.copyto(stage_buffer, n_vertices * sizeof(Vertex), model.offset, 0, copy_cmd);
-
-        // Map the staging buffer to CPU memory
-        void* stage_memory;
-        stage_buffer.map(&stage_memory);
-
         // Move all memory following the delete memory forward
-        memmove((void*) ((uint8_t*) stage_memory + model.offset), (void*) ((uint8_t*) stage_memory + model.offset + model.size), model.size * sizeof(Vertex));
-
-        // With that done, unmap and flush the stage buffer
-        stage_buffer.unmap();
-        stage_buffer.flush();
-
-        // Copy it back to the vertex buffer
-        stage_buffer.copyto(vertex_buffer, (n_vertices - model.size) * sizeof(Vertex), 0, model.offset, copy_cmd);
-
-        // Deallocate the staging buffer
-        this->stage_pool.deallocate(stage_buffer);
+        memmove((void*) ((uint8_t*) stage_memory + model.offset), (void*) ((uint8_t*) stage_memory + model.offset + model.size), (this->n_vertices - model.offset - model.size) * sizeof(Vertex));
     }
+
+    // With that done, unmap and flush the stage buffer
+    stage_buffer.unmap();
+    stage_buffer.flush();
+
+    // Copy it back to the vertex buffer
+    stage_buffer.copyto(vertex_buffer, (n_vertices - model.size) * sizeof(Vertex), 0, model.offset, copy_cmd);
+
+    // Deallocate the staging buffer
+    this->stage_pool.deallocate(stage_buffer);
 
     // We're done; shrink the number of vertices and delete the model from the list
     this->n_vertices -= model.size;
@@ -274,7 +276,7 @@ void ModelManager::unload_model(const std::string& uid) {
 
 
 /* Binds the vertex buffer to the given command buffer. */
-void ModelManager::schedule(const Rendering::CommandBuffer& draw_cmd) {
+void ModelManager::schedule(const Rendering::CommandBuffer& draw_cmd) const {
     DENTER("Models::ModelManager::schedule");
 
     // Schedule the vertex buffer to be drawn

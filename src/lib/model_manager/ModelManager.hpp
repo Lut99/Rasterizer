@@ -71,13 +71,16 @@ namespace Rasterizer::Models {
 
     public:
         /* Constructor for the ModelManager class, which takes a command pool for memory operations, a memory pool to allocate a new vertex buffer from, a another memory pool used to allocate staging buffers, optionally the size of the buffer and optionally the index for the array in the shaders. */
-        ModelManager(Rendering::CommandPool& cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, VkDeviceSize max_vertices = 1000000, uint32_t binding_index = 0);
+        ModelManager(Rendering::CommandPool& cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, uint32_t max_vertices = 1000000, uint32_t binding_index = 0);
         /* Copy constructor for the ModelManager class. */
         ModelManager(const ModelManager& other);
         /* Move constructor for the ModelManager class. */
         ModelManager(ModelManager&& other);
         /* Destructor for the ModelManager class. */
         ~ModelManager();
+
+        /* Returns if the ModelManager contains a model with the given uid. */
+        inline bool contains(const std::string& uid) const { return this->models.find(uid) != this->models.end(); }
 
         /* Loads a new model from the given file and with the given format. */
         inline void load_model(const std::string& path, ModelFormat format) { return this->load_model(path, path, format); }
@@ -91,17 +94,17 @@ namespace Rasterizer::Models {
         /* Function that returns the attribute descriptions for the vertex. */
         inline const Tools::Array<VkVertexInputAttributeDescription>& input_attribute_descriptions() const { return this->vk_input_attribute_descriptions; }
         /* Binds the vertex buffer to the given command buffer. */
-        void schedule(const Rendering::CommandBuffer& draw_cmd);
+        void schedule(const Rendering::CommandBuffer& draw_cmd) const;
 
-        /* Returns the number of bytes currently loaded by models. */
-        inline uint64_t size() const { return this->n_vertices * sizeof(Vertex); }
-        /* Returns the maximum number of bytes we can load. */
-        inline uint64_t capacity() const { return this->max_vertices * sizeof(Vertex); }
+        /* Returns the number of vertices currently loaded by models. */
+        inline uint32_t size() const { return this->n_vertices; }
+        /* Returns the maximum number of vertices we can load. */
+        inline uint32_t capacity() const { return this->max_vertices; }
 
         /* Copy assignment operator for the ModelManager class. */
         inline ModelManager& operator=(const ModelManager& other) { return *this = ModelManager(other); }
         /* Move assignment operator for the ModelManager class. */
-        inline ModelManager& operator=(ModelManager&& other) { if (this != &other) { swap(*this, other); } return; }
+        inline ModelManager& operator=(ModelManager&& other) { if (this != &other) { swap(*this, other); } return *this; }
         /* Swap operator for the ModelManager class. */
         friend void swap(ModelManager& mm1, ModelManager& mm2);
 

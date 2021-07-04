@@ -114,5 +114,5 @@ Tools::Array<VkVertexInputAttributeDescription> Vertex::input_attribute_descript
     populate_input_attribute_description_colour(result[1]);
 
     // Done
-    DRETURN;
+    DRETURN result;
 }

@@ -166,7 +166,7 @@ void Buffer::unmap() const {
 
 
 /* Copies this buffer's contents to the given Buffer, scheduling the command on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given. Optionally, a queue can be given to run the commands on, which will otherwise default to the first memory queue of the internal GPU. Also, it can be opted to not wait until the given queue is idle again but to return immediately. */
-void Buffer::copyto(const Buffer& destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, VkDeviceSize target_offset, const Rendering::CommandBuffer& command_buffer, VkQueue vk_queue = nullptr, bool wait_queue_idle = true) const {
+void Buffer::copyto(const Buffer& destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, VkDeviceSize target_offset, const Rendering::CommandBuffer& command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
     DENTER("Rendering::Buffer::copyto");
 
     // First, resolve the queue

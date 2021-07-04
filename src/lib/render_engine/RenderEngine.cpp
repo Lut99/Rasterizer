@@ -81,9 +81,10 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
 
 /***** RENDERENGINE CLASS *****/
-/* Constructor for the RenderEngine class, which takes a Window to render to, the Vertex binding description and the attribute descriptions. */
-RenderEngine::RenderEngine(Window& window, const VkVertexInputBindingDescription& binding_description, const Tools::Array<VkVertexInputAttributeDescription>& attribute_descriptions) :
+/* Constructor for the RenderEngine class, which takes a Window to render to and a model manager to load models from. */
+RenderEngine::RenderEngine(Window& window, const Models::ModelManager& model_manager) :
     window(window),
+    model_manager(model_manager),
 
     vertex_shader(this->window.gpu(), "bin/shaders/vertex_v2.spv"),
     fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
@@ -124,7 +125,7 @@ RenderEngine::RenderEngine(Window& window, const VkVertexInputBindingDescription
     pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
 
     // Prepare the static part
-    pipeline.init_vertex_input(binding_description, attribute_descriptions);
+    pipeline.init_vertex_input(this->model_manager.input_binding_description(), this->model_manager.input_attribute_descriptions());
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
     pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
@@ -142,16 +143,7 @@ RenderEngine::RenderEngine(Window& window, const VkVertexInputBindingDescription
 
     /* COMMAND BUFFERS */
     // We can already record the command buffers for each framebuffer
-    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
-    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
-        // Record it
-        this->draw_cmds[i].begin();
-        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
-        this->pipeline.schedule(this->draw_cmds[i]);
-        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
-        this->render_pass.stop_scheduling(this->draw_cmds[i]);
-        this->draw_cmds[i].end();
-    }
+    this->refresh();
 
 
 
@@ -174,17 +166,7 @@ void RenderEngine::_resize() {
     }
 
     // Then, re-create the command buffers
-    this->draw_cmd_pool.ndeallocate(this->draw_cmds);
-    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
-    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
-        // Record it
-        this->draw_cmds[i].begin();
-        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
-        this->pipeline.schedule(this->draw_cmds[i]);
-        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
-        this->render_pass.stop_scheduling(this->draw_cmds[i]);
-        this->draw_cmds[i].end();
-    }
+    this->refresh();
 
     // Done ez pz lemon sqzy
     DRETURN;
@@ -265,6 +247,41 @@ bool RenderEngine::loop() {
 }
 
 
+
+/* Refreshes the RenderEngine by re-drawing the command buffers. Can optionally skip waiting for the device to be idle. */
+void RenderEngine::refresh(bool wait_for_idle) {
+    DENTER("Rendering::RenderEngine::refresh");
+
+    // Wait until the device is ready
+    if (wait_for_idle) {
+        this->wait_for_idle();
+    }
+
+    // If any, deallocate old command buffers
+    if (this->draw_cmds.size() > 0) {
+        this->draw_cmd_pool.ndeallocate(this->draw_cmds);
+    }
+
+    // Allocate new command buffers
+    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
+
+    // Loop through them to record them
+    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
+        uint32_t vertex_size = this->model_manager.size() * sizeof(Models::Vertex);
+
+        // Record it
+        this->draw_cmds[i].begin();
+        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
+        this->pipeline.schedule(this->draw_cmds[i]);
+        this->model_manager.schedule(this->draw_cmds[i]);
+        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
+        this->render_pass.stop_scheduling(this->draw_cmds[i]);
+        this->draw_cmds[i].end();
+    }
+
+    // Done
+    DRETURN;
+}
 
 /* Resizes the window to the size of the given window. Note that this is a pretty slow operation, as it requires the device to be idle. */
 void RenderEngine::resize() {

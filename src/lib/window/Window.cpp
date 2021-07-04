@@ -22,14 +22,6 @@ using namespace Rasterizer;
 using namespace CppDebugger::SeverityValues;
 
 
-/***** GLOBALS *****/
-/* Keeps track of how many classes use the GLFW library; the first one should initialize it, the last one should destroy it. */
-static uint32_t n_windows = 0;
-
-
-
-
-
 /***** WINDOW CLASS *****/
 /* Constructor for the Window class, which takes the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
 Window::Window(const Rendering::Instance& instance, const std::string& title, uint32_t width, uint32_t height) :
@@ -46,15 +38,8 @@ Window::Window(const Rendering::Instance& instance, const std::string& title, ui
     DINDENT;
 
     DLOG(info, "Initializing GLFW window...");
-    if (n_windows == 0) {
-        DINDENT; DLOG(auxillary, "Initializing GLFW library..."); DDEDENT;
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    }
     // Get the window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
-    ++n_windows;
 
     // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
     glfwSetWindowUserPointer(this->glfw_window, (void*) this);
@@ -86,7 +71,6 @@ Window::Window(const Window& other) :
 
     // First, copy the glfw window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
-    ++n_windows;
 
     // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
     glfwSetWindowUserPointer(this->glfw_window, (void*) this);
@@ -145,13 +129,6 @@ Window::~Window() {
     if (this->glfw_window != nullptr) {
         DLOG(auxillary, "Destroying GLFW window...");
         glfwDestroyWindow(this->glfw_window);
-
-        // If we're the last window, also destroy the library
-        --n_windows;
-        if (n_windows == 0) {
-            DINDENT; DLOG(auxillary, "Terminating GLFW library..."); DDEDENT;
-            glfwTerminate();
-        }
     }
 
     DDEDENT;

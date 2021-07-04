@@ -58,6 +58,12 @@ int main(int argc, const char** argv) {
     DLOG(auxillary, "<<< RASTERIZER >>>");
     DLOG(auxillary, "");
 
+    // Initialize the GLFW library
+    DLOG(info, "Initializing GLFW...");
+    glfwInit();
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
     // Prepare the Vulkan instance first
     Rendering::Instance instance(Rendering::instance_extensions + get_glfw_extensions());
 
@@ -75,9 +81,10 @@ int main(int argc, const char** argv) {
 
     // Use those to initialize the model manager
     Models::ModelManager model_manager(copy_pool, draw_pool, stage_pool);
+    model_manager.load_model("triangle", Models::ModelFormat::triangle);
 
     // Initialize the engine
-    Rendering::RenderEngine render_engine(window, model_manager.input_binding_description(), model_manager.input_attribute_descriptions());
+    Rendering::RenderEngine render_engine(window, model_manager);
     DLOG(auxillary, "");
 
     // Do the render
@@ -98,6 +105,12 @@ int main(int argc, const char** argv) {
             // Show the FPS
             window.set_title("Rasterizer (FPS: " + std::to_string(fps) + ")");
             fps = 0;
+
+            // Add another model???
+            if (model_manager.contains("triangle")) {
+                model_manager.unload_model("triangle");
+                render_engine.refresh();
+            }
         }
     }
 

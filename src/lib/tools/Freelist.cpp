@@ -55,14 +55,14 @@ freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
     for (array_size_t i = 0; i < this->blocks.size(); i++) {
         if (!this->blocks[i].used && this->blocks[i].size >= size) {
             // Compute how many bytes offset we have
-            freelist_size_t align_bytes = align - this->free_blocks[i].offset % align;
+            freelist_size_t align_bytes = align - this->blocks[i].offset % align;
             if (align_bytes >= align) { align_bytes = 0; }
 
             // If the block now doesn't have enough memory, continue searching to the next one
-            if (align_bytes + size > this->blocks[i]) { continue; }
+            if (align_bytes + size > this->blocks[i].size) { continue; }
 
             // Otherwise, shrink the free block
-            result = align_bytes + this->blocks[i].offset:
+            result = align_bytes + this->blocks[i].offset;
             this->blocks[i].offset += align_bytes + size;
             this->blocks[i].size   -= align_bytes + size;
 
