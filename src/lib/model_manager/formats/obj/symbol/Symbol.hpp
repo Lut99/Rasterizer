@@ -16,16 +16,20 @@
 #ifndef MODELS_OBJ_SYMBOL_HPP
 #define MODELS_OBJ_SYMBOL_HPP
 
+#include "model_manager/formats/auxillary/DebugInfo.hpp"
+
 namespace Rasterizer::Models::Obj {
     /* The Symbol class, which forms the baseclass for both the NonTerminal and the Terminal. */
     class Symbol {
     public:
         /* Whether or not the Symbol is secretly a Terminal. */
         bool is_terminal;
+        /* The DebugInfo of the symbol, describing its location in the origin file. */
+        DebugInfo debug_info;
     
     protected:
-        /* Constructor for the Symbol class, which takes whether or not it is a terminal symbol. */
-        Symbol(bool is_terminal);
+        /* Constructor for the Symbol class, which takes whether or not it is a terminal symbol and the symbol's DebugInfo. */
+        Symbol(bool is_terminal, const DebugInfo& debug_info);
 
     };
 

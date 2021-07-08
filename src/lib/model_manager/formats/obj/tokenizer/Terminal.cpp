@@ -20,8 +20,8 @@ using namespace Rasterizer::Models::Obj;
 
 
 /***** TERMINAL CLASS *****/
-/* Constructor for the Terminal class, which takes its type. */
-Terminal::Terminal(TerminalType type) :
-    Symbol(true),
+/* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */
+Terminal::Terminal(TerminalType type, const DebugInfo& debug_info) :
+    Symbol(true, debug_info),
     type(type)
 {}

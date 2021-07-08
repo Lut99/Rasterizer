@@ -20,7 +20,8 @@ using namespace Rasterizer::Models::Obj;
 
 
 /***** OBJSYMBOL CLASS *****/
-/* Constructor for the Symbol class, which takes whether or not it is a terminal symbol. */
-Symbol::Symbol(bool is_terminal) :
-    is_terminal(is_terminal)
+/* Constructor for the Symbol class, which takes whether or not it is a terminal symbol and the symbol's DebugInfo. */
+Symbol::Symbol(bool is_terminal, const DebugInfo& debug_info) :
+    is_terminal(is_terminal),
+    debug_info(debug_info)
 {}

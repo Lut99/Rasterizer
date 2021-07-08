@@ -20,8 +20,9 @@ using namespace Rasterizer::Models::Obj;
 
 
 /***** OBJVALUETERMINAL CLASS *****/
-/* Constructor for the ValueTerminal, which takes the type of the ValueTerminal. */
+/* Constructor for the ValueTerminal class, which takes its type, its value and the DebugInfo. */
 template <class T>
-ValueTerminal<T>::ValueTerminal(TerminalType type) :
-    Terminal(type)
+ValueTerminal<T>::ValueTerminal(TerminalType type, const T& value, const DebugInfo& debug_info) :
+    Terminal(type, debug_info),
+    value(value)
 {}

@@ -1,5 +1,5 @@
 # Add the library
-add_library(ObjLoader STATIC ${CMAKE_CURRENT_SOURCE_DIR}/ModelManager.cpp)
+add_library(ObjLoader STATIC ${CMAKE_CURRENT_SOURCE_DIR}/ObjLoader.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(ObjLoader PUBLIC
@@ -9,6 +9,7 @@ target_include_directories(ObjLoader PUBLIC
 list(APPEND EXTRA_LIBS ObjLoader)
 
 # Also add nested directories
+add_subdirectory(ast)
 add_subdirectory(tokenizer)
 add_subdirectory(symbol)
 

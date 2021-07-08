@@ -18,8 +18,8 @@
 
 #include <string>
 #include <fstream>
-
 #include "tools/Array.hpp"
+
 #include "Terminal.hpp"
 
 namespace Rasterizer::Models::Obj {
@@ -41,13 +41,32 @@ namespace Rasterizer::Models::Obj {
     public:
         /* Constructor for the Tokenizer class, which takes the path to the file to tokenizer. */
         Tokenizer(const std::string& path);
+        /* Copy constructor for the Tokenizer class, which is deleted as it makes no sense to copy a stream. */
+        Tokenizer(const Tokenizer& other) = delete;
+        /* Move constructor for the Tokenizer class. */
+        Tokenizer(Tokenizer&& other);
+        /* Destructor for the Tokenizer class. */
+        ~Tokenizer();
         
         /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
         Terminal* get();
         /* Puts a token back on the internal list of tokens, so it can be returned next get call. Note that the Tokenizer will deallocate these if it gets deallocated. */
         void unget(Terminal* term);
+        /* Returns whether or not the Tokenizer is done parsing. */
+        inline bool eof() const { return this->file.eof(); }
+
+        /* Copy assignment operator for the Tokenizer class, which is deleted as it makes no sense to copy a stream. */
+        Tokenizer& operator=(const Tokenizer& other) = delete;
+        /* Move assignment operator for the Tokenizer class. */
+        inline Tokenizer& operator=(Tokenizer&& other) { if (this != &other) { swap(*this, other); } return *this; }
+        /* Swap operator for the Tokenizer class. */
+        friend void swap(Tokenizer& t1, Tokenizer& t2);
 
     };
+
+    /* Swap operator for the Tokenizer class. */
+    void swap(Tokenizer& t1, Tokenizer& t2);
+
 }
 
 #endif

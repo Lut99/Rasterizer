@@ -57,8 +57,8 @@ namespace Rasterizer::Models::Obj {
         TerminalType type;
 
 
-        /* Constructor for the Terminal class, which takes its type. */
-        Terminal(TerminalType type);
+        /* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */
+        Terminal(TerminalType type, const DebugInfo& debug_info);
 
     };
 

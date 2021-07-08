@@ -109,6 +109,7 @@ int main(int argc, const char** argv) {
             // Add another model???
             if (model_manager.contains("triangle")) {
                 model_manager.unload_model("triangle");
+                model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
                 render_engine.refresh();
             }
         }

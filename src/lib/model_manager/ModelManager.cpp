@@ -16,6 +16,8 @@
 #include "tools/Common.hpp"
 #include "tools/CppDebugger.hpp"
 
+#include "formats/obj/ObjLoader.hpp"
+
 #include "ModelManager.hpp"
 
 using namespace std;
@@ -170,7 +172,8 @@ void ModelManager::load_model(const std::string& uid, const std::string& path, M
     Tools::Array<Vertex> new_vertices;
     switch (format) {
         case ModelFormat::obj:
-            DLOG(fatal, "Not yet implemented.");
+            // Use the load function from the modelloader
+            new_vertices = load_obj_model(path);
             break;
 
         case ModelFormat::triangle:

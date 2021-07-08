@@ -13,13 +13,17 @@
  *   one.
 **/
 
+#include <iostream>
+#include <sstream>
 #include <cstring>
 #include <cerrno>
 #include "tools/CppDebugger.hpp"
 
+#include "ValueTerminal.hpp"
 #include "Tokenizer.hpp"
 
 using namespace std;
+using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Obj;
 using namespace CppDebugger::SeverityValues;
 
@@ -92,14 +96,49 @@ Tokenizer::Tokenizer(const std::string& path) :
     DLEAVE;
 }
 
+/* Move constructor for the Tokenizer class. */
+Tokenizer::Tokenizer(Tokenizer&& other) :
+    file(std::move(other.file)),
+    path(std::move(other.path)),
+
+    line(other.line),
+    col(other.col),
+    terminal_buffer(other.terminal_buffer)
+{
+    // Clear the other's list of terminal buffers to not deallocate them
+    other.terminal_buffer.clear();
+}
+
+/* Destructor for the Tokenizer class. */
+Tokenizer::~Tokenizer() {
+    DENTER("Obj::Tokenizer::~Tokenizer");
+
+    for (uint32_t i = 0; i < this->terminal_buffer.size(); i++) {
+        delete this->terminal_buffer[i];
+    }
+
+    DLEAVE;
+}
+
 
 
 /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
 Terminal* Tokenizer::get() {
     DENTER("Models::Obj::Tokenizer::get");
 
-    /* The character that we write to. */
+    // If there's something in the buffer, pop that off first
+    if (this->terminal_buffer.size() > 0) {
+        Terminal* result = this->terminal_buffer.last();
+        this->terminal_buffer.resize(this->terminal_buffer.size() - 1);
+        DRETURN result;
+    }
+
+    // Prepare some variables
     char c;
+    size_t line_start, col_start;
+    std::stringstream sstr;
+
+
 
 start:
     {
@@ -109,26 +148,38 @@ start:
         #else
         GET_CHAR(c);
         #endif
+        // printf("start: %c\n", c);
 
         // Switch on its value
         if (c == 'v') {
             // It's a vertex start symbol; simple token
-            DRETURN new Terminal(TerminalType::vertex, DebugInfo(this->file, this->line, this->col));
+            // printf("--> Found 'vertex' token, done\n");
+            DRETURN new Terminal(TerminalType::vertex, DebugInfo(this->path, this->line, this->col, this->file));
 
         } else if (c == 'f') {
             // It's a face start symbol; simple token
-            DRETURN new Terminal(TerminalType::face, DebugInfo(this->file, this->line, this->col));
+            // printf("--> Found 'face' token, done\n");
+            DRETURN new Terminal(TerminalType::face, DebugInfo(this->path, this->line, this->col, this->file));
 
-        } else if (c >= '0' || c <= '9') {
+        } else if (c >= '0' && c <= '9') {
             // It's a digit, but we do not yet known which
+            // printf("--> Found digit, going digit_start\n");
+            sstr << c;
+            line_start = this->line;
+            col_start = this->col;
+            goto digit_start;
 
-
-        } else if (c == '-') {
+        } else if (c == '-' || c == '.') {
             // It's a floating-point that's negative for sure
-
+            // printf("--> Found minus/dot, going float_start\n");
+            sstr << c;
+            line_start = this->line;
+            col_start = this->col;
+            goto float_start;
 
         } else if (IS_WHITESPACE(c)) {
             // If it's a newline, update the line counters
+            // printf("--> Found whitespace, retrying\n");
             if (c == '\n') {
                 this->col = 0;
                 ++this->line;
@@ -139,13 +190,153 @@ start:
 
         } else if (c == EOF) {
             // End-of-file; return that we reached it
-            DRETURN new Terminal(TerminalType::eof, DebugInfo(this->file, this->line, this->col));
+            // printf("--> Found EOF, done\n");
+            DRETURN new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, this->file));
+
+        } else {
+            // Unexpected token
+            DebugInfo debug(this->path, this->line, this->col, this->file);
+            debug.print_error(cerr, (std::string("Unexpected character '") += c) + "'");
+            DRETURN nullptr;
 
         }
-
     }
 
-    // Done!
+
+
+digit_start:
+    {
+        // Get a character from the stream
+        #ifdef _WIN32
+        GET_CHAR_W(c);
+        #else
+        GET_CHAR(c);
+        #endif
+        // printf("digit_start: %c\n", c);
+
+        // Switch on its value
+        if (c >= '0' && c <= '9') {
+            // Simply add the digit and continue
+            // printf("--> Found digit, continuing\n");
+            sstr << c;
+            goto digit_start;
+        
+        } else if (c == '.') {
+            // Surprise! It's a floating-point! Go to floating-point parsing
+            // printf("--> Found dot, going float_dot\n");
+            sstr << c;
+            goto float_dot;
+
+        } else {
+            // Unget the token
+            // printf("--> Found other token, done\n");
+            this->file.putback(c);
+            --this->col;
+
+            // Create the debug info
+            DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, this->file);
+
+            // Try to parse the string as a uint32_t value
+            uint32_t value;
+            try {
+                unsigned long lvalue = std::stoul(sstr.str());
+                if (lvalue > std::numeric_limits<uint32_t>::max()) { throw std::out_of_range("Manual overflow"); }
+                value = (uint32_t) lvalue;
+            } catch (std::invalid_argument& e) {
+                debug_info.print_error(cerr, "Illegal character parsing an unsigned integer: " + std::string(e.what()));
+                DRETURN nullptr;
+            } catch (std::out_of_range&) {
+                debug_info.print_error(cerr, "Value is out-of-range for a 32-bit unsigned integer (maximum: " + std::to_string(std::numeric_limits<uint32_t>::max()) + ").");
+                DRETURN nullptr;
+            }
+
+            // Otherwise, we have a valid value
+            DRETURN (Terminal*) new ValueTerminal<uint32_t>(TerminalType::uint, value, debug_info);
+
+        }
+    }
+
+
+
+float_start:
+    {
+        // Get a character from the stream
+        #ifdef _WIN32
+        GET_CHAR_W(c);
+        #else
+        GET_CHAR(c);
+        #endif
+        // printf("float_start: %c\n", c);
+
+        // Switch on its value
+        if (c >= '0' && c <= '9') {
+            // Keep parsing as normal number
+            // printf("--> Found digit, continuing\n");
+            sstr << c;
+            goto float_start;
+
+        } else if (c == '.') {
+            // It's a floating-point for real
+            // printf("--> Found dot, going float_dot\n");
+            sstr << c;
+            goto float_dot;
+
+        } else {
+            // We haven't seen a dot yet!
+            DebugInfo debug(this->path, line_start, col_start, this->line, this->col, this->file);
+            debug.print_error(cerr, "Encountered decimal value without a dot to mark it as such.");
+            DRETURN nullptr;
+
+        }
+    }
+
+float_dot:
+    {
+        // Get a character from the stream
+        #ifdef _WIN32
+        GET_CHAR_W(c);
+        #else
+        GET_CHAR(c);
+        #endif
+        // printf("float_dot: %c\n", c);
+
+        // Switch on its value
+        if (c >= '0' && c <= '9') {
+            // Keep parsing as normal number
+            // printf("--> Found digit, continuing\n");
+            sstr << c;
+            goto float_dot;
+
+        } else {
+            // Unget the token
+            // printf("--> Found other token, done\n");
+            this->file.putback(c);
+            --this->col;
+
+            // Create the debug info
+            DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, this->file);
+
+            // Try to parse the string as a uint32_t value
+            float value;
+            try {
+                value = std::stof(sstr.str());
+            } catch (std::invalid_argument& e) {
+                debug_info.print_error(cerr, "Illegal character parsing a decimal number: " + std::string(e.what()));
+                DRETURN nullptr;
+            } catch (std::out_of_range&) {
+                debug_info.print_error(cerr, "Value is out-of-range for a 32-bit floating-point (maximum: " + std::to_string(std::numeric_limits<float>::max()) + ").");
+                DRETURN nullptr;
+            }
+
+            // Otherwise, we have a valid value
+            DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        }
+    }
+
+
+
+    // We should never get here
+    DLOG(fatal, "Hole in jump logic encountered; reached point we should never reach");
     DRETURN nullptr;
 }
 
@@ -153,7 +344,23 @@ start:
 void Tokenizer::unget(Terminal* term) {
     DENTER("Models::Obj::Tokenizer::unget");
 
-    
+    // Put the token back on the list of tokens
+    this->terminal_buffer.push_back(term);
 
+    // Done
     DRETURN;
+}
+
+
+        
+/* Swap operator for the Tokenizer class. */
+void Obj::swap(Tokenizer& t1, Tokenizer& t2) {
+    using std::swap;
+
+    swap(t1.file, t2.file);
+    swap(t1.path, t2.path);
+    
+    swap(t1.line, t2.line);
+    swap(t1.col, t2.col);
+    swap(t1.terminal_buffer, t2.terminal_buffer);
 }

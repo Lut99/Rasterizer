@@ -2,9 +2,9 @@
  *   by Lut99
  *
  * Created:
- *   04/07/2021, 16:52:15
+ *   08/07/2021, 11:34:45
  * Last edited:
- *   04/07/2021, 16:52:15
+ *   08/07/2021, 11:34:45
  * Auto updated?
  *   Yes
  *
@@ -19,22 +19,21 @@
 #include "Terminal.hpp"
 
 namespace Rasterizer::Models::Obj {
-    /* The ValueTerminal class, which is like a Terminal but with some value. */
+    /* The ValueTerminal class, which is a standard Terminal but with some value T. */
     template <class T>
     class ValueTerminal: public Terminal {
     public:
         /* The value carried by the ValueTerminal. */
         T value;
 
-        
-        /* Constructor for the ValueTerminal, which takes the type of the ValueTerminal. */
-        ValueTerminal(TerminalType type);
+
+        /* Constructor for the ValueTerminal class, which takes its type, its value and the DebugInfo. */
+        ValueTerminal(TerminalType type, const T& value, const DebugInfo& debug_info);
 
     };
-
 }
 
-// Include the .cpp as well to still have the separation
+// Include the .cpp since it's a template
 #include "ValueTerminal.cpp"
 
 #endif
