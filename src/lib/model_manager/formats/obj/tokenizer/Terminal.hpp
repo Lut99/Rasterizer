@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "../symbol/Symbol.hpp"
+#include "model_manager/formats/auxillary/DebugInfo.hpp"
 
 namespace Rasterizer::Models::Obj {
     /* Lists all Terminal types. */
@@ -51,10 +51,12 @@ namespace Rasterizer::Models::Obj {
 
 
     /* The Terminal class, which represents a non-reducible symbol. */
-    class Terminal: public Symbol {
+    class Terminal {
     public:
         /* The type of the terminal. */
         TerminalType type;
+        /* The DebugInfo describing the terminal's location. */
+        DebugInfo debug_info;
 
 
         /* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */

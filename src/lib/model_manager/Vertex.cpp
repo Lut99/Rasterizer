@@ -91,6 +91,20 @@ static void populate_input_attribute_description_colour(VkVertexInputAttributeDe
 
 
 /***** VERTEX STRUCT *****/
+/* Default constructor for the Vertex struct. */
+Vertex::Vertex() :
+    pos(0.0, 0.0, 0.0),
+    colour(0.0, 0.0, 0.0)
+{}
+
+/* Constructor for the Vertex struct, which takes the position and colour. */
+Vertex::Vertex(const glm::vec3& pos, const glm::vec3& colour) :
+    pos(pos),
+    colour(colour)
+{}
+
+
+
 /* Static function that returns the binding description for the vertex. */
 VkVertexInputBindingDescription Vertex::input_binding_description() {
     DENTER("Models::Vertex::input_binding_descriptions");

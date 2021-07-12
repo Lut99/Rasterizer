@@ -9,9 +9,7 @@ target_include_directories(ObjLoader PUBLIC
 list(APPEND EXTRA_LIBS ObjLoader)
 
 # Also add nested directories
-add_subdirectory(ast)
 add_subdirectory(tokenizer)
-add_subdirectory(symbol)
 
 # Carry the list to the parent scope
 set(EXTRA_LIBS "${EXTRA_LIBS}" PARENT_SCOPE)

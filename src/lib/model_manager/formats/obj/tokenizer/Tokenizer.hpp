@@ -17,7 +17,7 @@
 #define MODELS_OBJ_TOKENIZER_HPP
 
 #include <string>
-#include <fstream>
+#include <cstdio>
 #include "tools/Array.hpp"
 
 #include "Terminal.hpp"
@@ -27,7 +27,7 @@ namespace Rasterizer::Models::Obj {
     class Tokenizer {
     private:
         /* File handle to the open file. */
-        std::ifstream file;
+        FILE* file;
         /* Name of the file we opened. */
         std::string path;
 
@@ -35,6 +35,8 @@ namespace Rasterizer::Models::Obj {
         size_t line;
         /* The column number we're currently at. */
         size_t col;
+        /* The last stream position of a sentence start. */
+        long last_sentence_start;
         /* Buffer for temporary tokens. */
         Tools::Array<Terminal*> terminal_buffer;
     
@@ -53,7 +55,7 @@ namespace Rasterizer::Models::Obj {
         /* Puts a token back on the internal list of tokens, so it can be returned next get call. Note that the Tokenizer will deallocate these if it gets deallocated. */
         void unget(Terminal* term);
         /* Returns whether or not the Tokenizer is done parsing. */
-        inline bool eof() const { return this->file.eof(); }
+        inline bool eof() const { return feof(this->file); }
 
         /* Copy assignment operator for the Tokenizer class, which is deleted as it makes no sense to copy a stream. */
         Tokenizer& operator=(const Tokenizer& other) = delete;

@@ -127,8 +127,13 @@ namespace Rasterizer::Rendering {
         /* When called, completes the pipeline with the settings given by the other initialization functions. */
         void finalize(const Rendering::RenderPass& render_pass, uint32_t first_subpass);
 
-        /* Schedules the pipeline to be run and thus drawn in the given command buffer. Optionally takes another bind point. */
+        /* Schedules the pipeline to be run in the given command buffer. Optionally takes another bind point. */
         void schedule(const Rendering::CommandBuffer& cmd, VkPipelineBindPoint vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        /* Schedules a new push constant to be pushed to the shader(s) in the pipeline. */
+        void schedule_push_constants(const Rendering::CommandBuffer& cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data);
+        /* Schedules a new push constant to be pushed to the shader(s) in the pipeline. This overload provides some more convencience by assuming an offset of 0 and automatically deducing the type's size. */
+        template <class T>
+        inline void schedule_push_constants(const Rendering::CommandBuffer& cmd, VkShaderStageFlags shader_stage, const T& value) { return this->schedule_push_constants(cmd, shader_stage, 0, sizeof(T), (void*) &value); }
         /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
         void schedule_draw(const Rendering::CommandBuffer& cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0);
 

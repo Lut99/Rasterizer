@@ -75,16 +75,18 @@ int main(int argc, const char** argv) {
     uint32_t stage_type = Rendering::MemoryPool::select_memory_type(window.gpu(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
     // Initialize the pools we'll need
-    Rendering::CommandPool copy_pool(window.gpu(), window.gpu().queue_info().memory(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    Rendering::CommandPool draw_cmd_pool(window.gpu(), window.gpu().queue_info().graphics(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    Rendering::CommandPool mem_cmd_pool(window.gpu(), window.gpu().queue_info().memory(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     Rendering::MemoryPool draw_pool(window.gpu(), draw_type, 1024 * 1024 * 1024, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     Rendering::MemoryPool stage_pool(window.gpu(), stage_type, 1024 * 1024 * 1024, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    Rendering::DescriptorPool descr_pool(window.gpu(), { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1);
 
     // Use those to initialize the model manager
-    Models::ModelManager model_manager(copy_pool, draw_pool, stage_pool);
+    Models::ModelManager model_manager(mem_cmd_pool, draw_pool, stage_pool);
     model_manager.load_model("triangle", Models::ModelFormat::triangle);
 
     // Initialize the engine
-    Rendering::RenderEngine render_engine(window, model_manager);
+    Rendering::RenderEngine render_engine(window, draw_cmd_pool, mem_cmd_pool, draw_pool, stage_pool, descr_pool, model_manager);
     DLOG(auxillary, "");
 
     // Do the render
@@ -92,6 +94,7 @@ int main(int argc, const char** argv) {
     DLOG(info, "Entering game loop...");
     chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
     bool busy = true;
+    uint32_t count = 0;
     while (busy) {
         // Run the render engine
         busy = render_engine.loop();
@@ -107,10 +110,24 @@ int main(int argc, const char** argv) {
             fps = 0;
 
             // Add another model???
-            if (model_manager.contains("triangle")) {
+            if (count == 0) {
+                model_manager.unload_model("triangle");
+                render_engine.refresh();
+                ++count;
+            } else if (count == 1) {
+                model_manager.load_model("triangle", Models::ModelFormat::triangle);
+                render_engine.refresh();
+                ++count;
+            } else if (count == 2) {
+                model_manager.unload_model("triangle");
+                model_manager.load_model("triangle", Models::ModelFormat::triangle);
+                render_engine.refresh();
+                ++count;
+            } else if (count == 3) {
                 model_manager.unload_model("triangle");
                 model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
                 render_engine.refresh();
+                ++count;
             }
         }
     }

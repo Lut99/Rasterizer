@@ -4,7 +4,7 @@
  * Created:
  *   13/11/2020, 15:33:50
  * Last edited:
- *   08/07/2021, 13:43:47
+ *   12/07/2021, 17:12:09
  * Auto updated?
  *   Yes
  *
@@ -16,7 +16,7 @@
 #include "SymbolStack.hpp"
 
 using namespace std;
-using namespace ArgumentParser::Parser;
+using namespace Rasterizer::Models;
 
 
 /***** SYMBOLSTACK CONST_ITERATOR *****/
@@ -260,7 +260,7 @@ SymbolStack<T>& SymbolStack<T>::operator=(SymbolStack<T>&& other) {
 
 /* Swap operator for the SymbolStack class. */
 template <class T>
-void ArgumentParser::Parser::swap(SymbolStack<T>& ss1, SymbolStack<T>& ss2) {
+void Rasterizer::Models::swap(SymbolStack<T>& ss1, SymbolStack<T>& ss2) {
     using std::swap;
 
     swap(ss1.symbols, ss2.symbols);

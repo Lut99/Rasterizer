@@ -15,6 +15,9 @@
 **/
 
 #include <chrono>
+#define GLM_FORCE_RADIANS
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 #include "tools/CppDebugger.hpp"
 #include "render_engine/auxillary/ErrorCodes.hpp"
 
@@ -24,6 +27,36 @@ using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
 using namespace CppDebugger::SeverityValues;
+
+
+/***** HELPER FUNCTIONS *****/
+/* Computes the three new camera matrices. */
+static void compute_camera_matrices(glm::mat4& proj_mat, glm::mat4& view_mat, glm::mat4& model_mat, float aspect_ratio) {
+    DENTER("compute_camera_matrices");
+
+    // Note that start time of the rendering process as a static - i.e., continious between calls
+    static std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
+    // Get the current time too
+    std::chrono::high_resolution_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
+    // Compute the difference between them
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    // Compute the projection matrix: field of view and such?
+    proj_mat = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.1f, 10.0f);
+    // Compute the view matrix: translation from the world space to camera space
+    view_mat = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    // Compute the model matrix: used to rotate the world to provide the rotating camera
+    model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    // Don't forget to flip the Y in the projection matrix, since GLM Y and Vulkan Y are actually inverted
+    proj_mat[1][1] *= -1;
+
+    // Done
+    DRETURN;
+}
+
+
+
 
 
 /***** POPULATE FUNCTIONS *****/
@@ -81,18 +114,21 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
 
 /***** RENDERENGINE CLASS *****/
-/* Constructor for the RenderEngine class, which takes a Window to render to and a model manager to load models from. */
-RenderEngine::RenderEngine(Window& window, const Models::ModelManager& model_manager) :
+/* Constructor for the RenderEngine class, which takes a Window to render to, a command pool for draw commands, a command pool for memory commands, a pool to allocate GPU-only buffers with, a memory pool for stage buffers, a pool for descriptor sets and a model manager to load models from. */
+RenderEngine::RenderEngine(Window& window, Rendering::CommandPool& draw_cmd_pool, Rendering::CommandPool& memory_cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, Rendering::DescriptorPool& descriptor_pool, const Models::ModelManager& model_manager) :
     window(window),
+    draw_cmd_pool(draw_cmd_pool),
+    mem_cmd_pool(memory_cmd_pool),
+    draw_pool(draw_pool),
+    stage_pool(stage_pool),
+    descr_pool(descriptor_pool),
     model_manager(model_manager),
 
-    vertex_shader(this->window.gpu(), "bin/shaders/vertex_v2.spv"),
+    vertex_shader(this->window.gpu(), "bin/shaders/vertex_v3.spv"),
     fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
 
     render_pass(this->window.gpu()),
     pipeline(this->window.gpu()),
-
-    draw_cmd_pool(this->window.gpu(), this->window.gpu().queue_info().graphics()),
 
     framebuffers(this->window.swapchain().size()),
 
@@ -128,13 +164,13 @@ RenderEngine::RenderEngine(Window& window, const Models::ModelManager& model_man
     pipeline.init_vertex_input(this->model_manager.input_binding_description(), this->model_manager.input_attribute_descriptions());
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
-    pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
+    pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     pipeline.init_multisampling();
     pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
     pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
     
     // Add the pipeline layout
-    pipeline.init_pipeline_layout({}, {});
+    pipeline.init_pipeline_layout({}, { { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t) (3ULL * sizeof(glm::mat4)) } });
 
     // Finally, generate the pipeline itself
     pipeline.finalize(this->render_pass, 0);
@@ -142,6 +178,9 @@ RenderEngine::RenderEngine(Window& window, const Models::ModelManager& model_man
 
 
     /* COMMAND BUFFERS */
+    // Allocate the command buffers
+    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
+
     // We can already record the command buffers for each framebuffer
     this->refresh();
 
@@ -208,8 +247,26 @@ bool RenderEngine::loop() {
     this->image_in_flight_fences[swapchain_index] = &this->frame_in_flight_fences[this->current_frame];
 
 
-
     /* RENDERING */
+    // Compute new camera matrices
+    glm::mat4 cam_proj, cam_view, cam_model;
+    compute_camera_matrices(cam_proj, cam_view, cam_model, (float) this->window.swapchain().extent().width / (float) this->window.swapchain().extent().height);
+
+    // Record the command buffer
+    this->draw_cmds[swapchain_index].begin();
+    this->render_pass.start_scheduling(this->draw_cmds[swapchain_index], this->framebuffers[swapchain_index]);
+    this->pipeline.schedule(this->draw_cmds[swapchain_index]);
+    this->model_manager.schedule(this->draw_cmds[swapchain_index]);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,                     0, sizeof(glm::mat4), &cam_proj);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,     sizeof(glm::mat4), sizeof(glm::mat4), &cam_view);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 2 * sizeof(glm::mat4), sizeof(glm::mat4), &cam_model);
+    this->pipeline.schedule_draw(this->draw_cmds[swapchain_index], 3, 1);
+    this->render_pass.stop_scheduling(this->draw_cmds[swapchain_index]);
+    this->draw_cmds[swapchain_index].end();
+
+
+
+    /* SUBMITTING */
     // Prepare to submit the command buffer
     Tools::Array<VkPipelineStageFlags> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     VkSubmitInfo submit_info;
@@ -257,27 +314,27 @@ void RenderEngine::refresh(bool wait_for_idle) {
         this->wait_for_idle();
     }
 
-    // If any, deallocate old command buffers
-    if (this->draw_cmds.size() > 0) {
-        this->draw_cmd_pool.ndeallocate(this->draw_cmds);
-    }
+    // // If any, deallocate old command buffers
+    // if (this->draw_cmds.size() > 0) {
+    //     this->draw_cmd_pool.ndeallocate(this->draw_cmds);
+    // }
 
-    // Allocate new command buffers
-    this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
+    // // Allocate new command buffers
+    // this->draw_cmds = this->draw_cmd_pool.nallocate(this->framebuffers.size());
 
-    // Loop through them to record them
-    for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
-        uint32_t vertex_size = this->model_manager.size() * sizeof(Models::Vertex);
+    // // Loop through them to record them
+    // for (uint32_t i = 0; i < this->draw_cmds.size(); i++) {
+    //     uint32_t vertex_size = this->model_manager.size() * sizeof(Models::Vertex);
 
-        // Record it
-        this->draw_cmds[i].begin();
-        this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
-        this->pipeline.schedule(this->draw_cmds[i]);
-        this->model_manager.schedule(this->draw_cmds[i]);
-        this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
-        this->render_pass.stop_scheduling(this->draw_cmds[i]);
-        this->draw_cmds[i].end();
-    }
+    //     // Record it
+    //     this->draw_cmds[i].begin();
+    //     this->render_pass.start_scheduling(this->draw_cmds[i], this->framebuffers[i]);
+    //     this->pipeline.schedule(this->draw_cmds[i]);
+    //     this->model_manager.schedule(this->draw_cmds[i]);
+    //     this->pipeline.schedule_draw(this->draw_cmds[i], 3, 1);
+    //     this->render_pass.stop_scheduling(this->draw_cmds[i]);
+    //     this->draw_cmds[i].end();
+    // }
 
     // Done
     DRETURN;

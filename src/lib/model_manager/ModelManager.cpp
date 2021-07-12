@@ -162,6 +162,8 @@ ModelManager::~ModelManager() {
 /* Loads a new model from the given file and with the given format. This overload uses a custom UID for the model instead of the file path. */
 void ModelManager::load_model(const std::string& uid, const std::string& path, ModelFormat format) {
     DENTER("Models::ModelManager::load_model");
+    DLOG(info, "Loading model...");
+    DINDENT;
 
     // First, check if the uid is unique
     if (this->models.find(uid) != this->models.end()) {
@@ -173,11 +175,16 @@ void ModelManager::load_model(const std::string& uid, const std::string& path, M
     switch (format) {
         case ModelFormat::obj:
             // Use the load function from the modelloader
+            DLOG(info, "Loading '" + path + "' as .obj file...");
             new_vertices = load_obj_model(path);
+            printf("Vertex 0: %f %f %f\n", new_vertices[0].pos.x, new_vertices[0].pos.y, new_vertices[0].pos.z);
+            printf("Vertex 1: %f %f %f\n", new_vertices[1].pos.x, new_vertices[1].pos.y, new_vertices[1].pos.z);
+            printf("Vertex 2: %f %f %f\n", new_vertices[2].pos.x, new_vertices[2].pos.y, new_vertices[2].pos.z);
             break;
 
         case ModelFormat::triangle:
             // Simply append the hardcoded list
+            DLOG(info, "Loading static triangle...");
             new_vertices = {
                 { glm::vec3( 0.0, -0.5, 0.0), glm::vec3(1.0, 0.0, 0.0) },
                 { glm::vec3( 0.5,  0.5, 0.0), glm::vec3(0.0, 1.0, 0.0) },
@@ -197,6 +204,7 @@ void ModelManager::load_model(const std::string& uid, const std::string& path, M
     }
 
     // With that, stage the memory
+    DLOG(info, "Moving model to GPU...");
     Rendering::Buffer stage_buffer = this->stage_pool.allocate_buffer(new_vertices.size() * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     void* stage_memory;
     stage_buffer.map(&stage_memory);
@@ -223,6 +231,7 @@ void ModelManager::load_model(const std::string& uid, const std::string& path, M
     this->n_vertices += new_vertices.size();
 
     // Done
+    DDEDENT;
     DRETURN;
 }
 

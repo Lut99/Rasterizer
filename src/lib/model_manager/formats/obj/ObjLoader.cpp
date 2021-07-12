@@ -12,10 +12,9 @@
  *   Contains the code that loads models from .obj files.
 **/
 
-#include "model_manager/formats/auxillary/SymbolStack.hpp"
 #include "tools/CppDebugger.hpp"
 
-#include "ast/NonTerminal.hpp"
+#include "tokenizer/ValueTerminal.hpp"
 #include "tokenizer/Tokenizer.hpp"
 
 #include "ObjLoader.hpp"
@@ -28,124 +27,12 @@ using namespace CppDebugger::SeverityValues;
 
 
 /***** MACROS *****/
-/* Looks at the next symbol of the stack, returning a pointer to it. */
-#define PEEK(SYMBOL, STACK_ITER, N_SYMBOLS) \
-    (SYMBOL) = *((STACK_ITER)++); \
-    ++(N_SYMBOLS);
 
 
 
 
 
 /***** HELPER FUNCTIONS *****/
-/* Given a symbol stack, tries to reduce it to a higher-level structure. Returns a description of the rule applied, or an empty string if no rule was applied. */
-static std::string reduce(SymbolStack<Symbol>& stack) {
-    DENTER("reduce");
-
-    // Get the iterator for the SymbolStack
-    SymbolStack<Symbol>::const_iterator iter = stack.begin();
-    // The symbol we examine at each timestep
-    Symbol* symbol;
-    // Keeps track of how many symbols we're using for this rule
-    size_t n_symbols = 0;
-
-
-
-    // Start
-    {
-        // Look at the symbol at the top of the stack
-        PEEK(symbol, iter, n_symbols);
-
-        // Do different things based on whether it is a terminal or not
-        if (symbol->is_terminal) {
-            Terminal* term = (Terminal*) symbol;
-            switch(term->type) {
-                case TerminalType::uint:
-                    // We might be looking at three uints, then a face token
-                    goto face_start;
-                
-                case TerminalType::decimal:
-                    // We might be looking at three floats, then a vertex token
-                    goto vertex_start;
-
-                case TerminalType::vertex:
-                case TerminalType::face:
-                    // We use this opportunity to check if the previous one was completely successfully
-                    goto sanity_check_start;
-
-                default:
-                    // Nothing matches our rules
-                    DRETURN "";
-
-            }
-
-        } else {
-            NonTerminal* nterm = (NonTerminal*) symbol;
-            // We never parse on nonterminal
-            DRETURN "";
-
-        }
-    }
-
-
-
-face_start:
-    {
-        // Look at the symbol at the top of the stack
-        // Look at the symbol at the top of the stack
-        PEEK(symbol, iter, n_symbols);
-
-        // Do different things based on whether it is a terminal or not
-        if (symbol->is_terminal) {
-            Terminal* term = (Terminal*) symbol;
-            switch(term->type) {
-                case TerminalType::uint:
-                    // If this is actually the fourth uint we see, we throw a tantrum
-                    if (n_symbols > 3) {
-                        stack[0]->debug_info.print_error(cerr, "Encountered more than three vertices for a Face.");
-                        stack.remove(1);
-                        DRETURN "error-more-than-three-vertices";
-                    }
-
-                    // Otherwise, continue trying to parse more uints
-                    goto face_start;
-
-                case TerminalType::face:
-                    // CHeck if we have seen enough vertices
-                    if (n_symbols < 4) {
-                        // Wait until we do
-                        DRETURN "";
-                    }
-
-                    // Otherwise, we're done
-                    
-
-                case TerminalType::decimal:
-                case TerminalType::vertex:
-                    stack[0]->debug_info.print_error(cerr, "Cannot use unsigned integers for vertex coordinates.");
-                    stack.remove(1);
-                    DRETURN "error-uint-for-vertices";
-
-                default:
-                    // Nothing matches our rules
-                    DRETURN "";
-
-            }
-
-        } else {
-            NonTerminal* nterm = (NonTerminal*) symbol;
-            // If we see a non-terminal, it means we are missing a face
-            stack[n_symbols - 1]->debug_info.print_error(cerr, "Missing data type indicator ('f' or 'v').");
-            stack.remove(n_symbols);
-            DRETURN "error-missing-indicator";
-
-        }
-    }
-
-
-
-    DRETURN "";
-}
 
 
 
@@ -156,35 +43,139 @@ face_start:
 Tools::Array<Vertex> Models::load_obj_model(const std::string& path) {
     DENTER("Models::load_obj_model");
 
+    // Prepare the resulting lists
+    Tools::Array<Vertex> vertices;
+    Tools::Array<uint32_t> faces;
+
     // Prepare the Tokenizer
     Obj::Tokenizer tokenizer(path);
 
-    // Initialize the symbol stack
-    SymbolStack<Symbol> stack(new Terminal(TerminalType::undefined, DebugInfo("", 0, 0, {})));
+    // Next, iterate through the input stream and find lines separated by the face or vertex tokens
+    int state = 0;
+    uint32_t counter;
+    float f1, f2, f3;
+    uint32_t u1, u2, u3;
+    bool stop = false;
+    for (int i = 0; !stop; i++) {
+        Terminal* term = tokenizer.get();
+        if (state == 0) {
+            // We're in idle state
+            switch(term->type) {
+                case TerminalType::vertex:
+                    // We start parsing as vertex
+                    state = 1;
+                    counter = 0;
+                    break;
+                
+                case TerminalType::face:
+                    // We start parsing as face
+                    state = 2;
+                    counter = 0;
+                    break;
+                
+                case TerminalType::eof:
+                    // We accept this one!
+                    stop = true;
+                    break;
+                
+                default:
+                    // Illegal token
+                    term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "': expected a type identifier for the line.");
+                    break;
 
-    // Next, start alternating shifting by reducing
-    bool changed = true;
-    while (changed) {
-        // Try to reduce the stack we have
-        std::string applied_rule = reduce(stack);
-        changed = !applied_rule.empty();
+            }
+        } else if (state == 1) {
+            // We're in parsing vertex state
+            switch(term->type) {
+                case TerminalType::decimal:
+                    // Store the coordinate (or at least, try to)
+                    if (counter == 0){
+                        f1 = ((ValueTerminal<float>*) term)->value;
+                    } else if (counter == 1) {
+                        f2 = ((ValueTerminal<float>*) term)->value;
+                    } else if (counter == 2) {
+                        f3 = ((ValueTerminal<float>*) term)->value;
 
-        // If we couldn't reduce anything, then try to pop the next terminal
-        if (!changed) {
-            // Get it
-            Terminal* new_term = tokenizer.get();
-            if (new_term == nullptr) { DRETURN {}; }
+                        // Now that we have them all anyway, also store it and return to the idle state
+                        while (vertices.size() + 1 >= vertices.capacity()) { vertices.reserve(2 * (vertices.capacity() + 1)); }
+                        vertices.push_back(Vertex({ f1, f2 - 5.0, f3 }, { 1.0, 0.0, 0.0 }));
+                        state = 0;
+                    } else {
+                        term->debug_info.print_error(cerr, "Too many coordinates for three-dimensional vector.");
+                        state = 0;
+                        break;
+                    }
 
-            // If it's EOF, though, don't add it
-            if (new_term->type != TerminalType::eof) {
-                stack.add_terminal(new_term);
-                changed = true;
+                    // Done
+                    ++counter;
+                    break;
+                
+                case TerminalType::uint:
+                    // Incorrect type
+                    term->debug_info.print_error(cerr, "Incorrect type used for vertex: can only use decimal values for coordinates.");
+                    state = 0;
+                    break;
+                
+                default:
+                    // Quit too soon
+                    term->debug_info.print_error(cerr, "Missing coordinates for three-dimensional vector.");
+                    state = 0;
+                    break;
+
+            }
+        } else if (state == 2) {
+            // We're in parsing face state
+            switch(term->type) {
+                case TerminalType::uint:
+                    // Store the coordinate (or at least, try to)
+                    if (counter == 0){
+                        u1 = ((ValueTerminal<uint32_t>*) term)->value;
+                    } else if (counter == 1) {
+                        u2 = ((ValueTerminal<uint32_t>*) term)->value;
+                    } else if (counter == 2) {
+                        u3 = ((ValueTerminal<uint32_t>*) term)->value;
+
+                        // Now that we have them all anyway, also store it and return to the idle state
+                        while (faces.size() + 3 >= faces.capacity()) { faces.reserve(2 * (faces.capacity() + 3)); }
+                        faces.push_back(u1);
+                        faces.push_back(u2);
+                        faces.push_back(u3);
+                        state = 0;
+                    } else {
+                        term->debug_info.print_error(cerr, "Too many indices for triangular face.");
+                        state = 0;
+                        break;
+                    }
+
+                    // Done
+                    ++counter;
+                    break;
+                
+                case TerminalType::decimal:
+                    // Incorrect type
+                    term->debug_info.print_error(cerr, "Incorrect type used for face: can only use unsigned integer values for indices.");
+                    state = 0;
+                    break;
+                
+                default:
+                    // Quit too soon
+                    term->debug_info.print_error(cerr, "Missing indices for triangular face.");
+                    state = 0;
+                    break;
+
             }
         }
 
-        // Move to the next attempt
+        // When done with an iteration, clear the term
+        delete term;
+    }
+
+    // With the lists completed, merge them into one unindexed list of vertices
+    Tools::Array<Vertex> result(faces.size());
+    for (uint32_t i = 0; i < faces.size(); i++) {
+        result.push_back(vertices[faces[i] - 1]);
     }
 
     // Done
-    DRETURN {};
+    DRETURN result;
 }

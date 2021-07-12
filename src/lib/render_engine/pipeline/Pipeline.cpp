@@ -565,6 +565,16 @@ void Pipeline::schedule(const Rendering::CommandBuffer& cmd, VkPipelineBindPoint
     DRETURN;
 }
 
+/* Schedules a new push constant to be pushed to the shader(s) in the pipeline. */
+void Pipeline::schedule_push_constants(const Rendering::CommandBuffer& cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data) {
+    DENTER("Rendering::Pipeline::schedule_push_constants");
+
+    // Simply schedule it
+    vkCmdPushConstants(cmd, this->vk_pipeline_layout, shader_stage, offset, size, data);
+
+    DRETURN;
+}
+
 /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
 void Pipeline::schedule_draw(const Rendering::CommandBuffer& cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) {
     DENTER("Rendering::Pipeline::schedule_draw");

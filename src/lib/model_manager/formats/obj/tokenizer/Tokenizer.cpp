@@ -30,36 +30,68 @@ using namespace CppDebugger::SeverityValues;
 
 /***** MACROS *****/
 /* Helper macro for fetching characters of the input stream. Uses Unix-style error handling */
-#define GET_CHAR(C) \
-    std::istream& _state = this->file.get((C)); \
-    if (!_state) { \
-        if (this->file.eof()) { \
-            c = EOF; \
-        } else { \
-            std::string err = strerror(errno); \
-            DLOG(fatal, "Something went wrong while reading from the stream: " + err); \
-        } \
+#define GET_CHAR(C, FILE, COL) \
+    (C) = fgetc((FILE)); \
+    if ((C) == EOF && ferror((FILE))) { \
+        std::string err = strerror(errno); \
+        DLOG(fatal, "Something went wrong while reading from the stream: " + err); \
     } \
-    ++this->col;
+    ++(COL);
 
 /* Helper macro for fetching characters of the input stream. Uses Windows-style error handling */
-#define GET_CHAR_W(C) \
-    std::istream& _state = this->file.get((C)); \
-    if (!_state) { \
-        if (this->file.eof()) { \
-            c = EOF; \
-        } else { \
-            char buffer[BUFSIZ]; \
-            strerror_s(buffer, errno); \
-            std::string err = buffer; \
-            DLOG(fatal, "Something went wrong while reading from the stream: " + err); \
-        } \
+#define GET_CHAR_W(C, FILE, COL) \
+    (C) = fgetc((FILE)); \
+    if ((C) == EOF && ferror((FILE))) { \
+        char buffer[BUFSIZ]; \
+        strerror_s(buffer, errno); \
+        std::string err = buffer; \
+        DLOG(fatal, "Something went wrong while reading from the stream: " + err); \
     } \
-    ++this->col;
+    ++(COL);
 
 /* Helper macro for determining if the given character is a whitespce. */
 #define IS_WHITESPACE(C) \
     ((C) == ' ' || (C) == '\n' || (C) == '\t')
+
+
+
+
+
+/***** HELPER FUNCTIONS *****/
+/* Function that, given a file stream and the start of this line, parses an entire line. */
+static std::string get_line(FILE* file, long sentence_start) {
+    DENTER("get_line");
+
+    // Backup the current cursor and go to the start of the line
+    long old_cursor = ftell(file);
+    // Go to the start of the line
+    fseek(file, sentence_start, SEEK_SET);
+
+    // Loop to assemble the line
+    char c;
+    int col = 0;
+    std::stringstream sstr;
+    while (true) {
+        // Get the character
+        #ifdef _WIN32
+        GET_CHAR_W(c, file, col);
+        #else
+        GET_CHAR(c, file, col);
+        #endif
+
+        // If it's a newline, stop
+        if (c == '\n' || c == EOF) {
+            fseek(file, old_cursor, SEEK_SET);
+            DRETURN sstr.str();
+        }
+
+        // Otherwise, store and re-try
+        sstr << c;
+    }
+
+    // We should never get here
+    DRETURN "";
+}
 
 
 
@@ -70,27 +102,34 @@ using namespace CppDebugger::SeverityValues;
 Tokenizer::Tokenizer(const std::string& path) :
     path(path),
     line(1),
-    col(0)
+    col(0),
+    last_sentence_start(0)
 {
     DENTER("Models::Obj::Tokenizer::Tokenizer");
 
     // First, open a handle
-    this->file = std::ifstream(this->path);
-    if (!this->file.is_open()) {
+    #ifdef _WIN32
+    int res = fopen_s(&this->file, this->path.c_str(), "r");
+    if (res != 0) {
         // Get the error number
-        std::string err;
-        #ifdef _WIN32
         char buffer[BUFSIZ];
         strerror_s(buffer, errno);
-        err = buffer;
-        #else
-        // Simply use strerrno
-        err = strerror(errno);
-        #endif
+        std::string err = buffer;
 
         // Show the error message
         DLOG(fatal, "Could not open file handle: " + err)
     }
+
+    #else
+    this->file = fopen(this->path.c_str(), "r");
+    if (this->file == NULL) {
+        // Get the error number
+        std::string err = strerror(errno);
+
+        // Show the error message
+        DLOG(fatal, "Could not open file handle: " + err)
+    }
+    #endif
 
     // Done
     DLEAVE;
@@ -98,14 +137,16 @@ Tokenizer::Tokenizer(const std::string& path) :
 
 /* Move constructor for the Tokenizer class. */
 Tokenizer::Tokenizer(Tokenizer&& other) :
-    file(std::move(other.file)),
-    path(std::move(other.path)),
+    file(other.file),
+    path(other.path),
 
     line(other.line),
     col(other.col),
+    last_sentence_start(other.last_sentence_start),
     terminal_buffer(other.terminal_buffer)
 {
     // Clear the other's list of terminal buffers to not deallocate them
+    other.file = NULL;
     other.terminal_buffer.clear();
 }
 
@@ -115,6 +156,9 @@ Tokenizer::~Tokenizer() {
 
     for (uint32_t i = 0; i < this->terminal_buffer.size(); i++) {
         delete this->terminal_buffer[i];
+    }
+    if (this->file != NULL) {
+        fclose(this->file);
     }
 
     DLEAVE;
@@ -137,16 +181,20 @@ Terminal* Tokenizer::get() {
     char c;
     size_t line_start, col_start;
     std::stringstream sstr;
+    // printf("\nNew try: '");
 
 
 
 start:
     {
+        // Possibly store the sentence start
+        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+
         // Get a character from the stream
         #ifdef _WIN32
-        GET_CHAR_W(c);
+        GET_CHAR_W(c, this->file, this->col);
         #else
-        GET_CHAR(c);
+        GET_CHAR(c, this->file, this->col);
         #endif
         // printf("start: %c\n", c);
 
@@ -154,12 +202,14 @@ start:
         if (c == 'v') {
             // It's a vertex start symbol; simple token
             // printf("--> Found 'vertex' token, done\n");
-            DRETURN new Terminal(TerminalType::vertex, DebugInfo(this->path, this->line, this->col, this->file));
+            // printf("'\n");
+            DRETURN new Terminal(TerminalType::vertex, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
 
         } else if (c == 'f') {
             // It's a face start symbol; simple token
             // printf("--> Found 'face' token, done\n");
-            DRETURN new Terminal(TerminalType::face, DebugInfo(this->path, this->line, this->col, this->file));
+            // printf("'\n");
+            DRETURN new Terminal(TerminalType::face, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
 
         } else if (c >= '0' && c <= '9') {
             // It's a digit, but we do not yet known which
@@ -191,11 +241,13 @@ start:
         } else if (c == EOF) {
             // End-of-file; return that we reached it
             // printf("--> Found EOF, done\n");
-            DRETURN new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, this->file));
+            // printf("'\n");
+            DRETURN new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
 
         } else {
             // Unexpected token
-            DebugInfo debug(this->path, this->line, this->col, this->file);
+            DebugInfo debug(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) });
+            // printf("'\n");
             debug.print_error(cerr, (std::string("Unexpected character '") += c) + "'");
             DRETURN nullptr;
 
@@ -206,11 +258,14 @@ start:
 
 digit_start:
     {
+        // Possibly store the sentence start
+        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+
         // Get a character from the stream
         #ifdef _WIN32
-        GET_CHAR_W(c);
+        GET_CHAR_W(c, this->file, this->col);
         #else
-        GET_CHAR(c);
+        GET_CHAR(c, this->file, this->col);
         #endif
         // printf("digit_start: %c\n", c);
 
@@ -230,11 +285,11 @@ digit_start:
         } else {
             // Unget the token
             // printf("--> Found other token, done\n");
-            this->file.putback(c);
+            fseek(this->file, -1, SEEK_CUR);
             --this->col;
 
             // Create the debug info
-            DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, this->file);
+            DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
 
             // Try to parse the string as a uint32_t value
             uint32_t value;
@@ -243,14 +298,17 @@ digit_start:
                 if (lvalue > std::numeric_limits<uint32_t>::max()) { throw std::out_of_range("Manual overflow"); }
                 value = (uint32_t) lvalue;
             } catch (std::invalid_argument& e) {
+                // printf("'\n");
                 debug_info.print_error(cerr, "Illegal character parsing an unsigned integer: " + std::string(e.what()));
                 DRETURN nullptr;
             } catch (std::out_of_range&) {
+                // printf("'\n");
                 debug_info.print_error(cerr, "Value is out-of-range for a 32-bit unsigned integer (maximum: " + std::to_string(std::numeric_limits<uint32_t>::max()) + ").");
                 DRETURN nullptr;
             }
 
             // Otherwise, we have a valid value
+            // printf("'\n");
             DRETURN (Terminal*) new ValueTerminal<uint32_t>(TerminalType::uint, value, debug_info);
 
         }
@@ -260,11 +318,14 @@ digit_start:
 
 float_start:
     {
+        // Possibly store the sentence start
+        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+
         // Get a character from the stream
         #ifdef _WIN32
-        GET_CHAR_W(c);
+        GET_CHAR_W(c, this->file, this->col);
         #else
-        GET_CHAR(c);
+        GET_CHAR(c, this->file, this->col);
         #endif
         // printf("float_start: %c\n", c);
 
@@ -283,7 +344,8 @@ float_start:
 
         } else {
             // We haven't seen a dot yet!
-            DebugInfo debug(this->path, line_start, col_start, this->line, this->col, this->file);
+            DebugInfo debug(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+            // printf("'\n");
             debug.print_error(cerr, "Encountered decimal value without a dot to mark it as such.");
             DRETURN nullptr;
 
@@ -292,11 +354,14 @@ float_start:
 
 float_dot:
     {
+        // Possibly store the sentence start
+        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+
         // Get a character from the stream
         #ifdef _WIN32
-        GET_CHAR_W(c);
+        GET_CHAR_W(c, this->file, this->col);
         #else
-        GET_CHAR(c);
+        GET_CHAR(c, this->file, this->col);
         #endif
         // printf("float_dot: %c\n", c);
 
@@ -310,11 +375,11 @@ float_dot:
         } else {
             // Unget the token
             // printf("--> Found other token, done\n");
-            this->file.putback(c);
+            fseek(this->file, -1, SEEK_CUR);
             --this->col;
 
             // Create the debug info
-            DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, this->file);
+            DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
 
             // Try to parse the string as a uint32_t value
             float value;
@@ -322,13 +387,16 @@ float_dot:
                 value = std::stof(sstr.str());
             } catch (std::invalid_argument& e) {
                 debug_info.print_error(cerr, "Illegal character parsing a decimal number: " + std::string(e.what()));
+                // printf("'\n");
                 DRETURN nullptr;
             } catch (std::out_of_range&) {
                 debug_info.print_error(cerr, "Value is out-of-range for a 32-bit floating-point (maximum: " + std::to_string(std::numeric_limits<float>::max()) + ").");
+                // printf("'\n");
                 DRETURN nullptr;
             }
 
             // Otherwise, we have a valid value
+            // printf("'\n");
             DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
         }
     }
@@ -362,5 +430,6 @@ void Obj::swap(Tokenizer& t1, Tokenizer& t2) {
     
     swap(t1.line, t2.line);
     swap(t1.col, t2.col);
+    swap(t1.last_sentence_start, t2.last_sentence_start);
     swap(t1.terminal_buffer, t2.terminal_buffer);
 }

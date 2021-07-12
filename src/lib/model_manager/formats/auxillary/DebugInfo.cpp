@@ -64,7 +64,7 @@ static std::string pad_spaces(T value, size_t N) {
 
 /***** DEBUGINFO CLASS *****/
 /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column and a file handle to read the relevant lines from. Although the given file object isn't constant, it should be reinstated back to its original state once the constructor is done. */
-DebugInfo::DebugInfo(const std::string& filename, size_t line, size_t col, std::ifstream& file) :
+DebugInfo::DebugInfo(const std::string& filename, size_t line, size_t col, FILE* file) :
     DebugInfo(filename, line, col, line, col, file)
 {}
 
@@ -74,7 +74,7 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line, size_t col, const
 {}
 
 /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column, an end line, an end column and a file handle to read the relevant lines from. */
-DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, size_t line2, size_t col2, std::ifstream& file) :
+DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, size_t line2, size_t col2, FILE* file) :
     filename(filename),
 
     line_start(line1),
@@ -87,8 +87,8 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
     DENTER("Tools::DebugInfo::DebugInfo");
 
     // First, reset the file to standard position
-    std::streampos old_cursor = file.tellg();
-    file.seekg(0);
+    long old_cursor = ftell(file);
+    fseek(file, 0, SEEK_SET);
 
     // Next, go through the characters until we find the line(s) we're looking for
     char c = '\0';
@@ -96,17 +96,12 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
     std::stringstream sstr;
     while (c != EOF) {
         // Get the next character
-        std::istream& state = file.get(c);
-        if (!state) {
-            if (file.eof()) {
-                c = EOF;
-                break;
-            } else {
-                char buffer[BUFSIZ];
-                strerror_s(buffer, errno);
-                std::string err = buffer;
-                DLOG(fatal, "Something went wrong while reading from the stream: " + err);
-            }
+        c = fgetc(file);
+        if (c == EOF && ferror(file)) {
+            char buffer[BUFSIZ];
+            strerror_s(buffer, errno);
+            std::string err = buffer;
+            DLOG(fatal, "Something went wrong while reading from the stream: " + err);
         }
 
         // If it's a newline, move to the next line
@@ -120,11 +115,10 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
             // Increment the counters
             ++line;
 
-            // If we're now passed the target line, we can stop
+            // If we're now past the target line, we can stop
             if (line > this->line_end) {
                 // Reinstate the old cursor
-                file.clear();
-                file.seekg(old_cursor);
+                fseek(file, old_cursor, SEEK_SET);
 
                 // Done
                 DRETURN;
@@ -138,7 +132,8 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
     }
 
     // We reached EOF before we read all lines
-    DLOG(fatal, "Given lines (from " + std::to_string(this->line_start) + " to " + std::to_string(this->line_end) + ") don't exist in the given file (" + this->filename + ").");
+    DLOG(warning, "Given lines (from " + std::to_string(this->line_start) + " to " + std::to_string(this->line_end) + ") don't exist in the given file (" + this->filename + ").");
+    this->raw_lines = Tools::Array<std::string>("", (uint32_t) (this->line_end - this->line_start + 1));
     DLEAVE;
 }
 

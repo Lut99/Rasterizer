@@ -19,7 +19,7 @@
 #include <cstddef>
 #include <string>
 #include <ostream>
-#include <fstream>
+#include <cstdio>
 #include "tools/Array.hpp"
 
 #include "FileCoord.hpp"
@@ -57,11 +57,11 @@ namespace Rasterizer::Models {
 
     public:
         /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column and a file handle to read the relevant lines from. Although the given file object isn't constant, it should be reinstated back to its original state once the constructor is done. */
-        DebugInfo(const std::string& filename, size_t line, size_t col, std::ifstream& file);
+        DebugInfo(const std::string& filename, size_t line, size_t col, FILE* file);
         /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column and lines to show during debugging. The array of lines must contain one entry for each line spanned by the symbol. By convention, we can interpret empty strings as irrelevant lines (since empty lines are usually irrelevant). */
         DebugInfo(const std::string& filename, size_t line, size_t col, const Tools::Array<std::string>& raw_lines);
         /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column, an end line, an end column and a file handle to read the relevant lines from. Although the given file object isn't constant, it should be reinstated back to its original state once the constructor is done. */
-        DebugInfo(const std::string& filename, size_t line1, size_t col1, size_t line2, size_t col2, std::ifstream& file);
+        DebugInfo(const std::string& filename, size_t line1, size_t col1, size_t line2, size_t col2, FILE* file);
         /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column, an end line, an end column and lines to show during debugging. The array of lines must contain one entry for each line spanned by the symbol. By convention, we can interpret empty strings as irrelevant lines (since empty lines are usually irrelevant). */
         DebugInfo(const std::string& filename, size_t line1, size_t col1, size_t line2, size_t col2, const Tools::Array<std::string>& raw_lines);
 

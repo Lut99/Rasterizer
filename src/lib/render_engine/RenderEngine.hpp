@@ -23,6 +23,8 @@
 #include "window/Window.hpp"
 #include "model_manager/ModelManager.hpp"
 
+#include "render_engine/memory/MemoryPool.hpp"
+#include "render_engine/descriptors/DescriptorPool.hpp"
 #include "render_engine/renderpass/RenderPass.hpp"
 #include "render_engine/pipeline/Shader.hpp"
 #include "render_engine/pipeline/Pipeline.hpp"
@@ -41,6 +43,17 @@ namespace Rasterizer::Rendering {
 
         /* The Window object managing and carrying the Instance, Surface, GPU and Swapchain. */
         Window& window;
+        /* The command pool for the draw calls. */
+        Rendering::CommandPool& draw_cmd_pool;
+        /* The command pool for memory calls. */
+        Rendering::CommandPool& mem_cmd_pool;
+        /* The memory pool for GPU-only, speedier buffers. */
+        Rendering::MemoryPool& draw_pool;
+        /* The memory pool for staging buffers. */
+        Rendering::MemoryPool& stage_pool;
+        /* The descriptor pool used to manage the descriptors. */
+        Rendering::DescriptorPool& descr_pool;
+
         /* The model manager that is used to draw. */
         const Models::ModelManager& model_manager;
 
@@ -55,8 +68,6 @@ namespace Rasterizer::Rendering {
         /* The graphics pipeline we use to render. */
         Rendering::Pipeline pipeline;
 
-        /* The command pool for the draw calls. */
-        Rendering::CommandPool draw_cmd_pool;
         /* Handles for the command buffer to use. */
         Tools::Array<CommandBuffer> draw_cmds;
 
@@ -80,8 +91,8 @@ namespace Rasterizer::Rendering {
         void _resize();
     
     public:
-        /* Constructor for the RenderEngine class, which takes a Window to render to and a model manager to load models from. */
-        RenderEngine(Window& window, const Models::ModelManager& model_manager);
+        /* Constructor for the RenderEngine class, which takes a Window to render to, a command pool for draw commands, a command pool for memory commands, a pool to allocate GPU-only buffers with, a memory pool for stage buffers, a pool for descriptor sets and a model manager to load models from. */
+        RenderEngine(Window& window, Rendering::CommandPool& draw_cmd_pool, Rendering::CommandPool& memory_cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, Rendering::DescriptorPool& descriptor_pool, const Models::ModelManager& model_manager);
         /* Copy constructor for the RenderEngine class, which is deleted. */
         RenderEngine(const RenderEngine& other) = delete;
 
