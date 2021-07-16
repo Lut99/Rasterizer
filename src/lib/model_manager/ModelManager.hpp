@@ -25,6 +25,7 @@
 #include "render_engine/memory/Buffer.hpp"
 #include "render_engine/commandbuffers/CommandBuffer.hpp"
 #include "Vertex.hpp"
+#include "Index.hpp"
 #include "ModelFormat.hpp"
 
 namespace Rasterizer::Models {
@@ -42,9 +43,13 @@ namespace Rasterizer::Models {
         /* Internal struct used to describe a single model. */
         struct Model {
             /* The offset of the model in the list of vertices. */
-            uint32_t offset;
+            uint32_t voffset;
             /* The number of vertices belonging to this model. */
-            uint32_t size;
+            uint32_t vsize;
+            /* The offset of the model in the list of indices. */
+            uint32_t ioffset;
+            /* The number of indices belonging to this model. */
+            uint32_t isize;
         };
 
 
@@ -55,11 +60,15 @@ namespace Rasterizer::Models {
         Rendering::buffer_h vertex_buffer_h;
         /* Keeps track of how many vertices we loaded. */
         uint32_t n_vertices;
-        /* Keeps track of how much space we have. */
+        /* Keeps track of how much space for vertices we have. */
         uint32_t max_vertices;
 
-        /* Buffer used for sending data to and from the GPU. */
-        Rendering::buffer_h stage_buffer_h;
+        /* The buffer that will be used to store the indices. */
+        Rendering::buffer_h index_buffer_h;
+        /* Keeps track of how many indices we loaded. */
+        uint32_t n_indices;
+        /* Keeps track of how much space for indices we have. */
+        uint32_t max_indices;
 
         /* Description for the Vulkan input binding. */
         VkVertexInputBindingDescription vk_input_binding_description;
@@ -71,7 +80,7 @@ namespace Rasterizer::Models {
 
     public:
         /* Constructor for the ModelManager class, which takes a command pool for memory operations, a memory pool to allocate a new vertex buffer from, a another memory pool used to allocate staging buffers, optionally the size of the buffer and optionally the index for the array in the shaders. */
-        ModelManager(Rendering::CommandPool& cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, uint32_t max_vertices = 1000000, uint32_t binding_index = 0);
+        ModelManager(Rendering::CommandPool& cmd_pool, Rendering::MemoryPool& draw_pool, Rendering::MemoryPool& stage_pool, uint32_t max_vertices = 500000, uint32_t max_indices = 1000000, uint32_t binding_index = 0);
         /* Copy constructor for the ModelManager class. */
         ModelManager(const ModelManager& other);
         /* Move constructor for the ModelManager class. */
@@ -97,9 +106,13 @@ namespace Rasterizer::Models {
         void schedule(const Rendering::CommandBuffer& draw_cmd) const;
 
         /* Returns the number of vertices currently loaded by models. */
-        inline uint32_t size() const { return this->n_vertices; }
+        inline uint32_t vsize() const { return this->n_vertices; }
         /* Returns the maximum number of vertices we can load. */
-        inline uint32_t capacity() const { return this->max_vertices; }
+        inline uint32_t vcapacity() const { return this->max_vertices; }
+        /* Returns the number of indices currently loaded by models. */
+        inline uint32_t isize() const { return this->n_indices; }
+        /* Returns the maximum number of indices we can load. */
+        inline uint32_t icapacity() const { return this->max_indices; }
 
         /* Copy assignment operator for the ModelManager class. */
         inline ModelManager& operator=(const ModelManager& other) { return *this = ModelManager(other); }

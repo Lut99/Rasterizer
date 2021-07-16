@@ -586,6 +586,17 @@ void Pipeline::schedule_draw(const Rendering::CommandBuffer& cmd, uint32_t verte
     DRETURN;
 }
 
+/* Schedules the draw call for the pipeline, except that is uses an index buffer instead of just a list of vertices. Takes the number of indices, the number of instances, the first vertex, the first index and the first instance. */
+void Pipeline::schedule_draw_indexed(const Rendering::CommandBuffer& cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_index, uint32_t first_instance) {
+    DENTER("Rendering::Pipeline::schedule_draw_indexed");
+
+    // Simply do the draw call
+    vkCmdDrawIndexed(cmd, index_count, instance_count, first_index, first_vertex, first_instance);
+
+    // We're done
+    DRETURN;
+}
+
 
 
 /* Swap operator for the Pipeline class. */

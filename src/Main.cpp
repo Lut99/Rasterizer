@@ -83,7 +83,7 @@ int main(int argc, const char** argv) {
 
     // Use those to initialize the model manager
     Models::ModelManager model_manager(mem_cmd_pool, draw_pool, stage_pool);
-    model_manager.load_model("triangle", Models::ModelFormat::triangle);
+    model_manager.load_model("square", Models::ModelFormat::square);
 
     // Initialize the engine
     Rendering::RenderEngine render_engine(window, draw_cmd_pool, mem_cmd_pool, draw_pool, stage_pool, descr_pool, model_manager);
@@ -109,26 +109,26 @@ int main(int argc, const char** argv) {
             window.set_title("Rasterizer (FPS: " + std::to_string(fps) + ")");
             fps = 0;
 
-            // Add another model???
-            if (count == 0) {
-                model_manager.unload_model("triangle");
-                render_engine.refresh();
-                ++count;
-            } else if (count == 1) {
-                model_manager.load_model("triangle", Models::ModelFormat::triangle);
-                render_engine.refresh();
-                ++count;
-            } else if (count == 2) {
-                model_manager.unload_model("triangle");
-                model_manager.load_model("triangle", Models::ModelFormat::triangle);
-                render_engine.refresh();
-                ++count;
-            } else if (count == 3) {
-                model_manager.unload_model("triangle");
-                model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
-                render_engine.refresh();
-                ++count;
-            }
+            // // Add another model???
+            // if (count == 0) {
+            //     model_manager.unload_model("triangle");
+            //     render_engine.refresh();
+            //     ++count;
+            // } else if (count == 1) {
+            //     model_manager.load_model("triangle", Models::ModelFormat::triangle);
+            //     render_engine.refresh();
+            //     ++count;
+            // } else if (count == 2) {
+            //     model_manager.unload_model("triangle");
+            //     model_manager.load_model("triangle", Models::ModelFormat::triangle);
+            //     render_engine.refresh();
+            //     ++count;
+            // } else if (count == 3) {
+            //     model_manager.unload_model("triangle");
+            //     model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
+            //     render_engine.refresh();
+            //     ++count;
+            // }
         }
     }
 

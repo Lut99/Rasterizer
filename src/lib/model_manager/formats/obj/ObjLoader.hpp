@@ -16,11 +16,12 @@
 #define MODELS_OBJ_LOADER_HPP
 
 #include "model_manager/Vertex.hpp"
+#include "model_manager/Index.hpp"
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Models {
-    /* Loads the file at the given path as a .obj file, and returns a list of vertices from it. */
-    Tools::Array<Vertex> load_obj_model(const std::string& path);
+    /* Loads the file at the given path as a .obj file, and returns a list of vertices and list of indices in that list of vertices from it. */
+    void load_obj_model(Tools::Array<Vertex>& new_vertices, Tools::Array<index_t>& new_indices, const std::string& path);
 
 };
 

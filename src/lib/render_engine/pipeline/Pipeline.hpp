@@ -136,6 +136,8 @@ namespace Rasterizer::Rendering {
         inline void schedule_push_constants(const Rendering::CommandBuffer& cmd, VkShaderStageFlags shader_stage, const T& value) { return this->schedule_push_constants(cmd, shader_stage, 0, sizeof(T), (void*) &value); }
         /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
         void schedule_draw(const Rendering::CommandBuffer& cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0);
+        /* Schedules the draw call for the pipeline, except that is uses an index buffer instead of just a list of vertices. Takes the number of indices, the number of instances, the first vertex, the first index and the first instance. */
+        void schedule_draw_indexed(const Rendering::CommandBuffer& cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_index = 0, uint32_t first_instance = 0);
 
         /* Explicitly returns the internal VkPipelineLayout object. */
         inline const VkPipelineLayout& layout() const { return this->vk_pipeline_layout; }

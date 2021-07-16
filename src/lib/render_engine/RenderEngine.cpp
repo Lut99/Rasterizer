@@ -164,7 +164,7 @@ RenderEngine::RenderEngine(Window& window, Rendering::CommandPool& draw_cmd_pool
     pipeline.init_vertex_input(this->model_manager.input_binding_description(), this->model_manager.input_attribute_descriptions());
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
-    pipeline.init_rasterizer(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    pipeline.init_rasterizer(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE); //VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     pipeline.init_multisampling();
     pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
     pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
@@ -260,7 +260,7 @@ bool RenderEngine::loop() {
     this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,                     0, sizeof(glm::mat4), &cam_proj);
     this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,     sizeof(glm::mat4), sizeof(glm::mat4), &cam_view);
     this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 2 * sizeof(glm::mat4), sizeof(glm::mat4), &cam_model);
-    this->pipeline.schedule_draw(this->draw_cmds[swapchain_index], 3, 1);
+    this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], this->model_manager.isize(), 1);
     this->render_pass.stop_scheduling(this->draw_cmds[swapchain_index]);
     this->draw_cmds[swapchain_index].end();
 

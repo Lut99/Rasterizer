@@ -31,7 +31,8 @@ Window::Window(const Rendering::Instance& instance, const std::string& title, ui
     w(width),
     h(height),
 
-    should_resize(false)
+    should_resize(false),
+    should_close(false)
 {
     DENTER("Window::Window");
     DLOG(info, "Initializing Window class...");
@@ -41,9 +42,17 @@ Window::Window(const Rendering::Instance& instance, const std::string& title, ui
     // Get the window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
 
+    // Set the mouse input mode
+    glfwSetInputMode(this->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported()) {
+        glfwSetInputMode(this->glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+
     // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
     glfwSetWindowUserPointer(this->glfw_window, (void*) this);
     glfwSetFramebufferSizeCallback(this->glfw_window, Window::glfw_resize_callback);
+    glfwSetKeyCallback(this->glfw_window, Window::glfw_key_callback);
+    glfwSetCursorPosCallback(this->glfw_window, Window::glfw_cursor_callback);
 
     // Initialize the other classes
     this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
@@ -65,16 +74,29 @@ Window::Window(const Window& other) :
     rw(other.rw),
     rh(other.rh),
 
-    should_resize(other.should_resize)
+    old_mouse_pos(other.old_mouse_pos),
+    new_mouse_pos(other.new_mouse_pos),
+    mouse_callbacks(other.mouse_callbacks),
+
+    should_resize(other.should_resize),
+    should_close(other.should_close)
 {
     DENTER("Window::Window::copy");
 
     // First, copy the glfw window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
 
+    // Set the mouse input mode
+    glfwSetInputMode(this->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported()) {
+        glfwSetInputMode(this->glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    }
+
     // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
     glfwSetWindowUserPointer(this->glfw_window, (void*) this);
     glfwSetFramebufferSizeCallback(this->glfw_window, Window::glfw_resize_callback);
+    glfwSetKeyCallback(this->glfw_window, Window::glfw_key_callback);
+    glfwSetCursorPosCallback(this->glfw_window, Window::glfw_cursor_callback);
 
     // Also copy the other classes
     this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
@@ -99,7 +121,12 @@ Window::Window(Window&& other) :
     rw(other.rw),
     rh(other.rh),
 
-    should_resize(other.should_resize)
+    old_mouse_pos(other.old_mouse_pos),
+    new_mouse_pos(other.new_mouse_pos),
+    mouse_callbacks(other.mouse_callbacks),
+
+    should_resize(other.should_resize),
+    should_close(other.should_close)
 {
     // Set the deallocatable stuff to nullptr to avoid them, well, deallocating
     other.glfw_window = nullptr;
@@ -139,12 +166,49 @@ Window::~Window() {
 
 /* Callback for the GLFW window resize. */
 void Window::glfw_resize_callback(GLFWwindow* glfw_window, int width, int height) {
-    DENTER("glfw_resize_callback");
+    DENTER("Window::glfw_resize_callback");
 
-    // First, get the RenderEngine back
+    // First, get the window back
     Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
     // Mark that we need to resize at the new opportunity
     window->should_resize = true;
+
+    // Done
+    DRETURN;
+}
+
+/* Callback for GLFW window key events. */
+void Window::glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
+    DENTER("Window::glfw_key_callback");
+
+    // First, get the window back
+    Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
+
+    // Check if escape was pressed
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        window->should_close = true;
+    }
+
+    // Done
+    DRETURN;
+}
+
+/* Callback for GLFW window cursor move events. */
+void Window::glfw_cursor_callback(GLFWwindow* glfw_window, double x, double y) {
+    DENTER("Window::glfw_cursor_callback");
+
+    // First, get the window back
+    Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
+
+    // Store the new x and y position
+    window->old_mouse_pos = window->new_mouse_pos;
+    window->new_mouse_pos.x = (float) x;
+    window->new_mouse_pos.y = (float) y;
+
+    // Call the relevant callbacks
+    for (uint32_t i = 0; i < window->mouse_callbacks.size(); i++) {
+        window->mouse_callbacks[i].func(window->mouse_callbacks[i].extra_data, window->new_mouse_pos, window->old_mouse_pos);
+    }
 
     // Done
     DRETURN;
@@ -218,7 +282,20 @@ bool Window::loop() const {
     glfwPollEvents();
 
     // Next, return if the window should close
-    DRETURN !glfwWindowShouldClose(this->glfw_window);
+    DRETURN !glfwWindowShouldClose(this->glfw_window) && !this->should_close;
+}
+
+
+
+/* Registers the given function as a new mouse callback. Optionally, some extra datapoint or object can be given that can be accessed during the callback. */
+void Window::register_mouse_callback(void (*callback)(void*, const glm::vec2&, const glm::vec2&), void* extra_data) {
+    DENTER("Window::register_mouse_callback");
+
+    // Simply add to the list
+    this->mouse_callbacks.push_back({ callback, extra_data });
+
+    // Done
+    DRETURN;
 }
 
 
@@ -245,8 +322,13 @@ void Rasterizer::swap(Window& w1, Window& w2) {
     swap(w1.h, w2.h);
     swap(w1.rw, w2.rw);
     swap(w1.rh, w2.rh);
+
+    swap(w1.old_mouse_pos, w2.old_mouse_pos);
+    swap(w1.new_mouse_pos, w2.new_mouse_pos);
+    swap(w1.mouse_callbacks, w2.mouse_callbacks);
     
     swap(w1.should_resize, w2.should_resize);
+    swap(w1.should_close, w2.should_close);
 
     // Done
     DRETURN;

@@ -24,9 +24,13 @@ namespace Rasterizer::Models {
         unsupported = 0,
         /* The hardcoded triangle 'format', i.e., doesn't touch the disk but simply inserts the debug triangle. */
         triangle = 1,
+        /* The hardcoded square 'format', i.e., doesn't touch the disk but simply inserts the debug square. */
+        square = 2,
+        /* The hardcoded squares 'format': two squares stacked on top of each other. */
+        squares = 3,
 
         /* The standard and very simple .obj format. */
-        obj = 2
+        obj = 4
 
     };
 
@@ -34,6 +38,9 @@ namespace Rasterizer::Models {
     static const std::string model_format_names[] = {
         "unsupported",
         "triangle",
+        "square",
+        "squares",
+
         "obj"
     };
 

@@ -39,5 +39,5 @@ void main() {
     // gl_Position = camera.proj * camera.view * camera.model * vec4(vertex, 0.0, 1.0);
     gl_Position = camera.proj * camera.view * camera.model * vec4(vertex, 1.0);
     // Also return the color for the fragment shader
-    frag_color = vec3(0.5 * camera.model[0][0] + 0.5, 0.0, 0.0);
+    frag_color = color;
 }

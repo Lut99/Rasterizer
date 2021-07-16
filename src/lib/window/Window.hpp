@@ -20,6 +20,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "glm/glm.hpp"
+
 #include "render_engine/instance/Instance.hpp"
 #include "render_engine/gpu/Surface.hpp"
 #include "render_engine/gpu/GPU.hpp"
@@ -33,6 +35,15 @@ namespace Rasterizer {
         const Rendering::Instance& instance;
 
     private:
+        /* Private struct used to keep track of mouse move callbacks. */
+        struct MouseCallback {
+            /* The function to call. */
+            void (*func)(void*, const glm::vec2&, const glm::vec2&);
+            /* Pointer to whatever structure the user wants to pass. */
+            void* extra_data;
+        };
+
+
         /* The GLFWwindow object that we handle. */
         GLFWwindow* glfw_window;
         /* Vulkan's representation of the window. */
@@ -53,12 +64,25 @@ namespace Rasterizer {
         /* The actual height of the window. */
         uint32_t rh;
 
+        /* The previously recorded cursor position. */
+        glm::vec2 old_mouse_pos;
+        /* The currently recorded cursor position. */
+        glm::vec2 new_mouse_pos;
+        /* List of mouse callbacks. */
+        Tools::Array<MouseCallback> mouse_callbacks;
+
         /* Variable that indicates if the Window wants to resize or not. */
         bool should_resize;
+        /* Variable that indicates if the window should close or not. */
+        bool should_close;
 
 
         /* Callback for the GLFW window resize event. */
         static void glfw_resize_callback(GLFWwindow* glfw_window, int width, int height);
+        /* Callback for GLFW window key events. */
+        static void glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, int action, int mods);
+        /* Callback for GLFW window cursor move events. */
+        static void glfw_cursor_callback(GLFWwindow* glfw_window, double x, double y);
     
     public:
         /* Constructor for the Window class, which takes the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
@@ -79,6 +103,11 @@ namespace Rasterizer {
 
         /* Runs window events. Returns whether or not the window should close. */
         bool loop() const;
+
+        /* Registers the given function as a new mouse callback. The callback's first vector is the new position, and the second vector is the old position. Optionally, some extra datapoint or object can be given that can be accessed during the callback. */
+        void register_mouse_callback(void (*callback)(void*, const glm::vec2&, const glm::vec2&), void* extra_data = nullptr);
+        /* Returns the current position of the mouse. */
+        inline glm::vec2 mouse_pos() const { return this->new_mouse_pos; }
 
         /* Returns the title of the window. */
         inline const std::string& title() const { return this->t; }
