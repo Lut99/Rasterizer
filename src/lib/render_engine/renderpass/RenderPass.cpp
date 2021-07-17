@@ -104,7 +104,7 @@ static void populate_render_pass_info(VkRenderPassCreateInfo& render_pass_info, 
 }
 
 /* Populates a given VkRenderPassBeginInfo struct. */
-static void populate_begin_info(VkRenderPassBeginInfo& begin_info, const VkRenderPass& vk_render_pass, const VkFramebuffer& vk_framebuffer, const VkRect2D& vk_render_area, const VkClearValue& clear_colour) {
+static void populate_begin_info(VkRenderPassBeginInfo& begin_info, const VkRenderPass& vk_render_pass, const VkFramebuffer& vk_framebuffer, const VkRect2D& vk_render_area, const Tools::Array<VkClearValue>& clear_values) {
     DENTER("populate_begin_info");
 
     // Set to default
@@ -121,8 +121,8 @@ static void populate_begin_info(VkRenderPassBeginInfo& begin_info, const VkRende
     begin_info.renderArea = vk_render_area;
 
     // Set the colour for the background
-    begin_info.clearValueCount = 1;
-    begin_info.pClearValues = &clear_colour;
+    begin_info.clearValueCount = clear_values.size();
+    begin_info.pClearValues = clear_values.rdata();
 
     // Done
     DRETURN;
@@ -222,11 +222,11 @@ uint32_t RenderPass::add_attachment(VkFormat vk_swapchain_format, VkAttachmentLo
 }
 
 /* Adds a new subpass to the RenderPass. The list of indices determines which color attachments to link to the subpass, and the list of image layouts determines the layout we like during the subpass for that attachment. Optionally takes another bindpoint than the graphics bind point. */
-void RenderPass::add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& attachment_refs, VkPipelineBindPoint bind_point) {
+void RenderPass::add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& color_attachment_refs, const std::pair<uint32_t, VkImageLayout>& depth_attachment_ref, VkPipelineBindPoint bind_point) {
     DENTER("Rendering::RenderPass::add_subpass");
 
     // Store that and the list of references internally
-    this->subpasses.push_back(Subpass(attachment_refs, bind_point));
+    this->subpasses.push_back(Subpass(color_attachment_refs, depth_attachment_ref, bind_point));
 
     // Done
     DINDENT;
@@ -259,7 +259,7 @@ void RenderPass::finalize() {
     // Convert the list of subpasses to their vulkan counterpart
     Tools::Array<VkSubpassDescription> vk_subpasses(this->subpasses.size());
     for (uint32_t i = 0; i < this->subpasses.size(); i++) {
-        vk_subpasses.push_back(this->subpasses[i]);
+        vk_subpasses.push_back(this->subpasses[i].subpass());
     }
 
     // Simply create the renderpass
@@ -281,7 +281,7 @@ void RenderPass::finalize() {
 
 
 /* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and a background colour for the image. */
-void RenderPass::start_scheduling(const Rendering::CommandBuffer& cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour) {
+void RenderPass::start_scheduling(const Rendering::CommandBuffer& cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour, const VkClearValue& vk_clear_depth) {
     DENTER("Rendering::RenderPass::start_scheduling");
 
     // First, create the rect that we shall render to
@@ -290,9 +290,12 @@ void RenderPass::start_scheduling(const Rendering::CommandBuffer& cmd, const Ren
     render_area.offset.y = 0;
     render_area.extent = framebuffer.extent();
 
+    // Define the list of clear colours
+    Tools::Array<VkClearValue> clear_values = { vk_clear_colour, vk_clear_depth };
+
     // Create the begin info and populate it
     VkRenderPassBeginInfo begin_info;
-    populate_begin_info(begin_info, this->vk_render_pass, framebuffer.framebuffer(), render_area, vk_clear_colour);
+    populate_begin_info(begin_info, this->vk_render_pass, framebuffer.framebuffer(), render_area, clear_values);
 
     // Schedule it in the command buffer (and tell it to schedule everything in the primary command buffers instead of secondary ones)
     vkCmdBeginRenderPass(cmd, &begin_info, VK_SUBPASS_CONTENTS_INLINE);

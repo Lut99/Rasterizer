@@ -16,6 +16,7 @@
 
 #include <chrono>
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "tools/CppDebugger.hpp"
@@ -124,6 +125,8 @@ RenderEngine::RenderEngine(Window& window, Rendering::CommandPool& draw_cmd_pool
     descr_pool(descriptor_pool),
     model_manager(model_manager),
 
+    depth_stencil(this->window.gpu(), this->draw_pool, this->window.swapchain().extent()),
+
     vertex_shader(this->window.gpu(), "bin/shaders/vertex_v3.spv"),
     fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
 
@@ -143,14 +146,15 @@ RenderEngine::RenderEngine(Window& window, Rendering::CommandPool& draw_cmd_pool
 
     /* RENDER PASS */
     // Prepare the render pass
-    uint32_t index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    this->render_pass.add_subpass({ std::make_pair(index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) });
-    this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, index, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+    uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    uint32_t dep_index = this->render_pass.add_attachment(this->depth_stencil.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    this->render_pass.add_subpass({ std::make_pair(col_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) }, std::make_pair(dep_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
+    this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, col_index, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
     this->render_pass.finalize();
 
     // Fetch the framebuffers of the swapchain
     for (uint32_t i = 0; i < this->window.swapchain().size(); i++) {
-        this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass));
+        this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass, this->depth_stencil));
     }
 
 
@@ -163,6 +167,7 @@ RenderEngine::RenderEngine(Window& window, Rendering::CommandPool& draw_cmd_pool
     // Prepare the static part
     pipeline.init_vertex_input(this->model_manager.input_binding_description(), this->model_manager.input_attribute_descriptions());
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    pipeline.init_depth_testing(VK_TRUE, VK_COMPARE_OP_LESS);
     pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
     pipeline.init_rasterizer(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE); //VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     pipeline.init_multisampling();
@@ -197,11 +202,14 @@ RenderEngine::RenderEngine(Window& window, Rendering::CommandPool& draw_cmd_pool
 void RenderEngine::_resize() {
     DENTER("Rendering::RenderEngine::_resize");
 
+    // Re-create the depth stencil with a new size
+    this->depth_stencil.resize(this->window.real_extent());
+
     // Fetch a new list of framebuffers
     this->framebuffers.clear();
     this->framebuffers.reserve(this->window.swapchain().size());
     for (uint32_t i = 0; i < this->window.swapchain().size(); i++) {
-        this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass));
+        this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass, this->depth_stencil));
     }
 
     // Then, re-create the command buffers

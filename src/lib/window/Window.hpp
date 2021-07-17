@@ -104,6 +104,9 @@ namespace Rasterizer {
         /* Runs window events. Returns whether or not the window should close. */
         bool loop() const;
 
+        /* Checks if the given key is pressed or not. */
+        inline bool key_pressed(int key) const { return glfwGetKey(this->glfw_window, key) == GLFW_PRESS; }
+
         /* Registers the given function as a new mouse callback. The callback's first vector is the new position, and the second vector is the old position. Optionally, some extra datapoint or object can be given that can be accessed during the callback. */
         void register_mouse_callback(void (*callback)(void*, const glm::vec2&, const glm::vec2&), void* extra_data = nullptr);
         /* Returns the current position of the mouse. */

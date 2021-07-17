@@ -57,6 +57,8 @@ namespace Rasterizer::Rendering {
         VkPipelineVertexInputStateCreateInfo vk_vertex_state_info;
         /* Describes what to do with the vertex input. */
         VkPipelineInputAssemblyStateCreateInfo vk_assembly_state_info;
+        /* Describes what to do w.r.t. depth testing. */
+        VkPipelineDepthStencilStateCreateInfo vk_depth_stencil_state_info;
         /* Describes how to stretch the resulting viewport. */
         VkViewport vk_viewport;
         /* Describes how to crop the resulting viewport. */
@@ -88,6 +90,8 @@ namespace Rasterizer::Rendering {
         void init_vertex_input(const VkVertexInputBindingDescription& vk_input_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_input_attribute_descriptions);
         /* Tells the Pipeline what to do with the vertex we gave it. The topology specifies the geometry of the vertices (i.e., draw points, lines, triangles), and restart_enable does something that is beyond my knowledge. */
         void init_input_assembly(VkPrimitiveTopology topology, VkBool32 restart_enable = VK_FALSE);
+        /* Tells the Pipeline what to do with depth stencil testing. */
+        void init_depth_testing(VkBool32 enable_testing, VkCompareOp compare_op);
         /* Tells the Pipeline how the render the output frame. The Viewport is used to stretch it, and the Scissor is used to cut it off. */
         void init_viewport_transformation(const Rectangle& viewport, const Rectangle& scissor);
         /* Tells the Pipeline how to configure the Rasterizer stage.

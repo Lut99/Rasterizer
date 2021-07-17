@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   03/07/2021, 16:49:12
+ *   17/07/2021, 13:38:13
  * Auto updated?
  *   Yes
  *
@@ -23,6 +23,7 @@
 #include "render_engine/gpu/GPU.hpp"
 #include "render_engine/gpu/Surface.hpp"
 #include "render_engine/renderpass/RenderPass.hpp"
+#include "render_engine/depthtesting/DepthStencil.hpp"
 #include "Framebuffer.hpp"
 
 namespace Rasterizer::Rendering {
@@ -71,8 +72,8 @@ namespace Rasterizer::Rendering {
 
         /* Returns a the internal image at the given location. */
         inline VkImage operator[](uint32_t index) const { return this->vk_swapchain_images[index]; }
-        /* Returns a framebuffer for the image at the given location and the given render pass. */
-        inline Rendering::Framebuffer get_framebuffer(uint32_t index, const Rendering::RenderPass& render_pass) const { return Framebuffer(this->gpu, render_pass, this->vk_swapchain_views[index], this->vk_surface_extent); }
+        /* Returns a framebuffer for the image at the given location, the given render pass and that also references the given depth stencil. */
+        inline Rendering::Framebuffer get_framebuffer(uint32_t index, const Rendering::RenderPass& render_pass, const Rendering::DepthStencil& depth_stencil) const { return Framebuffer(this->gpu, render_pass, this->vk_swapchain_views[index], depth_stencil.view(), this->vk_surface_extent); }
 
         /* Resizes the swapchain to the given size. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
         void resize(uint32_t new_width, uint32_t new_height);

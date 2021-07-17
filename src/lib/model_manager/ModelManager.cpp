@@ -218,6 +218,26 @@ void ModelManager::load_model(const std::string& uid, const std::string& path, M
                 0, 1, 2, 2, 3, 0
             };
             break;
+        
+        case ModelFormat::squares:
+            // Simply append the hardcoded list
+            DLOG(info, "Loading two static squares positioned in a stacked manner...");
+            new_vertices = {
+                { {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f} },
+                { { 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} },
+                { { 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} },
+                { {-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f} },
+
+                { {-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f} },
+                { { 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f} },
+                { { 0.5f,  0.5f, -0.5f}, {0.0f, 0.0f, 1.0f} },
+                { {-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f, 1.0f} }
+            };
+            new_indices = {
+                0, 1, 2, 2, 3, 0,
+                4, 5, 6, 6, 7, 4
+            };
+            break;
 
         default:
             DLOG(fatal, "Unsupported model format '" + model_format_names[(int) format] + "'");

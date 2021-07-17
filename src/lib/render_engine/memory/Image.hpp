@@ -59,7 +59,7 @@ namespace Rasterizer::Rendering {
         /* The properties of the memory for this image. */
         VkMemoryPropertyFlags vk_memory_properties;
 
-        /* Private constructor for the Buffer class, which takes the buffer, the buffer's size and the properties of the pool's memory. */
+        /* Private constructor for the Image class, which takes a fuckton of parameters. */
         Image(image_h handle, VkImage image, VkExtent2D vk_extent, VkFormat vk_format, VkImageLayout vk_layout, VkImageUsageFlags vk_usage_flags, VkSharingMode vk_sharing_mode, VkImageCreateFlags vk_create_flags, VkDeviceMemory vk_memory, VkDeviceSize memory_offset, VkDeviceSize memory_size, VkDeviceSize req_memory_size, VkMemoryPropertyFlags memory_properties);
         
         /* Mark the MemoryPool as friend. */
@@ -74,9 +74,9 @@ namespace Rasterizer::Rendering {
         inline VkDeviceSize size() const { return this->vk_memory_size; }
         /* Returns the memory offset of the buffer, in bytes. */
         inline VkDeviceSize offset() const { return this->vk_memory_offset; }
-        /* Explicit retrieval of the internal buffer object. */
-        inline VkImage image() const { return this->vk_image; }
-        /* Implicit retrieval of the internal buffer object. */
+        /* Explicit retrieval of the internal VkImage object. */
+        inline const VkImage& image() const { return this->vk_image; }
+        /* Implicit retrieval of the internal VkImage object. */
         inline operator VkImage() const { return this->vk_image; }
         /* Explicit retrieval of the internal handle. */
         inline const image_h& handle() const { return this->vk_handle; }

@@ -34,13 +34,15 @@ namespace Rasterizer::Rendering {
         /* The extent of the framebuffer. */
         VkExtent2D vk_extent;
 
-        /* The imageview we wrap around. */
-        VkImageView vk_image_view;
+        /* The imageview we wrap around for the color. */
+        VkImageView vk_color_view;
+        /* The imageview we wrap around for the depth. */
+        VkImageView vk_depth_view;
         /* The create info used to create the buffer. */
         VkFramebufferCreateInfo vk_framebuffer_info;
 
-        /* Constructor for the Framebuffer class, which takes a GPU to allocate it on, a renderpass to bind to, a VkImageView to wrap around and an extent describing the buffer's size. */
-        Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_render_pass, const VkImageView& vk_image_view, const VkExtent2D& vk_extent);
+        /* Constructor for the Framebuffer class, which takes a GPU to allocate it on, a renderpass to bind to, a VkImageView to wrap around for the colour, a VkImageView to wrap around for the depth and an extent describing the buffer's size. */
+        Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_render_pass, const VkImageView& vk_color_view, const VkImageView& vk_depth_view, const VkExtent2D& vk_extent);
 
         /* Mark the RenderPass class as friend. */
         friend class Swapchain;

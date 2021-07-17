@@ -62,6 +62,35 @@ static void populate_assembly_state_info(VkPipelineInputAssemblyStateCreateInfo&
     DRETURN;
 }
 
+/* Populates the given VkPipelineDepthStencilStateCreateInfo struct. */
+static void populate_depth_stencil_state_info(VkPipelineDepthStencilStateCreateInfo& depth_stencil_state_info, VkBool32 vk_enable, VkCompareOp vk_compare_op) {
+    DENTER("populate_depth_stencil_state_info");
+
+    // Set to default
+    depth_stencil_state_info = {};
+    depth_stencil_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+
+    // Pass the arguments
+    depth_stencil_state_info.depthTestEnable = vk_enable;
+    depth_stencil_state_info.depthWriteEnable = vk_enable;
+
+    // Define how to compare the values of the depth stencil
+    depth_stencil_state_info.depthCompareOp = vk_compare_op;
+
+    // We can optionally specify to only keep elements within a certain bound; but we don't
+    depth_stencil_state_info.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil_state_info.minDepthBounds = 0.0f;
+    depth_stencil_state_info.maxDepthBounds = 1.0f;
+
+    // We can also do stencils tests(?)
+    depth_stencil_state_info.stencilTestEnable = VK_FALSE;
+    depth_stencil_state_info.front = {};
+    depth_stencil_state_info.back = {};
+
+    // Done
+    DRETURN;
+}
+
 /* Populates the given VkPipelineViewportStateCreateInfo struct. */
 static void populate_viewport_state_info(VkPipelineViewportStateCreateInfo& viewport_state_info, const VkViewport& vk_viewport, const VkRect2D& vk_scissor) {
     DENTER("populate_viewport_state_info");
@@ -235,6 +264,7 @@ Pipeline::Pipeline(const Pipeline& other) :
 
     vk_vertex_state_info(other.vk_vertex_state_info),
     vk_assembly_state_info(other.vk_assembly_state_info),
+    vk_depth_stencil_state_info(other.vk_depth_stencil_state_info),
     vk_viewport(other.vk_viewport),
     vk_scissor(other.vk_scissor),
     vk_viewport_state_info(other.vk_viewport_state_info),
@@ -262,23 +292,24 @@ Pipeline::Pipeline(Pipeline&& other) :
 
     vk_pipeline(other.vk_pipeline),
 
-    vk_descriptor_set_layouts(other.vk_descriptor_set_layouts),
-    vk_push_constants(other.vk_push_constants),
-    vk_layout_info(other.vk_layout_info),
-    vk_pipeline_layout(other.vk_pipeline_layout),
+    vk_descriptor_set_layouts(std::move(other.vk_descriptor_set_layouts)),
+    vk_push_constants(std::move(other.vk_push_constants)),
+    vk_layout_info(std::move(other.vk_layout_info)),
+    vk_pipeline_layout(std::move(other.vk_pipeline_layout)),
 
-    shaders(other.shaders),
-    shader_stages(other.shader_stages),
+    shaders(std::move(other.shaders)),
+    shader_stages(std::move(other.shader_stages)),
 
-    vk_vertex_state_info(other.vk_vertex_state_info),
-    vk_assembly_state_info(other.vk_assembly_state_info),
-    vk_viewport(other.vk_viewport),
-    vk_scissor(other.vk_scissor),
-    vk_viewport_state_info(other.vk_viewport_state_info),
-    vk_rasterizer_state_info(other.vk_rasterizer_state_info),
-    vk_multisample_state_info(other.vk_multisample_state_info),
-    vk_color_blending(other.vk_color_blending),
-    vk_color_state_info(other.vk_color_state_info)
+    vk_vertex_state_info(std::move(other.vk_vertex_state_info)),
+    vk_assembly_state_info(std::move(other.vk_assembly_state_info)),
+    vk_depth_stencil_state_info(std::move(other.vk_depth_stencil_state_info)),
+    vk_viewport(std::move(other.vk_viewport)),
+    vk_scissor(std::move(other.vk_scissor)),
+    vk_viewport_state_info(std::move(other.vk_viewport_state_info)),
+    vk_rasterizer_state_info(std::move(other.vk_rasterizer_state_info)),
+    vk_multisample_state_info(std::move(other.vk_multisample_state_info)),
+    vk_color_blending(std::move(other.vk_color_blending)),
+    vk_color_state_info(std::move(other.vk_color_state_info))
 {
     // Set the deallocatable fields to nullptrs
     other.vk_pipeline = nullptr;
@@ -346,6 +377,18 @@ void Pipeline::init_input_assembly(VkPrimitiveTopology topology, VkBool32 restar
 
     DINDENT;
     DLOG(info, "Initialized Pipeline input assembly");
+    DDEDENT;
+    DRETURN;
+}
+
+/* Tells the Pipeline what to do with depth stencil testing. */
+void Pipeline::init_depth_testing(VkBool32 enable_testing, VkCompareOp compare_op) {
+    DENTER("Rendering::Pipeline::init_depth_testing");
+
+    populate_depth_stencil_state_info(this->vk_depth_stencil_state_info, enable_testing, compare_op);
+
+    DINDENT;
+    DLOG(info, "Initialized Pipeline depth testing");
     DDEDENT;
     DRETURN;
 }
@@ -527,7 +570,7 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
     pipeline_info.pViewportState = &this->vk_viewport_state_info;
     pipeline_info.pRasterizationState = &this->vk_rasterizer_state_info;
     pipeline_info.pMultisampleState = &this->vk_multisample_state_info;
-    pipeline_info.pDepthStencilState = nullptr;
+    pipeline_info.pDepthStencilState = &this->vk_depth_stencil_state_info;
     pipeline_info.pColorBlendState = &this->vk_color_state_info;
     pipeline_info.pDynamicState = nullptr;
 
@@ -624,6 +667,7 @@ void Rendering::swap(Pipeline& p1, Pipeline& p2) {
 
     swap(p1.vk_vertex_state_info, p2.vk_vertex_state_info);
     swap(p1.vk_assembly_state_info, p2.vk_assembly_state_info);
+    swap(p1.vk_depth_stencil_state_info, p2.vk_depth_stencil_state_info);
     swap(p1.vk_viewport, p2.vk_viewport);
     swap(p1.vk_scissor, p2.vk_scissor);
     swap(p1.vk_viewport_state_info, p2.vk_viewport_state_info);

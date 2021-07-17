@@ -94,7 +94,7 @@ void Models::load_obj_model(Tools::Array<Vertex>& new_vertices, Tools::Array<ind
 
                         // Now that we have them all anyway, also store it and return to the idle state
                         while (new_vertices.size() + 1 >= new_vertices.capacity()) { new_vertices.reserve(2 * (new_vertices.capacity() + 1)); }
-                        new_vertices.push_back(Vertex({ f1, f2 - 5.0, f3 }, { 1.0, 0.0, 0.0 }));
+                        new_vertices.push_back(Vertex({ f1, f2, f3 }, { 1.0, 0.0, 0.0 }));
                         state = 0;
                     } else {
                         term->debug_info.print_error(cerr, "Too many coordinates for three-dimensional vector.");

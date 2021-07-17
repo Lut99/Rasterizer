@@ -57,14 +57,14 @@ namespace Rasterizer::Rendering {
         /* Adds a new attachment to the RenderPass. Note that the ordering matters w.r.t. indexing, but just to be sure, this function returns the index of the attachment. Takes the swapchain's image format, the load operation for the buffer, the store operation, the initial layout and the final layout after the subpass. */
         uint32_t add_attachment(VkFormat vk_swapchain_format, VkAttachmentLoadOp load_op, VkAttachmentStoreOp store_op, VkImageLayout initial_layout, VkImageLayout final_layout);
         /* Adds a new subpass to the RenderPass. The list of indices determines which color attachments to link to the subpass, and the list of image layouts determines the layout we like during the subpass for that attachment. Optionally takes another bindpoint than the graphics bind point. */
-        void add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& attachment_refs, VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        void add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& color_attachment_refs, const std::pair<uint32_t, VkImageLayout>& depth_attachment_ref, VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
         /* Adds a new dependency to the RenderPass. Needs the subpass before the barrier, the subpass after it, the stage of the subpass before it, the access mask of the stage before it, the stage of the subpass after it and the access mask of that stage. */
         void add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkPipelineStageFlags src_stage, VkAccessFlags src_access, VkPipelineStageFlags dst_stage, VkAccessFlags dst_access);
         /* Finalizes the RenderPass. After this, no new subpasses can be defined without calling finalize() again. */
         void finalize();
 
         /* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and optionally a background colour for the image. */
-        void start_scheduling(const Rendering::CommandBuffer& cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour = { 0.749f, 1.0f, 0.992f, 1.0f });
+        void start_scheduling(const Rendering::CommandBuffer& cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour = { 0.749f, 1.0f, 0.992f, 1.0f }, const VkClearValue& vk_clear_depth = { 1.0f, 0.0 });
         /* Finishes scheduling the RenderPass. */
         void stop_scheduling(const Rendering::CommandBuffer& cmd);
 

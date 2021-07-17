@@ -27,14 +27,17 @@ namespace Rasterizer::Rendering {
         /* The VkSubpassDescription object we wrap. */
         VkSubpassDescription vk_subpass;
 
-        /* The attachment references for this subpass. */
-        VkAttachmentReference* attachment_refs;
+        /* The color attachment references for this subpass. */
+        VkAttachmentReference* color_attachment_refs;
         /* The number of attachment references. */
-        uint32_t n_attachments;
+        uint32_t n_color_attachments;
+
+        /* The depth attachment reference for this subpass. */
+        VkAttachmentReference* depth_attachment_ref;
 
     public:
-        /* Constructor for the Subpass class, which takes a list of attachment index/layout pairs to describe the references, and the bind point in the pipeline (which is usually the default of graphics). */
-        Subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& attachment_refs, VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        /* Constructor for the Subpass class, which takes a list of attachment index/layout pairs to describe the colour references, an index/layout pair for the depth reference and the bind point in the pipeline (which is usually the default of graphics). */
+        Subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& color_attachment_refs, const std::pair<uint32_t, VkImageLayout>& depth_attachment_ref, VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
         /* Copy constructor for the Subpass class. */
         Subpass(const Subpass& other);
         /* Move constructor for the Subpass class. */

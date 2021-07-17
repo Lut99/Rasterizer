@@ -194,9 +194,9 @@ MemoryPool::~MemoryPool() {
     DLOG(info, "Cleaning MemoryPool...");
     DINDENT;
 
-    // Delete all buffers
+    // Delete all buffers & images
     if (this->vk_used_blocks.size() > 0) {
-        DLOG(info, "Deallocating buffers...");
+        DLOG(info, "Deallocating buffers & images...");
         for (const std::pair<memory_h, UsedBlock*>& p : this->vk_used_blocks) {
             // Either destroy the buffer or the image
             if (p.second->type == MemoryBlockType::buffer) {
@@ -373,6 +373,7 @@ void MemoryPool::deallocate(memory_h handle) {
     if (block->type == MemoryBlockType::buffer) {
         vkDestroyBuffer(this->gpu, ((BufferBlock*) block)->vk_buffer, nullptr);
     } else if (block->type == MemoryBlockType::image) {
+        // Always destroy the image itself
         vkDestroyImage(this->gpu, ((ImageBlock*) block)->vk_image, nullptr);
     }
     this->vk_used_blocks.erase(iter);

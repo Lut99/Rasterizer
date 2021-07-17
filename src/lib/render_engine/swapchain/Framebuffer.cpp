@@ -26,7 +26,7 @@ using namespace CppDebugger::SeverityValues;
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkFramebufferCreateInfo struct. */
-static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info, const VkRenderPass& vk_render_pass, const VkImageView& vk_image_view, const VkExtent2D& vk_extent) {
+static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info, const VkRenderPass& vk_render_pass, const Tools::Array<VkImageView>& attachments, const VkExtent2D& vk_extent) {
     DENTER("populate_framebuffer_info");
 
     // Set to default
@@ -37,8 +37,8 @@ static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info,
     framebuffer_info.renderPass = vk_render_pass;
 
     // Attach the image view as a single attachment
-    framebuffer_info.attachmentCount = 1;
-    framebuffer_info.pAttachments = &vk_image_view;
+    framebuffer_info.attachmentCount = attachments.size();
+    framebuffer_info.pAttachments = attachments.rdata();
 
     // Finally, extract the framebuffer size from the extent
     framebuffer_info.width = vk_extent.width;
@@ -54,16 +54,18 @@ static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info,
 
 
 /***** FRAMEBUFFER CLASS *****/
-/* Constructor for the Framebuffer class, which takes a GPU to allocate it on, a renderpass to bind to, a VkImageView to wrap around and an extent describing the buffer's size. */
-Framebuffer::Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_render_pass, const VkImageView& vk_image_view, const VkExtent2D& vk_extent) :
+/* Constructor for the Framebuffer class, which takes a GPU to allocate it on, a renderpass to bind to, a VkImageView to wrap around for the colour, a VkImageView to wrap around for the depth and an extent describing the buffer's size. */
+Framebuffer::Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_render_pass, const VkImageView& vk_color_view, const VkImageView& vk_depth_view, const VkExtent2D& vk_extent) :
     gpu(gpu),
     vk_extent(vk_extent),
-    vk_image_view(vk_image_view)
+    vk_color_view(vk_color_view),
+    vk_depth_view(vk_depth_view)
 {
     DENTER("Rendering::Framebuffer::Framebuffer");
 
     // Populate the create info
-    populate_framebuffer_info(this->vk_framebuffer_info, vk_render_pass, this->vk_image_view, this->vk_extent);
+    Tools::Array<VkImageView> attachments = { this->vk_color_view, this->vk_depth_view };
+    populate_framebuffer_info(this->vk_framebuffer_info, vk_render_pass, attachments, this->vk_extent);
 
     // Use that to create the internal framebuffer
     VkResult vk_result;
@@ -79,7 +81,8 @@ Framebuffer::Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_rende
 Framebuffer::Framebuffer(const Framebuffer& other) :
     gpu(other.gpu),
     vk_extent(other.vk_extent),
-    vk_image_view(other.vk_image_view),
+    vk_color_view(other.vk_color_view),
+    vk_depth_view(other.vk_depth_view),
     vk_framebuffer_info(other.vk_framebuffer_info)
 {
     DENTER("Rendering::Framebuffer::Framebuffer(copy)");
@@ -98,7 +101,8 @@ Framebuffer::Framebuffer(Framebuffer&& other) :
     gpu(other.gpu),
     vk_framebuffer(other.vk_framebuffer),
     vk_extent(other.vk_extent),
-    vk_image_view(other.vk_image_view),
+    vk_color_view(other.vk_color_view),
+    vk_depth_view(other.vk_depth_view),
     vk_framebuffer_info(other.vk_framebuffer_info)
 {
     // Mark the framebuffer as do-not-deallocate
@@ -133,7 +137,8 @@ void Rendering::swap(Rendering::Framebuffer& fb1, Rendering::Framebuffer& fb2) {
     using std::swap;
     swap(fb1.vk_framebuffer, fb2.vk_framebuffer);
     swap(fb1.vk_extent, fb2.vk_extent);
-    swap(fb1.vk_image_view, fb2.vk_image_view);
+    swap(fb1.vk_color_view, fb2.vk_color_view);
+    swap(fb1.vk_depth_view, fb2.vk_depth_view);
     swap(fb1.vk_framebuffer_info, fb2.vk_framebuffer_info);
 
     // Done

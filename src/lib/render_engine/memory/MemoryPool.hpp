@@ -4,7 +4,7 @@
  * Created:
  *   25/04/2021, 11:36:35
  * Last edited:
- *   02/07/2021, 12:54:08
+ *   17/07/2021, 13:18:18
  * Auto updated?
  *   Yes
  *
@@ -105,7 +105,7 @@ namespace Rasterizer::Rendering {
         std::unordered_map<memory_h, UsedBlock*> vk_used_blocks;
         /* Keeps track of the free blocks in the array of allocated memory */
         Tools::Freelist free_list;
-
+        
 
         /* Private helper function that takes a BufferBlock, and uses it to initialize the given buffer. */
         inline static Buffer init_buffer(const Rendering::GPU& gpu, buffer_h handle, BufferBlock* block, VkDeviceMemory vk_memory, VkMemoryPropertyFlags memory_properties) { return Buffer(gpu, handle, block->vk_buffer, block->vk_usage_flags, block->vk_sharing_mode, block->vk_create_flags, vk_memory, block->start, block->length, block->req_length, memory_properties); }
@@ -148,10 +148,14 @@ namespace Rasterizer::Rendering {
         inline buffer_h allocate_buffer_h(buffer_h buffer) { return this->allocate_buffer_h(this->deref_buffer(buffer)); }
         /* Tries to get a new image from the pool of the given sizes and with the given flags. Applies extra checks if NDEBUG is not defined. */
         inline Image allocate_image(uint32_t width, uint32_t height, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkImageCreateFlags create_flags = 0) { return this->deref_image(this->allocate_image_h(width, height, image_format, image_layout, usage_flags, sharing_mode, create_flags)); }
+        /* Tries to get a new image from the pool of the given sizes (but as an extent this time) and with the given flags. Applies extra checks if NDEBUG is not defined. */
+        inline Image allocate_image(const VkExtent2D& extent, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkImageCreateFlags create_flags = 0) { return this->allocate_image(extent.width, extent.height, image_format, image_layout, usage_flags, sharing_mode, create_flags); }
         /* Allocates a new image that has the same specifications as the given Image object. Note that the given Image needn't be allocated with the same pool as this one. */
         inline Image allocate_image(const Image& image) { return this->allocate_image(image.vk_extent.width, image.vk_extent.height, image.vk_format, image.vk_layout, image.vk_usage_flags, image.vk_sharing_mode, image.vk_format); }
         /* Tries to get a new image from the pool of the given sizes and with the given flags, returning only its handle. Applies extra checks if NDEBUG is not defined. */
         image_h allocate_image_h(uint32_t width, uint32_t height, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkImageCreateFlags create_flags = 0);
+        /* Tries to get a new image from the pool of the given sizes (but as an extent this time) and with the given flags, returning only its handle. Applies extra checks if NDEBUG is not defined. */
+        inline image_h allocate_image_h(const VkExtent2D& extent, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkImageCreateFlags create_flags = 0) { return this->allocate_image_h(extent.width, extent.height, image_format, image_layout, usage_flags, sharing_mode, create_flags); }
         /* Allocates a new image that has the same specifications as the given Image object, returning only its handle. Note that the given Image needn't be allocated with the same pool as this one. */
         inline image_h allocate_image_h(const Image& image) { return this->allocate_image_h(image.vk_extent.width, image.vk_extent.height, image.vk_format, image.vk_layout, image.vk_usage_flags, image.vk_sharing_mode, image.vk_format); }
         /* Deallocates the buffer or image with the given handle. Does not throw an error if the handle doesn't exist, unless NDEBUG is not defined. */

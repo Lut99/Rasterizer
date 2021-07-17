@@ -24,6 +24,7 @@
 #include "model_manager/ModelManager.hpp"
 
 #include "render_engine/memory/MemoryPool.hpp"
+#include "render_engine/depthtesting/DepthStencil.hpp"
 #include "render_engine/descriptors/DescriptorPool.hpp"
 #include "render_engine/renderpass/RenderPass.hpp"
 #include "render_engine/pipeline/Shader.hpp"
@@ -58,6 +59,9 @@ namespace Rasterizer::Rendering {
         const Models::ModelManager& model_manager;
 
     private:
+        /* The depth stencil we attach to the pipeline. */
+        Rendering::DepthStencil depth_stencil;
+
         /* The vertex shader we use. */
         Rendering::Shader vertex_shader;
         /* The fragment shader we use. */

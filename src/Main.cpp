@@ -27,6 +27,8 @@
 
 #include "model_manager/ModelManager.hpp"
 
+#include "object_manager/ObjectManager.hpp"
+
 using namespace std;
 using namespace Rasterizer;
 using namespace CppDebugger::SeverityValues;
@@ -81,9 +83,10 @@ int main(int argc, const char** argv) {
     Rendering::MemoryPool stage_pool(window.gpu(), stage_type, 1024 * 1024 * 1024, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     Rendering::DescriptorPool descr_pool(window.gpu(), { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1);
 
-    // Use those to initialize the model manager
+    // Use those to initialize the model manager & object manager
     Models::ModelManager model_manager(mem_cmd_pool, draw_pool, stage_pool);
-    model_manager.load_model("square", Models::ModelFormat::square);
+    Objects::ObjectManager object_manager(window, model_manager);
+    object_manager.add_object({ 0.0f, 0.0f, 0.0f }, "squares", Models::ModelFormat::squares);
 
     // Initialize the engine
     Rendering::RenderEngine render_engine(window, draw_cmd_pool, mem_cmd_pool, draw_pool, stage_pool, descr_pool, model_manager);
@@ -109,7 +112,13 @@ int main(int argc, const char** argv) {
             window.set_title("Rasterizer (FPS: " + std::to_string(fps) + ")");
             fps = 0;
 
-            // // Add another model???
+            // Add another model???
+            // if (count == 0) {
+            //     model_manager.unload_model("squares");
+            //     model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
+            //     render_engine.refresh();
+            //     ++count;
+            // }
             // if (count == 0) {
             //     model_manager.unload_model("triangle");
             //     render_engine.refresh();
