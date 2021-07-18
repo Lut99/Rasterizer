@@ -26,8 +26,7 @@
 #include "render_engine/RenderEngine.hpp"
 
 #include "model_manager/ModelManager.hpp"
-
-#include "object_manager/ObjectManager.hpp"
+#include "ecs/EntityManager.hpp"
 
 using namespace std;
 using namespace Rasterizer;
@@ -83,13 +82,14 @@ int main(int argc, const char** argv) {
     Rendering::MemoryPool stage_pool(window.gpu(), stage_type, 1024 * 1024 * 1024, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     Rendering::DescriptorPool descr_pool(window.gpu(), { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1);
 
-    // Use those to initialize the model manager & object manager
-    Models::ModelManager model_manager(mem_cmd_pool, draw_pool, stage_pool);
-    Objects::ObjectManager object_manager(window, model_manager);
-    object_manager.add_object({ 0.0f, 0.0f, 0.0f }, "squares", Models::ModelFormat::squares);
+    // Next, initialize the entity manager
+    ECS::EntityManager entity_manager;
+    entity_t squares = entity_manager.add(ComponentFlags::model);
+    entity_manager.get_model(squares).id = "squares";
+    entity_manager.get_model(squares).format = Models::ModelFormat::squares;
 
     // Initialize the engine
-    Rendering::RenderEngine render_engine(window, draw_cmd_pool, mem_cmd_pool, draw_pool, stage_pool, descr_pool, model_manager);
+    Rendering::RenderEngine render_engine(window, draw_cmd_pool, mem_cmd_pool, draw_pool, stage_pool, descr_pool);
     DLOG(auxillary, "");
 
     // Do the render

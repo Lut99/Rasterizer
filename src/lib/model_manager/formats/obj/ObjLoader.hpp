@@ -15,8 +15,8 @@
 #ifndef MODELS_OBJ_LOADER_HPP
 #define MODELS_OBJ_LOADER_HPP
 
-#include "model_manager/Vertex.hpp"
-#include "model_manager/Index.hpp"
+#include "render_engine/Vertex.hpp"
+#include "render_engine/Index.hpp"
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Models {

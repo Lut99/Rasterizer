@@ -1,5 +1,5 @@
 # Add the RenderEngine itself
-add_library(RenderEngine STATIC ${CMAKE_CURRENT_SOURCE_DIR}/RenderEngine.cpp)
+add_library(RenderEngine STATIC ${CMAKE_CURRENT_SOURCE_DIR}/RenderEngine.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Vertex.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(RenderEngine PUBLIC
@@ -9,6 +9,7 @@ target_include_directories(RenderEngine PUBLIC
 list(APPEND EXTRA_LIBS RenderEngine)
 
 # Add the subdirectories
+add_subdirectory(models)
 add_subdirectory(synchronization)
 add_subdirectory(renderpass)
 add_subdirectory(pipeline)

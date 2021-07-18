@@ -1,5 +1,5 @@
 # Add the RenderEngine itself
-add_library(ModelManager STATIC ${CMAKE_CURRENT_SOURCE_DIR}/ModelManager.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Vertex.cpp)
+add_library(ModelManager STATIC ${CMAKE_CURRENT_SOURCE_DIR}/ModelManager.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(ModelManager PUBLIC

@@ -55,10 +55,10 @@ namespace Rasterizer::Rendering {
         /* The descriptor pool used to manage the descriptors. */
         Rendering::DescriptorPool& descr_pool;
 
-        /* The model manager that is used to draw. */
+    private:
+        /* The model manager that is used to manage and load models. */
         const Models::ModelManager& model_manager;
 
-    private:
         /* The depth stencil we attach to the pipeline. */
         Rendering::DepthStencil depth_stencil;
 

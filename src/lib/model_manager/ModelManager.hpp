@@ -24,8 +24,8 @@
 #include "render_engine/commandbuffers/CommandPool.hpp"
 #include "render_engine/memory/Buffer.hpp"
 #include "render_engine/commandbuffers/CommandBuffer.hpp"
-#include "Vertex.hpp"
-#include "Index.hpp"
+#include "render_engine/Vertex.hpp"
+#include "render_engine/Index.hpp"
 #include "ModelFormat.hpp"
 
 namespace Rasterizer::Models {

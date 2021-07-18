@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "model_manager/formats/auxillary/DebugInfo.hpp"
+#include "../auxillary/DebugInfo.hpp"
 
 namespace Rasterizer::Models::Obj {
     /* Lists all Terminal types. */
