@@ -4,7 +4,7 @@
  * Created:
  *   12/23/2020, 4:00:20 PM
  * Last edited:
- *   12/23/2020, 5:18:05 PM
+ *   28/07/2021, 18:20:33
  * Auto updated?
  *   Yes
  *
@@ -42,56 +42,56 @@ static bool test_list_initializer() {
 
     // Test each of them if they still have the values we like
     for (array_size_t i = 0; i < test1.size(); i++) {
-        if (test1[i] != i + 1) {
-            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test1[i] != (int) (i + 1)) {
+            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (*test2[i] != i + 1) {
-            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test2[i] != (int) (i + 1)) {
+            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test3.size(); i++) {
-        if (**test3[i] != i + 1) {
-            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test3[i] != (int) (i + 1)) {
+            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test4.size(); i++) {
-        if (*test4[i] != i + 1) {
-            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test4[i] != (int) (i + 1)) {
+            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test5.size(); i++) {
-        if (**test5[i] != i + 1) {
-            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test5[i] != (int) (i + 1)) {
+            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test6.size(); i++) {
-        if (test6[i].value1() != i + 1) {
-            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test6[i].value1() != (int) (i + 1)) {
+            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test6[i].value2() != i + 1) {
-            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test6[i].value2() != (int) (i + 1)) {
+            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test7.size(); i++) {
-        if (**test7[i].value1() != i + 1) {
-            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test7[i].value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (test7[i].value2().value1() != i + 1) {
-            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test7[i].value2().value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test7[i].value2().value2() != i + 1) {
-            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test7[i].value2().value2() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
@@ -121,56 +121,56 @@ static bool test_c_style_constructor() {
 
     // Test each of them if they still have the values we like
     for (array_size_t i = 0; i < test1.size(); i++) {
-        if (test1[i] != i + 1) {
-            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test1[i] != (int) (i + 1)) {
+            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (*test2[i] != i + 1) {
-            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test2[i] != (int) (i + 1)) {
+            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test3.size(); i++) {
-        if (**test3[i] != i + 1) {
-            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test3[i] != (int) (i + 1)) {
+            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test4.size(); i++) {
-        if (*test4[i] != i + 1) {
-            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test4[i] != (int) (i + 1)) {
+            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test5.size(); i++) {
-        if (**test5[i] != i + 1) {
-            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test5[i] != (int) (i + 1)) {
+            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test6.size(); i++) {
-        if (test6[i].value1() != i + 1) {
-            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test6[i].value1() != (int) (i + 1)) {
+            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test6[i].value2() != i + 1) {
-            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test6[i].value2() != (int) (i + 1)) {
+            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test7.size(); i++) {
-        if (**test7[i].value1() != i + 1) {
-            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test7[i].value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (test7[i].value2().value1() != i + 1) {
-            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test7[i].value2().value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test7[i].value2().value2() != i + 1) {
-            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test7[i].value2().value2() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
@@ -200,56 +200,56 @@ static bool test_vector_constructor() {
 
     // Test each of them if they still have the values we like
     for (array_size_t i = 0; i < test1.size(); i++) {
-        if (test1[i] != i + 1) {
-            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test1[i] != (int) (i + 1)) {
+            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (*test2[i] != i + 1) {
-            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test2[i] != (int) (i + 1)) {
+            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test3.size(); i++) {
-        if (**test3[i] != i + 1) {
-            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test3[i] != (int) (i + 1)) {
+            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test4.size(); i++) {
-        if (*test4[i] != i + 1) {
-            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test4[i] != (int) (i + 1)) {
+            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test5.size(); i++) {
-        if (**test5[i] != i + 1) {
-            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test5[i] != (int) (i + 1)) {
+            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test6.size(); i++) {
-        if (test6[i].value1() != i + 1) {
-            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test6[i].value1() != (int) (i + 1)) {
+            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test6[i].value2() != i + 1) {
-            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test6[i].value2() != (int) (i + 1)) {
+            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test7.size(); i++) {
-        if (**test7[i].value1() != i + 1) {
-            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test7[i].value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (test7[i].value2().value1() != i + 1) {
-            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test7[i].value2().value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test7[i].value2().value2() != i + 1) {
-            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test7[i].value2().value2() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
@@ -279,56 +279,56 @@ static bool test_copy_constructor() {
 
     // Test each of them if they still have the values we like
     for (array_size_t i = 0; i < test1.size(); i++) {
-        if (test1[i] != i + 1) {
-            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test1[i] != (int) (i + 1)) {
+            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (*test2[i] != i + 1) {
-            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test2[i] != (int) (i + 1)) {
+            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test3.size(); i++) {
-        if (**test3[i] != i + 1) {
-            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test3[i] != (int) (i + 1)) {
+            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test4.size(); i++) {
-        if (*test4[i] != i + 1) {
-            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test4[i] != (int) (i + 1)) {
+            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test5.size(); i++) {
-        if (**test5[i] != i + 1) {
-            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test5[i] != (int) (i + 1)) {
+            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test6.size(); i++) {
-        if (test6[i].value1() != i + 1) {
-            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test6[i].value1() != (int) (i + 1)) {
+            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test6[i].value2() != i + 1) {
-            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test6[i].value2() != (int) (i + 1)) {
+            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test7.size(); i++) {
-        if (**test7[i].value1() != i + 1) {
-            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test7[i].value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (test7[i].value2().value1() != i + 1) {
-            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test7[i].value2().value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test7[i].value2().value2() != i + 1) {
-            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test7[i].value2().value2() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
@@ -358,56 +358,56 @@ static bool test_move_constructor() {
 
     // Test each of them if they still have the values we like
     for (array_size_t i = 0; i < test1.size(); i++) {
-        if (test1[i] != i + 1) {
-            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test1[i] != (int) (i + 1)) {
+            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (*test2[i] != i + 1) {
-            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test2[i] != (int) (i + 1)) {
+            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test3.size(); i++) {
-        if (**test3[i] != i + 1) {
-            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test3[i] != (int) (i + 1)) {
+            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test4.size(); i++) {
-        if (*test4[i] != i + 1) {
-            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test4[i] != (int) (i + 1)) {
+            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test5.size(); i++) {
-        if (**test5[i] != i + 1) {
-            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test5[i] != (int) (i + 1)) {
+            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test6.size(); i++) {
-        if (test6[i].value1() != i + 1) {
-            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test6[i].value1() != (int) (i + 1)) {
+            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test6[i].value2() != i + 1) {
-            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test6[i].value2() != (int) (i + 1)) {
+            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test7.size(); i++) {
-        if (**test7[i].value1() != i + 1) {
-            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (**test7[i].value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (test7[i].value2().value1() != i + 1) {
-            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (test7[i].value2().value1() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
-        if (*test7[i].value2().value2() != i + 1) {
-            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string(i + 1) + ")");
+        if (*test7[i].value2().value2() != (int) (i + 1)) {
+            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string((int) (i + 1)) + ")");
             ENDCASE(false);
         }
     }
@@ -430,71 +430,71 @@ static bool test_altered() {
 
     // Alter them
     for (int i = 0; i < 3; i++) {
-        test1[i] = i + 3;
-        *test2[i] = i + 3;
-        **test3[i] = i + 3;
-        *test4[i] = i + 3;
-        **test5[i] = i + 3;
-        test6[i].value1() = i + 3;
-        *test6[i].value2() = i + 3;
-        **test7[i].value1() = i + 3;
-        test7[i].value2().value1() = i + 3;
-        *test7[i].value2().value2() = i + 3;
+        test1[i] = (int) (i + 3);
+        *test2[i] = (int) (i + 3);
+        **test3[i] = (int) (i + 3);
+        *test4[i] = (int) (i + 3);
+        **test5[i] = (int) (i + 3);
+        test6[i].value1() = (int) (i + 3);
+        *test6[i].value2() = (int) (i + 3);
+        **test7[i].value1() = (int) (i + 3);
+        test7[i].value2().value1() = (int) (i + 3);
+        *test7[i].value2().value2() = (int) (i + 3);
     }
 
     // Check them
     // Test each of them if they still have the values we like
     for (array_size_t i = 0; i < test1.size(); i++) {
-        if (test1[i] != i + 3) {
-            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (test1[i] != (int) (i + 3)) {
+            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (*test2[i] != i + 3) {
-            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test2[i] != (int) (i + 3)) {
+            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test3.size(); i++) {
-        if (**test3[i] != i + 3) {
-            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (**test3[i] != (int) (i + 3)) {
+            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test4.size(); i++) {
-        if (*test4[i] != i + 3) {
-            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test4[i] != (int) (i + 3)) {
+            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test5.size(); i++) {
-        if (**test5[i] != i + 3) {
-            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (**test5[i] != (int) (i + 3)) {
+            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test6.size(); i++) {
-        if (test6[i].value1() != i + 3) {
-            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (test6[i].value1() != (int) (i + 3)) {
+            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
-        if (*test6[i].value2() != i + 3) {
-            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test6[i].value2() != (int) (i + 3)) {
+            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test7.size(); i++) {
-        if (**test7[i].value1() != i + 3) {
-            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (**test7[i].value1() != (int) (i + 3)) {
+            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
-        if (test7[i].value2().value1() != i + 3) {
-            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (test7[i].value2().value1() != (int) (i + 3)) {
+            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
-        if (*test7[i].value2().value2() != i + 3) {
-            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test7[i].value2().value2() != (int) (i + 3)) {
+            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
@@ -517,71 +517,71 @@ static bool test_at_altered() {
 
     // Alter them
     for (int i = 0; i < 3; i++) {
-        test1.at(i) = i + 3;
-        *test2.at(i) = i + 3;
-        **test3.at(i) = i + 3;
-        *test4.at(i) = i + 3;
-        **test5.at(i) = i + 3;
-        test6.at(i).value1() = i + 3;
-        *test6.at(i).value2() = i + 3;
-        **test7.at(i).value1() = i + 3;
-        test7.at(i).value2().value1() = i + 3;
-        *test7.at(i).value2().value2() = i + 3;
+        test1.at(i) = (int) (i + 3);
+        *test2.at(i) = (int) (i + 3);
+        **test3.at(i) = (int) (i + 3);
+        *test4.at(i) = (int) (i + 3);
+        **test5.at(i) = (int) (i + 3);
+        test6.at(i).value1() = (int) (i + 3);
+        *test6.at(i).value2() = (int) (i + 3);
+        **test7.at(i).value1() = (int) (i + 3);
+        test7.at(i).value2().value1() = (int) (i + 3);
+        *test7.at(i).value2().value2() = (int) (i + 3);
     }
 
     // Check them
     // Test each of them if they still have the values we like
     for (array_size_t i = 0; i < test1.size(); i++) {
-        if (test1[i] != i + 3) {
-            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (test1[i] != (int) (i + 3)) {
+            ERROR("Easy value " + std::to_string(test1[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (*test2[i] != i + 3) {
-            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test2[i] != (int) (i + 3)) {
+            ERROR("Medium value " + std::to_string(*test2[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test3.size(); i++) {
-        if (**test3[i] != i + 3) {
-            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (**test3[i] != (int) (i + 3)) {
+            ERROR("Medium hard value " + std::to_string(**test3[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test4.size(); i++) {
-        if (*test4[i] != i + 3) {
-            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test4[i] != (int) (i + 3)) {
+            ERROR("Hard value " + std::to_string(*test4[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test5.size(); i++) {
-        if (**test5[i] != i + 3) {
-            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (**test5[i] != (int) (i + 3)) {
+            ERROR("Super hard value " + std::to_string(**test5[i]) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test6.size(); i++) {
-        if (test6[i].value1() != i + 3) {
-            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (test6[i].value1() != (int) (i + 3)) {
+            ERROR("Extreme value 1 " + std::to_string(test6[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
-        if (*test6[i].value2() != i + 3) {
-            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test6[i].value2() != (int) (i + 3)) {
+            ERROR("Extreme value 2 " + std::to_string(*test6[i].value2()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }
     for (array_size_t i = 0; i < test7.size(); i++) {
-        if (**test7[i].value1() != i + 3) {
-            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (**test7[i].value1() != (int) (i + 3)) {
+            ERROR("Super extreme value 1 " + std::to_string(**test7[i].value1()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
-        if (test7[i].value2().value1() != i + 3) {
-            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (test7[i].value2().value1() != (int) (i + 3)) {
+            ERROR("Super extreme value 2 (1) " + std::to_string(test7[i].value2().value1()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
-        if (*test7[i].value2().value2() != i + 3) {
-            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string(i + 3) + ")");
+        if (*test7[i].value2().value2() != (int) (i + 3)) {
+            ERROR("Super extreme value 2 (2) " + std::to_string(*test7[i].value2().value2()) + " is incorrect (expected " + std::to_string((int) (i + 3)) + ")");
             ENDCASE(false);
         }
     }

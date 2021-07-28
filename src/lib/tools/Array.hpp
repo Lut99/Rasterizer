@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 16:45:17
  * Last edited:
- *   27/07/2021, 16:45:17
+ *   28/07/2021, 20:27:50
  * Auto updated?
  *   Yes
  *
@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <initializer_list>
 #include <vector>
+#include <limits>
 
 namespace Tools {
     /* The datatype used for the size of the Array. */
@@ -97,14 +98,15 @@ namespace Tools {
             /* Move assignment operator for the ArrayStorage class */
             inline ArrayStorage& operator=(ArrayStorage&& other) { if (this != &other) { swap(*this, other); } return *this; }
             /* Swap operator for the ArrayStorage class. */
-            friend void swap(ArrayStorage& as1, ArrayStorage& as2);
+            friend void swap(ArrayStorage& as1, ArrayStorage& as2) {
+                using std::swap;
+
+                swap(as1.elements, as2.elements);
+                swap(as1.length, as2.length);
+                swap(as1.max_length, as2.max_length);
+            }
 
         };
-
-        /* Swap operator for the ArrayStorage class. */
-        template <class T>
-        void swap(ArrayStorage<T>& as1, ArrayStorage<T>& as2);
-
     }
 
 
@@ -115,7 +117,15 @@ namespace Tools {
     private:
         /* The internal data as wrapped by ArrayStorage. */
         _intern::ArrayStorage<T> storage;
-    
+
+
+        /* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
+        template <typename U = void>
+        auto _def_push_back(int) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U>;
+        /* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
+        template <typename U = void>
+        auto _def_push_back(long) -> std::enable_if_t<D, U>;
+
     public:
         /* Default constructor for the Array class, which initializes it to not having any elements. */
         Array();
@@ -129,7 +139,7 @@ namespace Tools {
         Array(const std::initializer_list<T>& list);
         /* Constructor for the Array class, which takes a raw C-style vector to copy elements from and its size. Note that the Array's element type must have a copy custructor defined. */
         template <typename U = void, typename = std::enable_if_t<C, U>>
-        Array(T* list, array_size_t list_size);
+        Array(const T* list, array_size_t list_size);
         /* Constructor for the Array class, which takes a C++-style vector. Note that the Array's element type must have a copy custructor defined. */
         template <typename U = void, typename = std::enable_if_t<C, U>>
         Array(const std::vector<T>& list);
@@ -147,6 +157,8 @@ namespace Tools {
         template <typename U = Array<T>&>
         auto operator+=(Array<T>&& elems) -> std::enable_if_t<M, U>;
 
+        /* Adds a new element of type T to the array, initializing it with its default constructor. Only needs a default constructor to be present, but cannot resize itself without a move constructor. */
+        inline auto push_back() -> decltype(this->_def_push_back(0), void()) { return this->_def_push_back(0); }
         /* Adds a new element of type T to the array, copying it. Note that this requires the element to be copy constructible. */
         template <typename U = void>
         auto push_back(const T& elem) -> std::enable_if_t<C, U>;
@@ -155,7 +167,7 @@ namespace Tools {
         auto push_back(T&& elem) -> std::enable_if_t<M, U>;
         /* Removes the last element from the array. */
         void pop_back();
-        
+
         /* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. */
         template <typename U = void>
         auto erase(array_size_t index) -> std::enable_if_t<M, U>;
@@ -175,37 +187,37 @@ namespace Tools {
         auto resize(array_size_t new_size) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U>;
 
         /* Returns a muteable reference to the element at the given index. Does not perform any in-of-bounds checking. */
-        inline T& operator[](array_size_t index) { return this->elements[index]; }
+        inline T& operator[](array_size_t index) { return this->storage.elements[index]; }
         /* Returns a constant reference to the element at the given index. Does not perform any in-of-bounds checking. */
-        inline const T& operator[](array_size_t index) const { return this->elements[index]; }
+        inline const T& operator[](array_size_t index) const { return this->storage.elements[index]; }
         /* Returns a muteable reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
         T& at(array_size_t index);
         /* Returns a constant reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
         inline const T& at(array_size_t index) const { return this->at(index); }
         /* Returns the last element in the list. */
-        inline T& last() { return this->elements[this->length - 1]; }
+        inline T& last() { return this->storage.elements[this->length - 1]; }
         /* Returns the last element in the list. */
-        inline const T& last() const { return this->elements[this->length - 1]; }
+        inline const T& last() const { return this->storage.elements[this->length - 1]; }
 
         /* Returns a muteable pointer to the internal data struct. Use this to fill the array using C-libraries, but beware that the array needs to have enough space reserved. Also note that object put here will still be deallocated by the Array using ~T(). The optional new_size parameter is used to update the size() value of the array, so it knows what is initialized and what is not. Leave it at numeric_limits<array_size_t>::max() to leave the array size unchanged. */
         T* wdata(array_size_t new_size = std::numeric_limits<array_size_t>::max());
         /* Returns a constant pointer to the internal data struct. Use this to read from the array using C-libraries, but beware that the array needs to have enough space reserved. */
-        inline const T* rdata() const { return this->elements; }
+        inline const T* rdata() const { return this->storage.elements; }
         /* Returns true if there are no elements in this array, or false otherwise. */
-        inline bool empty() const { return this->length == 0; }
+        inline bool empty() const { return this->storage.length == 0; }
         /* Returns the number of elements stored in this Array. */
-        inline array_size_t size() const { return this->length; }
+        inline array_size_t size() const { return this->storage.length; }
         /* Returns the number of elements this Array can store before resizing. */
-        inline array_size_t capacity() const { return this->max_length; }
+        inline array_size_t capacity() const { return this->storage.max_length; }
 
         /* Swap operator for the Array class. */
-        friend void swap(Array& a1, Array& a2);
+        friend void swap(Array& a1, Array& a2) {
+            using std::swap;
+
+            swap(a1.storage, a2.storage);
+        }
 
     };
-    
-    /* Swap operator for the Array class. */
-    template <class T>
-    void swap(Array<T>& a1, Array<T>& a2);
 
 }
 

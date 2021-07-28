@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 17:11:02
  * Last edited:
- *   27/07/2021, 17:11:02
+ *   28/07/2021, 20:25:43
  * Auto updated?
  *   Yes
  *
@@ -70,18 +70,6 @@ _intern::ArrayStorage<T>::~ArrayStorage() {
 
 
 
-/* Swap operator for the ArrayStorage class. */
-template <class T>
-void _intern::swap(_intern::ArrayStorage<T>& as1, _intern::ArrayStorage<T>& as2) {
-    using std::swap;
-
-    swap(as1.elements, as2.elements);
-    swap(as1.length, as2.length);
-    swap(as1.max_length, as2.max_length);
-}
-
-
-
 
 
 /***** ARRAY CLASS *****/
@@ -124,7 +112,7 @@ Array<T, D, C, M>::Array(const std::initializer_list<T>& list) :
 /* Constructor for the Array class, which takes a raw C-style vector to copy elements from and its size. Note that the Array's element type must have a copy custructor defined. */
 template <class T, bool D, bool C, bool M>
 template <typename U, typename>
-Array<T, D, C, M>::Array(T* list, array_size_t list_size) :
+Array<T, D, C, M>::Array(const T* list, array_size_t list_size) :
     Array(list_size)
 {
     // Copy all the elements over
@@ -184,6 +172,34 @@ auto Array<T, D, C, M>::operator+=(Array<T>&& elems) -> std::enable_if_t<M, U> {
 
 
 
+/* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+inline auto Array<T, D, C, M>::_def_push_back(int) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U> {
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        this->reserve(this->storage.length + 1);
+    }
+
+    // Add the element to the end of the array
+    new(this->storage.elements + this->storage.length++) T();
+}
+
+/* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+inline auto Array<T, D, C, M>::_def_push_back(long) -> std::enable_if_t<D, U> {
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+    }
+
+    // Add the element to the end of the array
+    new(this->storage.elements + this->storage.length++) T();
+}
+
+
+
 /* Adds a new element of type T to the array, copying it. Note that this requires the element to be copy constructible. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
@@ -218,11 +234,11 @@ void Array<T, D, C, M>::pop_back() {
 
     // Delete the last element if we need to
     if (std::is_destructible<T>::value) {
-        this->elements[this->length - 1].~T();
+        this->storage.elements[this->storage.length - 1].~T();
     }
 
     // Decrement the length
-    --this->length;
+    --this->storage.length;
 }
 
 
@@ -236,7 +252,7 @@ auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<M, U> {
 
     // Otherwise, delete the element if needed
     if (std::is_destructible<T>::value) {
-        this->elements[index].~T();
+        this->storage.elements[index].~T();
     }
 
     // Move the other elements one back
@@ -263,12 +279,12 @@ auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index)
     }
 
     // Move all elements following it back
-    for (array_size_t i = stop_index + 1; i < this->length; i++) {
+    for (array_size_t i = stop_index + 1; i < this->storage.length; i++) {
         new(this->storage.elements + (i - (stop_index - start_index) - 1)) T(std::move(this->storage.elements[i]));
     }
 
     // Decrease the length
-    this->length -= 1 + stop_index - start_index;
+    this->storage.length -= 1 + stop_index - start_index;
 }
 
 /* Erases everything from the array, but leaves the internally located array intact. */
@@ -276,13 +292,13 @@ template <class T, bool D, bool C, bool M>
 void Array<T, D, C, M>::clear() {
     // Delete everything in the Array if the type wants it to
     if (std::is_destructible<T>::value) {
-        for (array_size_t i = 0; i < this->length; i++) {
-            this->elements[i].~T();
+        for (array_size_t i = 0; i < this->storage.length; i++) {
+            this->storage.elements[i].~T();
         }
     }
 
     // Set the new length
-    this->length = 0;
+    this->storage.length = 0;
 }
 
 /* Erases everything from the array, even removing the internal allocated array. */
@@ -290,16 +306,16 @@ template <class T, bool D, bool C, bool M>
 void Array<T, D, C, M>::reset() {
     // Delete everything in the Array if the type wants it to
     if (std::is_destructible<T>::value) {
-        for (array_size_t i = 0; i < this->length; i++) {
-            this->elements[i].~T();
+        for (array_size_t i = 0; i < this->storage.length; i++) {
+            this->storage.elements[i].~T();
         }
     }
-    free(this->elements);
+    free(this->storage.elements);
 
     // Set the new values
-    this->elements = nullptr;
-    this->length = 0;
-    this->max_length = 0;
+    this->storage.elements = nullptr;
+    this->storage.length = 0;
+    this->storage.max_length = 0;
 }
 
 
@@ -369,17 +385,7 @@ T& Array<T, D, C, M>::at(array_size_t index) {
 template <class T, bool D, bool C, bool M>
 T* Array<T, D, C, M>::wdata(array_size_t new_size) {
     // Update the size if it's not the max
-    if (new_size != std::numeric_limits<array_size_t>::max()) { this->length = new_size; }
+    if (new_size != std::numeric_limits<array_size_t>::max()) { this->storage.length = new_size; }
     // Return the pointer
-    return this->elements;
-}
-
-
-
-/* Swap operator for the Array class. */
-template <class T>
-void Tools::swap(Array<T>& a1, Array<T>& a2) {
-    using std::swap;
-
-    swap(a1.storage, a2.storage);
+    return this->storage.elements;
 }

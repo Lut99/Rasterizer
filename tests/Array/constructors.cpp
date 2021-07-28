@@ -4,7 +4,7 @@
  * Created:
  *   1/13/2021, 4:05:43 PM
  * Last edited:
- *   1/14/2021, 1:25:20 PM
+ *   28/07/2021, 20:15:30
  * Auto updated?
  *   Yes
  *
@@ -129,8 +129,8 @@ static bool test_nodefault() {
     test.push_back(NoDefault(4));
     Array<NoDefault> test2 = test;
     for (array_size_t i = 0; i < test2.size(); i++) {
-        if (test2[i].get_value() != i + 1) {
-            ERROR("Constructing without default failed; expected " + std::to_string(i + 1) + ", got " + std::to_string(test2[i].get_value()));
+        if (test2[i].get_value() != (int) (i + 1)) {
+            ERROR("Constructing without default failed; expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(test2[i].get_value()));
             ENDCASE(false);
         }
     }
@@ -138,7 +138,7 @@ static bool test_nodefault() {
     // Also do the through-function test
     Array<NoDefault> test3 = populate<NoDefault>(3);
     for (array_size_t i = 0; i < 3; i++) {
-        if (test3[i].get_value() != i) {
+        if (test3[i].get_value() != (int) i) {
             ERROR("Constructing without default through populate failed; expected " + std::to_string(i) + ", got " + std::to_string(test3[i].get_value()));
             ENDCASE(false);
         }
@@ -157,8 +157,8 @@ static bool test_nocopy() {
     test.push_back(NoCopy(2));
     test.push_back(NoCopy(3));
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (test[i].get_value() != i + 1) {
-            ERROR("Constructing without copy failed; expected " + std::to_string(i + 1) + ", got " + std::to_string(test[i].get_value()));
+        if (test[i].get_value() != (int) (i + 1)) {
+            ERROR("Constructing without copy failed; expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(test[i].get_value()));
             ENDCASE(false);
         }
     }
@@ -166,7 +166,7 @@ static bool test_nocopy() {
     // Also do the through-function test
     Array<NoDefault> test2 = populate<NoDefault>(3);
     for (array_size_t i = 0; i < 3; i++) {
-        if (test2[i].get_value() != i) {
+        if (test2[i].get_value() != (int) i) {
             ERROR("Constructing without copy through populate failed; expected " + std::to_string(i) + ", got " + std::to_string(test2[i].get_value()));
             ENDCASE(false);
         }
@@ -183,8 +183,8 @@ static bool test_nomove() {
     NoMove elems[] = { NoMove(1), NoMove(2), NoMove(3) };
     Array<NoMove> test(elems, 3);
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (test[i].get_value() != i + 1) {
-            ERROR("Constructing without copy failed; expected " + std::to_string(i + 1) + ", got " + std::to_string(test[i].get_value()));
+        if (test[i].get_value() != (int) (i + 1)) {
+            ERROR("Constructing without copy failed; expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(test[i].get_value()));
             ENDCASE(false);
         }
     }
@@ -192,7 +192,7 @@ static bool test_nomove() {
     // Also do the through-function test
     Array<NoDefault> test2 = populate<NoDefault>(3);
     for (array_size_t i = 0; i < 3; i++) {
-        if (test2[i].get_value() != i) {
+        if (test2[i].get_value() != (int) i) {
             ERROR("Constructing without move through populate failed; expected " + std::to_string(i) + ", got " + std::to_string(test2[i].get_value()));
             ENDCASE(false);
         }
@@ -211,8 +211,8 @@ static bool test_nodefaultnocopy() {
     test.push_back(NoDefaultNoCopy(2));
     test.push_back(NoDefaultNoCopy(3));
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (test[i].get_value() != i + 1) {
-            ERROR("Constructing without copy failed; expected " + std::to_string(i + 1) + ", got " + std::to_string(test[i].get_value()));
+        if (test[i].get_value() != (int) (i + 1)) {
+            ERROR("Constructing without copy failed; expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(test[i].get_value()));
             ENDCASE(false);
         }
     }
@@ -220,7 +220,7 @@ static bool test_nodefaultnocopy() {
     // Also do the through-function test
     Array<NoDefault> test2 = populate<NoDefault>(3);
     for (array_size_t i = 0; i < 3; i++) {
-        if (test2[i].get_value() != i) {
+        if (test2[i].get_value() != (int) i) {
             ERROR("Constructing without default & copy through populate failed; expected " + std::to_string(i) + ", got " + std::to_string(test2[i].get_value()));
             ENDCASE(false);
         }
@@ -234,8 +234,10 @@ static bool test_nodefaultnocopy() {
 static bool test_nocopynomove() {
     TESTCASE("without copy & move constructors");
 
-    Array<NoCopyNoMove> test;
-    test.resize(3);
+    Array<NoCopyNoMove> test(3);
+    test.push_back();
+    test.push_back();
+    test.push_back();
     for (array_size_t i = 0; i < test.size(); i++) {
         if (test[i].get_value() != NoCopyNoMove::default_value) {
             ERROR("Constructing without copy failed; expected " + std::to_string(NoCopyNoMove::default_value) + ", got " + std::to_string(test[i].get_value()));
@@ -254,8 +256,8 @@ static bool test_nodefaultnomove() {
     NoDefaultNoMove elems[] = { NoDefaultNoMove(1), NoDefaultNoMove(2), NoDefaultNoMove(3) };
     Array<NoDefaultNoMove> test(elems, 3);
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (test[i].get_value() != i + 1) {
-            ERROR("Constructing without copy failed; expected " + std::to_string(i + 1) + ", got " + std::to_string(test[i].get_value()));
+        if (test[i].get_value() != (int) (i + 1)) {
+            ERROR("Constructing without copy failed; expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(test[i].get_value()));
             ENDCASE(false);
         }
     }
@@ -263,7 +265,7 @@ static bool test_nodefaultnomove() {
     // Also do the through-function test
     Array<NoDefault> test2 = populate<NoDefault>(3);
     for (array_size_t i = 0; i < 3; i++) {
-        if (test2[i].get_value() != i) {
+        if (test2[i].get_value() != (int) i) {
             ERROR("Constructing without default & move through populate failed; expected " + std::to_string(i) + ", got " + std::to_string(test2[i].get_value()));
             ENDCASE(false);
         }

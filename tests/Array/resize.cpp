@@ -4,7 +4,7 @@
  * Created:
  *   12/23/2020, 4:46:17 PM
  * Last edited:
- *   12/23/2020, 5:33:34 PM
+ *   28/07/2021, 18:22:29
  * Auto updated?
  *   Yes
  *
@@ -56,7 +56,7 @@ bool test_reserve_empty() {
     new(test.wdata(3) + 2) hard_t(3);
 
     for (array_size_t i = 0; i < test.capacity(); i++) {
-        if (*test[i] != i + 1) {
+        if (*test[i] != (int) (i + 1)) {
             ERROR("Reserving in empty array failed; element at index " + std::to_string(i) + " is expected: " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
@@ -83,7 +83,7 @@ bool test_reserve_nonempty() {
     new(test.wdata(6) + 5) hard_t(6);
 
     for (array_size_t i = 0; i < test.capacity(); i++) {
-        if (*test[i] != i + 1) {
+        if (*test[i] != (int) (i + 1)) {
             ERROR("Reserving in non-empty array failed; element at index " + std::to_string(i) + " is expected: " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
@@ -105,7 +105,7 @@ bool test_reserve_downsize() {
     }
 
     for (array_size_t i = 0; i < test.capacity(); i++) {
-        if (*test[i] != i + 1) {
+        if (*test[i] != (int) (i + 1)) {
             ERROR("Reserving in larger array failed; element at index " + std::to_string(i) + " is expected: " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }

@@ -4,7 +4,7 @@
  * Created:
  *   12/23/2020, 5:31:23 PM
  * Last edited:
- *   1/13/2021, 4:22:47 PM
+ *   28/07/2021, 18:28:20
  * Auto updated?
  *   Yes
  *
@@ -41,8 +41,8 @@ bool test_reserved_push() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < 3; i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Pushing to reserved array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Pushing to reserved array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -66,8 +66,8 @@ bool test_nonreserved_push() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < 3; i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Pushing to non-reserved array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Pushing to non-reserved array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -98,8 +98,8 @@ bool test_empty_pop() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < 3; i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Pushing to popped array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Pushing to popped array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -125,8 +125,8 @@ bool test_nonempty_pop() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Popping from non-empty array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Popping from non-empty array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -142,8 +142,8 @@ bool test_nonempty_pop() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Pushing to popped array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Pushing to popped array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -174,8 +174,8 @@ bool test_empty_erase() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Pushing to erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Pushing to erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -201,8 +201,8 @@ bool test_nonempty_erase() {
     
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Erasing from non-empty array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Erasing from non-empty array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -218,8 +218,8 @@ bool test_nonempty_erase() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Pushing to erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Pushing to erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -234,8 +234,8 @@ bool test_nonempty_erase() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 2) {
-             ERROR("Pushing to very erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 2) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 2)) {
+             ERROR("Pushing to very erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 2)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -262,8 +262,8 @@ bool test_range_erase() {
     
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 1) {
-            ERROR("Erasing from non-empty array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+            ERROR("Erasing from non-empty array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -279,8 +279,8 @@ bool test_range_erase() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 1) {
-             ERROR("Pushing to erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 1) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 1)) {
+             ERROR("Pushing to erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 1)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
@@ -295,8 +295,8 @@ bool test_range_erase() {
 
     // Test if the values made it
     for (array_size_t i = 0; i < test.size(); i++) {
-        if (*test[i] != i + 3) {
-             ERROR("Pushing to very erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string(i + 3) + ", got " + std::to_string(*test[i]));
+        if (*test[i] != (int) (i + 3)) {
+             ERROR("Pushing to very erased array failed; incorrect value at index " + std::to_string(i) + ": expected " + std::to_string((int) (i + 3)) + ", got " + std::to_string(*test[i]));
             ENDCASE(false);
         }
     }
