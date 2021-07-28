@@ -14,6 +14,8 @@
 
 #include "tools/CppDebugger.hpp"
 
+#include "components/Transform.hpp"
+
 #include "EntityManager.hpp"
 
 using namespace std;
@@ -24,8 +26,56 @@ using namespace CppDebugger::SeverityValues;
 
 /***** ENTITYMANAGER CLASS *****/
 /* Constructor for the EntityManager class. */
-EntityManager::EntityManager()
-{}
+EntityManager::EntityManager() {
+    DENTER("ECS::EntityManager::EntityManager");
+
+    // Register the components
+    this->components = new IComponentList*[EntityManager::max_components];
+    this->components[0] = (IComponentList*) new ComponentList<Transform>(ComponentFlags::transform);
+
+    // Done
+    DLEAVE;
+}
+
+/* Copy constructor for the EntityManager class. */
+EntityManager::EntityManager(const EntityManager& other) :
+    entities(other.entities)
+{
+    DENTER("ECS::EntityManager::EntityManager(copy)");
+
+    // Allocate new lists
+    this->components = new IComponentList*[EntityManager::max_components];
+    for (uint32_t i = 0; i < EntityManager::max_components; i++) {
+        this->components[i] = other.components[i]->copy();
+    }
+
+    // Done
+    DLEAVE;
+}
+
+/* Move constructor for the EntityManager class. */
+EntityManager::EntityManager(EntityManager&& other) :
+    entities(other.entities),
+    components(other.components)
+{
+    other.components = nullptr;
+}
+
+/* Destructor for the EntityManager class. */
+EntityManager::~EntityManager() {
+    DENTER("ECS::EntityManager::~EntityManager");
+
+    // Delete the componentlists if needed
+    if (this->components != nullptr) {
+        for (uint32_t i = 0; i < EntityManager::max_components; i++) {
+            delete this->components[i];
+        }
+        delete[] this->components;
+    }
+
+    // Done
+    DLEAVE;
+}
 
 
 
@@ -43,12 +93,13 @@ entity_t EntityManager::add(ComponentFlags components) {
     }
 
     // Add the ID to the list
-    this->entities.insert(entity);
-    this->entity_components.insert(make_pair(entity, components));
+    this->entities.insert(make_pair(entity, components));
 
     // Next, create each of the components
-    if (components & ComponentFlags::transform) {
-        this->transforms.add(entity, {});
+    for (uint32_t i = 0; i < EntityManager::max_components; i++) {
+        if (components & this->components[i]->flags()) {
+            this->components[i]->add(entity);
+        }
     }
 
     // We're done; return the ID
@@ -65,15 +116,26 @@ void EntityManager::remove(entity_t entity) {
     }
 
     // If it does, then remove its components
-    ComponentFlags components = this->entity_components.at(entity);
-    if (components & ComponentFlags::transform) {
-        this->transforms.remove(entity);
+    ComponentFlags components = this->entities.at(entity);
+    for (uint32_t i = 0; i < EntityManager::max_components; i++) {
+        if (components & this->components[i]->flags()) {
+            this->components[i]->remove(entity);
+        }
     }
 
     // Remove the entity from the manager itself
-    this->entity_components.erase(entity);
     this->entities.erase(entity);
 
     // Done, it's fully erased
     DRETURN;
+}
+
+
+
+/* Swap operator for the EntityManager class. */
+void ECS::swap(EntityManager& em1, EntityManager& em2) {
+    using std::swap;
+
+    swap(em1.entities, em2.entities);
+    swap(em1.components, em2.components);
 }

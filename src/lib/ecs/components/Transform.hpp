@@ -30,13 +30,16 @@ namespace Rasterizer::ECS {
         glm::vec3 scale;
     };
 
+    /* Hash function for the Transform struct, which returns its 'hash' code. */
+    template <> inline constexpr uint32_t hash_component<Transform>() { return 0; }
+
 }
 
 
 
 namespace Tools {
     /* The string name of the Transform component. */
-    template <> inline const char* type_name<Rasterizer::ECS::Transform>() { return "Transform"; }
+    template <> inline constexpr const char* type_name<Rasterizer::ECS::Transform>() { return "Transform"; }
 }
 
 #endif

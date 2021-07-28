@@ -71,3 +71,19 @@ add_custom_target(shaders
     COMMAND glslc -fshader-stage=frag -o ${PROJECT_SOURCE_DIR}/bin/shaders/frag_v1.spv ${PROJECT_SOURCE_DIR}/src/shaders/fragment_v1.glsl
     COMMENT "Building shaders..."
 )
+
+
+
+##### ARRAY TESTS #####
+# Add the test directory
+add_subdirectory(tests/Array)
+
+# Define the executable for the tests
+add_executable(test_array ${PROJECT_SOURCE_DIR}/tests/Array/test_array.cpp)
+# Define the executable's include directory
+target_include_directories(test_array PUBLIC "${INCLUDE_DIRS}")
+
+# Add which libraries to link
+target_link_libraries(test_array PUBLIC
+                      ${ARRAY_TEST_LIBS}
+                      )

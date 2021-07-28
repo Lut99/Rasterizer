@@ -30,9 +30,7 @@ namespace Rasterizer::ECS {
             all = ~0,
 
             /* The Transform component, which means the entity has a location in world space. */
-            transform = 0x1,
-            /* The Modelled component, which means the entity has a model that needs to be loaded. */
-            model = 0x2
+            transform = 0x1
 
         };
     };
@@ -44,8 +42,7 @@ namespace Rasterizer::ECS {
         { ComponentFlags::none, "none" },
         { ComponentFlags::all, "all" },
 
-        { ComponentFlags::transform, "transform" },
-        { ComponentFlags::model, "model" }
+        { ComponentFlags::transform, "transform" }
     };
 
 }

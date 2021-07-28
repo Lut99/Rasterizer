@@ -25,23 +25,18 @@ using namespace CppDebugger::SeverityValues;
 
 
 /***** COMPONENTLIST CLASS *****/
-/* Constructor for the ComponentList class, which takes an initial array size. */
+/* Constructor for the ComponentList class, which takes the type of the Component as a flag and an initial array size. */
 template <class T>
-ComponentList<T>::ComponentList(component_list_size_t initial_capacity = 16) :
-    entities((T*) malloc(initial_capacity * sizeof(T))),
-    n_entities(0),
-    max_entities(initial_capacity)
+ComponentList<T>::ComponentList(ComponentFlags type_flags, component_list_size_t initial_capacity) :
+    IComponentList(type_flags, initial_capacity),
+    entities((T*) malloc(initial_capacity * sizeof(T)))
 {}
 
 /* Copy constructor for the ComponentList class. */
 template <class T>
 ComponentList<T>::ComponentList(const ComponentList<T>& other) :
-    entity_map(other.entity_map),
-    index_map(other.index_map),
-
-    entities((T*) malloc(other.max_entities * sizeof(T))),
-    n_entities(other.n_entities),
-    max_entities(other.max_entities)
+    IComponentList(other),
+    entities((T*) malloc(other.max_entities * sizeof(T)))
 {
     // Also copy the structs themselves
     memcpy(this->entities, other.entities, this->n_entities * sizeof(T));
@@ -50,12 +45,8 @@ ComponentList<T>::ComponentList(const ComponentList<T>& other) :
 /* Move constructor for the ComponentList class. */
 template <class T>
 ComponentList<T>::ComponentList(ComponentList<T>&& other) :
-    entity_map(std::move(other.entity_map)),
-    index_map(std::move(other.index_map)),
-
-    entities(other.entities),
-    n_entities(other.n_entities),
-    max_entities(other.max_entities)
+    IComponentList(std::move(other)),
+    entities(other.entities)
 {
     other.entities = nullptr;
 }
@@ -70,10 +61,16 @@ ComponentList<T>::~ComponentList() {
 
 
 
+/* Stores a new 'entity', filling it with default values. */
+template <class T>
+void ComponentList<T>::add(entity_t entity) {
+    return this->add(entity, {});
+}
+
 /* Stores a new 'entity', by associating the given entity ID with the given Component data. */
 template <class T>
 void ComponentList<T>::add(entity_t entity, const T& component) {
-    DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add");
+    DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add(component)");
 
     // Try to find if the entity already exists
     std::unordered_map<entity_t, component_list_size_t>::iterator iter = this->entity_map.find(entity);
@@ -95,7 +92,8 @@ void ComponentList<T>::add(entity_t entity, const T& component) {
     this->entity_map.insert(make_pair(entity, index));
     this->index_map.insert(make_pair(index, entity));
 
-    // Done
+    // Done, increment the size
+    ++this->n_entities;
     DRETURN;
 }
 
@@ -124,7 +122,8 @@ void ComponentList<T>::remove(entity_t entity) {
         this->index_map[i - 1] = entity;
     }
 
-    // Done
+    // Done, decrement the size
+    --this->n_entities;
     DRETURN;
 }
 
@@ -158,14 +157,17 @@ void ComponentList<T>::reserve(component_list_size_t new_capacity) {
 
 
 
+/* Allows the ComponentList to be copied virtually. */
+template <class T>
+ComponentList<T>* ComponentList<T>::copy() const {
+    return new ComponentList<T>(*this);
+}
+
 /* Swap operator for the ComponentList class. */
 template <class T>
 void ECS::swap(ComponentList<T>& cl1, ComponentList<T>& cl2) {
     using std::swap;
 
-    swap(cl1.entity_map, cl2.entity_map);
-    
+    swap((IComponentList&) cl1, (IComponentList&) cl2);
     swap(cl1.entities, cl2.entities);
-    swap(cl1.n_entities, cl2.n_entities);
-    swap(cl1.max_entities, cl2.max_entities);
 }

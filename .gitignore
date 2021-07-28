@@ -40,3 +40,6 @@ build/
 
 # All weird windows build stuff
 *.pdb
+
+# Skip uploading the old library
+src/lib_old

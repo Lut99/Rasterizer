@@ -22,10 +22,10 @@
 
 #include "glm/glm.hpp"
 
-#include "render_engine/instance/Instance.hpp"
-#include "render_engine/gpu/Surface.hpp"
-#include "render_engine/gpu/GPU.hpp"
-#include "render_engine/swapchain/Swapchain.hpp"
+#include "rendering/instance/Instance.hpp"
+#include "rendering/gpu/Surface.hpp"
+#include "rendering/gpu/GPU.hpp"
+#include "rendering/swapchain/Swapchain.hpp"
 
 namespace Rasterizer {
     /* The Window class, which manages the GLFW window and which bundles some base Vulkan classes in one place. */
