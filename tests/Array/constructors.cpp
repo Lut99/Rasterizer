@@ -4,7 +4,7 @@
  * Created:
  *   1/13/2021, 4:05:43 PM
  * Last edited:
- *   28/07/2021, 20:15:30
+ *   7/28/2021, 9:09:17 PM
  * Auto updated?
  *   Yes
  *
@@ -164,13 +164,17 @@ static bool test_nocopy() {
     }
 
     // Also do the through-function test
-    Array<NoDefault> test2 = populate<NoDefault>(3);
+    Array<NoCopy> test2 = populate<NoCopy>(3);
     for (array_size_t i = 0; i < 3; i++) {
         if (test2[i].get_value() != (int) i) {
             ERROR("Constructing without copy through populate failed; expected " + std::to_string(i) + ", got " + std::to_string(test2[i].get_value()));
             ENDCASE(false);
         }
     }
+    
+    test.push_back();
+    test.push_back();
+    test.push_back();
 
     cout << "  ";
     ENDCASE(true);

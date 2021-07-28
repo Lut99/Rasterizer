@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 17:11:02
  * Last edited:
- *   28/07/2021, 20:25:43
+ *   7/28/2021, 9:24:31 PM
  * Auto updated?
  *   Yes
  *
@@ -59,7 +59,7 @@ _intern::ArrayStorage<T>::ArrayStorage(_intern::ArrayStorage<T>&& other) :
 template <class T>
 _intern::ArrayStorage<T>::~ArrayStorage() {
     if (this->elements != nullptr) {
-        if (std::is_destructible<T>::value) {
+        if constexpr (std::is_destructible<T>::value) {
             for (array_size_t i = 0; i < this->length; i++) {
                 this->elements[i].~T();
             }
@@ -83,6 +83,7 @@ Array<T, D, C, M>::Array(array_size_t initial_size) {
     // Allocate memory for the internal storage class
     this->storage.elements = (T*) malloc(initial_size * sizeof(T));
     this->storage.max_length = initial_size;
+    
 }
 
 /* Constructor for the Array class, which takes a single element and repeats that the given amount of times. Makes use of the element's copy constructor. */
@@ -172,33 +173,22 @@ auto Array<T, D, C, M>::operator+=(Array<T>&& elems) -> std::enable_if_t<M, U> {
 
 
 
-/* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
+/* Adds a new element of type T to the array, initializing it with its default constructor. Only needs a default constructor to be present, but cannot resize itself without a move constructor. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-inline auto Array<T, D, C, M>::_def_push_back(int) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U> {
+auto Array<T, D, C, M>::push_back() -> std::enable_if_t<D, U> {
     // Make sure the array has enough size
     if (this->storage.length >= this->storage.max_length) {
-        this->reserve(this->storage.length + 1);
+        if constexpr (M) {
+            this->reserve(this->storage.length + 1);
+        } else {
+            throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+        }
     }
 
     // Add the element to the end of the array
     new(this->storage.elements + this->storage.length++) T();
 }
-
-/* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
-template <class T, bool D, bool C, bool M>
-template <typename U>
-inline auto Array<T, D, C, M>::_def_push_back(long) -> std::enable_if_t<D, U> {
-    // Make sure the array has enough size
-    if (this->storage.length >= this->storage.max_length) {
-        throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
-    }
-
-    // Add the element to the end of the array
-    new(this->storage.elements + this->storage.length++) T();
-}
-
-
 
 /* Adds a new element of type T to the array, copying it. Note that this requires the element to be copy constructible. */
 template <class T, bool D, bool C, bool M>
@@ -233,7 +223,7 @@ void Array<T, D, C, M>::pop_back() {
     if (this->storage.length == 0) { return; }
 
     // Delete the last element if we need to
-    if (std::is_destructible<T>::value) {
+    if constexpr (std::is_destructible<T>::value) {
         this->storage.elements[this->storage.length - 1].~T();
     }
 
@@ -251,7 +241,7 @@ auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<M, U> {
     if (index >= this->storage.length) { return; }
 
     // Otherwise, delete the element if needed
-    if (std::is_destructible<T>::value) {
+    if constexpr (std::is_destructible<T>::value) {
         this->storage.elements[index].~T();
     }
 
@@ -272,7 +262,7 @@ auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index)
     if (start_index >= this->storage.length || stop_index >= this->storage.length || start_index > stop_index) { return; }
 
     // Otherwise, delete the elements if needed
-    if (std::is_destructible<T>::value) {
+    if constexpr (std::is_destructible<T>::value) {
         for (array_size_t i = start_index; i <= stop_index; i++) {
             this->storage.elements[i].~T();
         }
@@ -291,7 +281,7 @@ auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index)
 template <class T, bool D, bool C, bool M>
 void Array<T, D, C, M>::clear() {
     // Delete everything in the Array if the type wants it to
-    if (std::is_destructible<T>::value) {
+    if constexpr (std::is_destructible<T>::value) {
         for (array_size_t i = 0; i < this->storage.length; i++) {
             this->storage.elements[i].~T();
         }
@@ -305,7 +295,7 @@ void Array<T, D, C, M>::clear() {
 template <class T, bool D, bool C, bool M>
 void Array<T, D, C, M>::reset() {
     // Delete everything in the Array if the type wants it to
-    if (std::is_destructible<T>::value) {
+    if constexpr (std::is_destructible<T>::value) {
         for (array_size_t i = 0; i < this->storage.length; i++) {
             this->storage.elements[i].~T();
         }
@@ -335,7 +325,7 @@ auto Array<T, D, C, M>::reserve(array_size_t new_size) -> std::enable_if_t<M, U>
     }
 
     // Start by allocating space for a new array
-    T* new_elements = (T*) malloc(new_size = sizeof(T));
+    T* new_elements = (T*) malloc(new_size * sizeof(T));
     if (new_elements == nullptr) { throw std::bad_alloc(); }
 
     // Copy the elements over using their move constructor
@@ -345,14 +335,14 @@ auto Array<T, D, C, M>::reserve(array_size_t new_size) -> std::enable_if_t<M, U>
     }
 
     // Delete the elements that are too many
-    if (std::is_destructible<T>::value) {
+    if constexpr (std::is_destructible<T>::value) {
         for (array_size_t i = n_to_copy; i < this->storage.length; i++) {
             this->storage.elements[i].~T();
         }
     }
     free(this->storage.elements);
 
-    // Set the new properties of the elements array
+    // Finally, put the Array to the internal slot
     this->storage.elements = new_elements;
     this->storage.length = n_to_copy;
     this->storage.max_length = new_size;
@@ -364,7 +354,6 @@ template <typename U>
 auto Array<T, D, C, M>::resize(array_size_t new_size) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U> {
     // Simply reserve the space
     this->reserve(new_size);
-    printf("\n\nlmao\n\n");
 
     // Populate the other elements with default constructors
     for (array_size_t i = this->storage.length; i < this->storage.max_length; i++) {

@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 16:45:17
  * Last edited:
- *   28/07/2021, 20:27:50
+ *   7/28/2021, 9:23:17 PM
  * Auto updated?
  *   Yes
  *
@@ -22,6 +22,7 @@
 #include <initializer_list>
 #include <vector>
 #include <limits>
+#include <cstdio>
 
 namespace Tools {
     /* The datatype used for the size of the Array. */
@@ -118,14 +119,6 @@ namespace Tools {
         /* The internal data as wrapped by ArrayStorage. */
         _intern::ArrayStorage<T> storage;
 
-
-        /* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
-        template <typename U = void>
-        auto _def_push_back(int) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U>;
-        /* Private helper function for the push_back() with default constructor that also makes use of the object's move constructor to resize the array when necessary. */
-        template <typename U = void>
-        auto _def_push_back(long) -> std::enable_if_t<D, U>;
-
     public:
         /* Default constructor for the Array class, which initializes it to not having any elements. */
         Array();
@@ -158,7 +151,8 @@ namespace Tools {
         auto operator+=(Array<T>&& elems) -> std::enable_if_t<M, U>;
 
         /* Adds a new element of type T to the array, initializing it with its default constructor. Only needs a default constructor to be present, but cannot resize itself without a move constructor. */
-        inline auto push_back() -> decltype(this->_def_push_back(0), void()) { return this->_def_push_back(0); }
+        template <typename U = void>
+        auto push_back() -> std::enable_if_t<D, U>;
         /* Adds a new element of type T to the array, copying it. Note that this requires the element to be copy constructible. */
         template <typename U = void>
         auto push_back(const T& elem) -> std::enable_if_t<C, U>;
