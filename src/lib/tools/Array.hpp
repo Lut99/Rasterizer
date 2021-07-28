@@ -209,4 +209,7 @@ namespace Tools {
 
 }
 
+// Also get the .cpp
+#include "Array.cpp"
+
 #endif

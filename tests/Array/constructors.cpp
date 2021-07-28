@@ -17,7 +17,7 @@
 #include <cstddef>
 
 #define FULLCOMPILE
-#include "Tools/Array.hpp"
+#include "tools/Array.hpp"
 #include "common.hpp"
 
 using namespace std;
