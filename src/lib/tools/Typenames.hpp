@@ -42,27 +42,6 @@ namespace Tools {
 
     /* Returns the name of the bool datatype. */
     template <> inline constexpr const char* type_name<bool>() { return "bool"; }
-
-    /* Returns the name of the char datatype. */
-    template <> inline constexpr const char* type_name<char>() { return "char"; }
-    /* Returns the name of the unsigned char datatype. */
-    template <> inline constexpr const char* type_name<unsigned char>() { return "unsigned char"; }
-    /* Returns the name of the short datatype. */
-    template <> inline constexpr const char* type_name<short>() { return "short"; }
-    /* Returns the name of the unsigned short datatype. */
-    template <> inline constexpr const char* type_name<unsigned short>() { return "unsigned short"; }
-    /* Returns the name of the int datatype. */
-    template <> inline constexpr const char* type_name<int>() { return "int"; }
-    /* Returns the name of the unsigned int datatype. */
-    template <> inline constexpr const char* type_name<unsigned int>() { return "unsigned int"; }
-    /* Returns the name of the long datatype. */
-    template <> inline constexpr const char* type_name<long>() { return "long"; }
-    /* Returns the name of the unsigned long datatype. */
-    template <> inline constexpr const char* type_name<unsigned long>() { return "unsigned long"; }
-    /* Returns the name of the long long datatype. */
-    template <> inline constexpr const char* type_name<long long>() { return "long long"; }
-    /* Returns the name of the unsigned long long datatype. */
-    template <> inline constexpr const char* type_name<unsigned long long>() { return "unsigned long long"; }
     
     /* Returns the name of the int8_t datatype. */
     template <> inline constexpr const char* type_name<int8_t>() { return "int8_t"; }

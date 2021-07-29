@@ -6,7 +6,7 @@ target_include_directories(RenderSystem PUBLIC
                            "${INCLUDE_DIRS}")
 
 # Add it to the list of includes & linked libraries
-list(APPEND EXTRA_LIBS RenderEngine)
+list(APPEND EXTRA_LIBS RenderSystem)
 
 # Add the subdirectories
 add_subdirectory(synchronization)

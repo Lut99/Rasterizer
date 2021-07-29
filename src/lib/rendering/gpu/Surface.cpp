@@ -13,7 +13,7 @@
  *   GLFW window.
 **/
 
-#include "render_engine/auxillary/ErrorCodes.hpp"
+#include "../auxillary/ErrorCodes.hpp"
 #include "tools/CppDebugger.hpp"
 
 #include "Surface.hpp"

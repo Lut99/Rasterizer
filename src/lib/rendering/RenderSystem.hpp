@@ -20,12 +20,17 @@
 #include "ecs/EntityManager.hpp"
 #include "window/Window.hpp"
 #include "memory/MemoryManager.hpp"
+#include "models/ModelSystem.hpp"
 
 #include "depthtesting/DepthStencil.hpp"
 #include "swapchain/Framebuffer.hpp"
+
 #include "pipeline/Shader.hpp"
 #include "renderpass/RenderPass.hpp"
 #include "pipeline/Pipeline.hpp"
+
+#include "synchronization/Semaphore.hpp"
+#include "synchronization/Fence.hpp"
 
 namespace Rasterizer::Rendering {
     /* The RenderSystem class, which is in charge of rendering the renderable entities in the EntityManager. */
@@ -38,6 +43,8 @@ namespace Rasterizer::Rendering {
         Window& window;
         /* The MemoryManager that contains the pools we might need. */
         MemoryManager& memory_manager;
+        /* The ModelSystem which we use to schedule the model buffers with. */
+        const Models::ModelSystem& model_system;
     
     private:
         /* The depth stencil we attach to the pipeline. */
@@ -54,6 +61,9 @@ namespace Rasterizer::Rendering {
         Rendering::RenderPass render_pass;
         /* The graphics pipeline we use to render. */
         Rendering::Pipeline pipeline;
+
+        /* Handles for the command buffer to use. */
+        Tools::Array<CommandBuffer> draw_cmds;
 
         /* Contains the semaphores that signal when a new image is available in the swapchain. */
         Tools::Array<Rendering::Semaphore> image_ready_semaphores;
@@ -72,8 +82,8 @@ namespace Rasterizer::Rendering {
         void _resize();
 
     public:
-        /* Constructor for the RenderSystem, which takes a window and a memory manager to render to and draw memory from, respectively. */
-        RenderSystem(Window& window, MemoryManager& memory_manager);
+        /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively) and a model system to schedule the model buffers with. */
+        RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system);
 
         /* Runs a single iteration of the game loop. Returns whether or not the RenderSystem is asked to close the window (false) or not (true). */
         bool render_frame(const ECS::EntityManager& entity_manager);

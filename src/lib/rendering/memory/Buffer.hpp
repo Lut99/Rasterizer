@@ -97,6 +97,8 @@ namespace Rasterizer::Rendering {
         /* Implicit retrieval of the internal handle. */
         inline operator buffer_h() const { return this->vk_handle; }
 
+        /* Move assignment operator for the Buffer class. */
+        inline Buffer& operator=(Buffer&& other) { if (this != &other) { swap(*this, other); } return *this; }
         /* Swap operator for the Buffer class. */
         friend void swap(Buffer& b1, Buffer& b2);
     };

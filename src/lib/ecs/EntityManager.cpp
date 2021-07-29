@@ -15,6 +15,7 @@
 #include "tools/CppDebugger.hpp"
 
 #include "components/Transform.hpp"
+#include "components/Mesh.hpp"
 
 #include "EntityManager.hpp"
 
@@ -32,6 +33,7 @@ EntityManager::EntityManager() {
     // Register the components
     this->components = new IComponentList*[EntityManager::max_components];
     this->components[0] = (IComponentList*) new ComponentList<Transform>(ComponentFlags::transform);
+    this->components[1] = (IComponentList*) new ComponentList<Mesh>(ComponentFlags::mesh);
 
     // Done
     DLEAVE;

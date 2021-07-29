@@ -19,13 +19,12 @@
 
 #include "window/Window.hpp"
 
+#include "models/ModelSystem.hpp"
+
 #include "rendering/instance/Instance.hpp"
-#include "rendering/gpu/Surface.hpp"
-#include "rendering/gpu/GPU.hpp"
-#include "rendering/memory/MemoryPool.hpp"
+#include "rendering/memory/MemoryManager.hpp"
 #include "rendering/RenderSystem.hpp"
 
-#include "model_manager/ModelManager.hpp"
 #include "ecs/EntityManager.hpp"
 
 using namespace std;
@@ -70,26 +69,20 @@ int main(int argc, const char** argv) {
 
     // Use that to prepare the Window class
     Window window(instance, "Rasterizer", 800, 600);
-
-    // Investigate the memory type we'll need
-    uint32_t draw_type = Rendering::MemoryPool::select_memory_type(window.gpu(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    uint32_t stage_type = Rendering::MemoryPool::select_memory_type(window.gpu(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-
-    // Initialize the pools we'll need
-    Rendering::CommandPool draw_cmd_pool(window.gpu(), window.gpu().queue_info().graphics(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    Rendering::CommandPool mem_cmd_pool(window.gpu(), window.gpu().queue_info().memory(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    Rendering::MemoryPool draw_pool(window.gpu(), draw_type, 1024 * 1024 * 1024, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    Rendering::MemoryPool stage_pool(window.gpu(), stage_type, 1024 * 1024 * 1024, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    Rendering::DescriptorPool descr_pool(window.gpu(), { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1);
-
-    // Next, initialize the entity manager
+    // Prepare the memory manager
+    Rendering::MemoryManager memory_manager(window.gpu());
+    // Initialize the ModelSystem
+    Models::ModelSystem model_system(memory_manager);
+    // Initialize the RenderSystem
+    Rendering::RenderSystem render_system(window, memory_manager, model_system);
+    // Initialize the entity manager
     ECS::EntityManager entity_manager;
-    entity_t squares = entity_manager.add(ComponentFlags::model);
-    entity_manager.get_model(squares).id = "squares";
-    entity_manager.get_model(squares).format = Models::ModelFormat::squares;
+
+    // Prepare a renderable entity
+    entity_t squares = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+    model_system.load_model(entity_manager, squares, "", Models::ModelFormat::squares);
 
     // Initialize the engine
-    Rendering::RenderEngine render_engine(window, draw_cmd_pool, mem_cmd_pool, draw_pool, stage_pool, descr_pool);
     DLOG(auxillary, "");
 
     // Do the render
@@ -100,7 +93,7 @@ int main(int argc, const char** argv) {
     uint32_t count = 0;
     while (busy) {
         // Run the render engine
-        busy = render_engine.loop();
+        busy = render_system.render_frame(entity_manager);
 
         // Keep track of the fps
         ++fps;
@@ -143,7 +136,7 @@ int main(int argc, const char** argv) {
 
     // Wait for the GPU to be idle before we stop
     DLOG(info, "Cleaning up...");
-    render_engine.wait_for_idle();
+    window.gpu().wait_for_idle();
 
     // We're done
     glfwTerminate();

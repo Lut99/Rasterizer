@@ -14,7 +14,7 @@
 **/
 
 #include "tools/CppDebugger.hpp"
-#include "render_engine/auxillary/ErrorCodes.hpp"
+#include "../auxillary/ErrorCodes.hpp"
 #include "SwapchainInfo.hpp"
 
 using namespace std;

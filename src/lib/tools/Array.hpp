@@ -189,9 +189,9 @@ namespace Tools {
         /* Returns a constant reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
         inline const T& at(array_size_t index) const { return this->at(index); }
         /* Returns the last element in the list. */
-        inline T& last() { return this->storage.elements[this->length - 1]; }
+        inline T& last() { return this->storage.elements[this->storage.length - 1]; }
         /* Returns the last element in the list. */
-        inline const T& last() const { return this->storage.elements[this->length - 1]; }
+        inline const T& last() const { return this->storage.elements[this->storage.length - 1]; }
 
         /* Returns a muteable pointer to the internal data struct. Use this to fill the array using C-libraries, but beware that the array needs to have enough space reserved. Also note that object put here will still be deallocated by the Array using ~T(). The optional new_size parameter is used to update the size() value of the array, so it knows what is initialized and what is not. Leave it at numeric_limits<array_size_t>::max() to leave the array size unchanged. */
         T* wdata(array_size_t new_size = std::numeric_limits<array_size_t>::max());

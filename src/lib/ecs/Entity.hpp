@@ -14,7 +14,7 @@
 **/
 
 #ifndef ECS_ENTITY_HPP
-#define ECS_ENTITY_HPp
+#define ECS_ENTITY_HPP
 
 #include <cstdint>
 
@@ -23,7 +23,7 @@ namespace Rasterizer::ECS {
     using entity_t = uint32_t;
 
     /* The null value of the entity_t. */
-    constexpr const entity_t NullEntity = 0;
+    static constexpr const entity_t NullEntity = 0;
 
 }
 

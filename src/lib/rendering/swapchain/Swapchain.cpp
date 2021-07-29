@@ -17,8 +17,8 @@
 #include <limits>
 #include "tools/CppDebugger.hpp"
 
-#include "render_engine/auxillary/Formats.hpp"
-#include "render_engine/auxillary/ErrorCodes.hpp"
+#include "../auxillary/Formats.hpp"
+#include "../auxillary/ErrorCodes.hpp"
 
 #include "Swapchain.hpp"
 

@@ -17,7 +17,7 @@
 
 #include <cstdint>
 
-namespace Rasterizer::Models {
+namespace Rasterizer::Rendering {
     /* The datatype used for indices. */
     using index_t = uint32_t;
 

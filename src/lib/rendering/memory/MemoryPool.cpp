@@ -16,7 +16,7 @@
 #include <limits>
 #include "tools/CppDebugger.hpp"
 
-#include "render_engine/auxillary/ErrorCodes.hpp"
+#include "../auxillary/ErrorCodes.hpp"
 #include "tools/Common.hpp"
 
 #include "MemoryPool.hpp"

@@ -14,12 +14,18 @@
  *   component to decide where to place the entity.
 **/
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 #include "tools/CppDebugger.hpp"
+
+#include "ecs/components/Transform.hpp"
+#include "ecs/components/Mesh.hpp"
+#include "models/ModelSystem.hpp"
 
 #include "auxillary/ErrorCodes.hpp"
 #include "auxillary/Rectangle.hpp"
-#include "synchronization/Semaphore.hpp"
-#include "synchronization/Fence.hpp"
 
 #include "Vertex.hpp"
 #include "RenderSystem.hpp"
@@ -29,6 +35,36 @@ using namespace Rasterizer;
 using namespace Rasterizer::ECS;
 using namespace Rasterizer::Rendering;
 using namespace CppDebugger::SeverityValues;
+
+
+/***** HELPER FUNCTIONS *****/
+/* Computes the three new camera matrices. */
+static void compute_camera_matrices(glm::mat4& proj_mat, glm::mat4& view_mat, glm::mat4& model_mat, float aspect_ratio) {
+    DENTER("compute_camera_matrices");
+
+    // Note that start time of the rendering process as a static - i.e., continious between calls
+    static std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
+    // Get the current time too
+    std::chrono::high_resolution_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
+    // Compute the difference between them
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    // Compute the projection matrix: field of view and such?
+    proj_mat = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.1f, 10.0f);
+    // Compute the view matrix: translation from the world space to camera space
+    view_mat = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    // Compute the model matrix: used to rotate the world to provide the rotating camera
+    model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    // Don't forget to flip the Y in the projection matrix, since GLM Y and Vulkan Y are actually inverted
+    proj_mat[1][1] *= -1;
+
+    // Done
+    DRETURN;
+}
+
+
+
 
 
 /***** POPULATE FUNCTIONS *****/
@@ -83,11 +119,14 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
 
 
+
+
 /***** RENDERSYSTEM CLASS *****/
-/* Constructor for the RenderSystem, which takes a window and a memory manager to render to and draw memory from, respectively. */
-RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager) :
+/* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively) and a model system to schedule the model buffers with. */
+RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system) :
     window(window),
     memory_manager(memory_manager),
+    model_system(model_system),
 
     depth_stencil(this->window.gpu(), this->memory_manager.draw_pool, this->window.swapchain().extent()),
     framebuffers(this->window.swapchain().size()),
@@ -97,6 +136,8 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager) :
 
     render_pass(this->window.gpu()),
     pipeline(this->window.gpu()),
+
+    draw_cmds(this->memory_manager.draw_cmd_pool.nallocate(this->window.swapchain().size())),
 
     image_ready_semaphores(Semaphore(this->window.gpu()), RenderSystem::max_frames_in_flight),
     render_ready_semaphores(Semaphore(this->window.gpu()), RenderSystem::max_frames_in_flight),
@@ -202,9 +243,48 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
 
     /***** RENDERING *****/
+    // Compute new camera matrices
+    glm::mat4 cam_proj, cam_view, cam_model;
+    compute_camera_matrices(cam_proj, cam_view, cam_model, (float) this->window.swapchain().extent().width / (float) this->window.swapchain().extent().height);
+
+    // Prepare the command buffer's recording
+    this->draw_cmds[swapchain_index].begin();
+    this->render_pass.start_scheduling(this->draw_cmds[swapchain_index], this->framebuffers[swapchain_index]);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,                     0, sizeof(glm::mat4), &cam_proj);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,     sizeof(glm::mat4), sizeof(glm::mat4), &cam_view);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 2 * sizeof(glm::mat4), sizeof(glm::mat4), &cam_model);
+    this->pipeline.schedule(this->draw_cmds[swapchain_index]);
+
     /* Do draw calls for each entity. */
-    
-    
+    const ECS::ComponentList<ECS::Mesh>& list = entity_manager.get_list<ECS::Mesh>();
+    for (ECS::component_list_size_t i = 0; i < list.size(); i++) {
+        // Get the mesh component for this entity
+        const ECS::Mesh& mesh = list[i];
+
+        // Record the command buffer for this entity
+        this->model_system.schedule(mesh, this->draw_cmds[swapchain_index]);
+        this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], mesh.n_instances, 1);
+    }
+
+    // Finish recording
+    this->render_pass.stop_scheduling(this->draw_cmds[swapchain_index]);
+    this->draw_cmds[swapchain_index].end();
+
+
+
+    /* SUBMITTING */
+    // Prepare to submit the command buffer
+    Tools::Array<VkPipelineStageFlags> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSubmitInfo submit_info;
+    populate_submit_info(submit_info, this->draw_cmds[swapchain_index], this->image_ready_semaphores[this->current_frame], wait_stages, this->render_ready_semaphores[this->current_frame]);
+
+    // Submit to the queue
+    vkResetFences(this->window.gpu(), 1, &frame_in_flight_fences[this->current_frame].fence());
+    Tools::Array<VkQueue> graphics_queues = this->window.gpu().queues(QueueType::graphics);
+    if ((vk_result = vkQueueSubmit(graphics_queues[0], 1, &submit_info, this->frame_in_flight_fences[this->current_frame])) != VK_SUCCESS) {
+        DLOG(fatal, "Could not submit to queue: " + vk_error_map[vk_result]);
+    }
+
 
 
     /* PRESENTING */

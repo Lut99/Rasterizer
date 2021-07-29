@@ -30,7 +30,9 @@ namespace Rasterizer::ECS {
             all = ~0,
 
             /* The Transform component, which means the entity has a location in world space. */
-            transform = 0x1
+            transform = 0x1,
+            /* The Mesh component, which means the entity has a model which can be rendered. */
+            mesh = 0x2
 
         };
     };
@@ -40,9 +42,10 @@ namespace Rasterizer::ECS {
     /* Names for the Component enum. */
     static const std::unordered_map<ComponentFlags, std::string> component_flags_names = {
         { ComponentFlags::none, "none" },
-        { ComponentFlags::all, "all" },
+        { ComponentFlags::all,  "all" },
 
-        { ComponentFlags::transform, "transform" }
+        { ComponentFlags::transform, "transform" },
+        { ComponentFlags::mesh,      "mesh" }
     };
 
 }

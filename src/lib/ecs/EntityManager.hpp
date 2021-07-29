@@ -31,9 +31,9 @@ namespace Rasterizer::ECS {
     class EntityManager {
     public:
         /* The maximum number of entities supported by the EntityManager. */
-        static const constexpr entity_t max_entities = 1024;
+        static constexpr const entity_t max_entities = 1024;
         /* The maximum number of components supported by the EntityManager. */
-        static const constexpr uint32_t max_components = 1;
+        static constexpr const uint32_t max_components = 2;
 
     private:
         /* List describing all entities. In particular, each entity is defined by having an index in this list. */
@@ -51,6 +51,8 @@ namespace Rasterizer::ECS {
         /* Destructor for the EntityManager class. */
         ~EntityManager();
 
+        /* Spawns a new entity in the EntityManager that has the given components, automatically casting the given int to a ComponentsFlags. Returns the assigned ID to that entity. */
+        inline entity_t add(int components) { return this->add((ComponentFlags) components); }
         /* Spawns a new entity in the EntityManager that has the given components. Returns the assigned ID to that entity. */
         entity_t add(ComponentFlags components);
         /* Despawns the given entity. Note that its ID may be re-used later, and should thus not be used to reference it anymore after this point. */
@@ -62,10 +64,10 @@ namespace Rasterizer::ECS {
         inline bool has_component(entity_t entity, ComponentFlags components) const { return (this->entities.at(entity) & components) == components; }
         /* Returns a muteable reference to the templated component. Does not perform any checks on whether or not the entity has the given component. */
         template <class T>
-        inline T& get_component(entity_t entity) { return this->components[hash_component<T>()]->operator[](entity); }
+        inline T& get_component(entity_t entity) { return ((ComponentList<T>*) this->components[hash_component<T>()])->get(entity); }
         /* Returns a immuteable reference to the templated component. Does not perform any checks on whether or not the entity has the given component. */
         template <class T>
-        inline const T& get_component(entity_t entity) const { return this->components[hash_component<T>()]->operator[](entity); }
+        inline const T& get_component(entity_t entity) const { return ((ComponentList<T>*) this->components[hash_component<T>()])->get(entity); }
 
         /* Returns a muteable reference to the component list itself so that it can be iterated over. */
         template <class T>

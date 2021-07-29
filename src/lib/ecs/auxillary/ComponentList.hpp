@@ -40,10 +40,14 @@ namespace Rasterizer::ECS {
         /* Destructor for the ComponentList class. */
         ~ComponentList();
 
+        /* Returns the component associated to the given index (useful for iteration). */
+        inline T& operator[](component_list_size_t index) { return this->entities[index]; }
+        /* Returns the component associated to the given index (useful for iteration). */
+        inline const T& operator[](component_list_size_t index) const { return this->entities[index]; }
         /* Returns the component associated to the given entity. */
-        inline T& operator[](entity_t entity) { return this->entities[this->entity_map.at(entity)]; }
+        inline T& get(entity_t entity) { return this->entities[this->entity_map.at(entity)]; }
         /* Returns the component associated to the given entity. */
-        inline const T& operator[](entity_t entity) const { return this->entities[this->entity_map.at(entity)]; }
+        inline const T& get(entity_t entity) const { return this->entities[this->entity_map.at(entity)]; }
 
         /* Stores a new 'entity', filling it with default values. */
         virtual void add(entity_t entity);

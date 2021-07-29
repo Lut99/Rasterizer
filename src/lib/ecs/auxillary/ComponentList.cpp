@@ -13,6 +13,8 @@
  *   return a single component from an entity.
 **/
 
+#include <algorithm>
+
 #include "tools/CppDebugger.hpp"
 #include "tools/Typenames.hpp"
 
@@ -81,7 +83,7 @@ void ComponentList<T>::add(entity_t entity, const T& component) {
 
     // If needed, double the size of the array
     while (this->n_entities >= this->max_entities) {
-        this->reserve(this->capacity * 2);
+        this->reserve(this->max_entities * 2);
     }
 
     // Assign an index
@@ -141,7 +143,7 @@ void ComponentList<T>::reserve(component_list_size_t new_capacity) {
     }
 
     // Copy the elements from the old to the new array
-    memcpy(new_entities, this->entities, std::min(this->n_components, new_capacity) * sizeof(T));
+    memcpy(new_entities, this->entities, std::min(this->n_entities, new_capacity) * sizeof(T));
 
     // When done, deallocate the old one
     free(this->entities);

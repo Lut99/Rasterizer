@@ -15,8 +15,8 @@
 **/
 
 #include "tools/CppDebugger.hpp"
-#include "render_engine/auxillary/ErrorCodes.hpp"
-#include "render_engine/auxillary/Formats.hpp"
+#include "../auxillary/Formats.hpp"
+#include "../auxillary/ErrorCodes.hpp"
 
 #include "RenderPass.hpp"
 

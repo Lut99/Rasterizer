@@ -17,10 +17,12 @@
 #define ECS_TRANSFORM_HPP
 
 #include "glm/glm.hpp"
+
+#include "../auxillary/ComponentHash.hpp"
 #include "tools/Typenames.hpp"
 
 namespace Rasterizer::ECS {
-    /* The Transform component, which describes everything needed for a renderable object. */
+    /* The Transform component, which describes everything needed to position a renderable object in the scene. */
     struct Transform {
         /* The position of the entity in world space. */
         glm::vec3 position;
@@ -39,7 +41,7 @@ namespace Rasterizer::ECS {
 
 namespace Tools {
     /* The string name of the Transform component. */
-    template <> inline constexpr const char* type_name<Rasterizer::ECS::Transform>() { return "Transform"; }
+    template <> inline constexpr const char* type_name<Rasterizer::ECS::Transform>() { return "ECS::Transform"; }
 }
 
 #endif
