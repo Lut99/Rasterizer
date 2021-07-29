@@ -17,7 +17,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "render_engine/gpu/GPU.hpp"
+#include "../gpu/GPU.hpp"
 
 namespace Rasterizer::Rendering {
     /* The Semaphore class, which wraps a VkSemaphore object and manages its memory. */

@@ -4,7 +4,7 @@
  * Created:
  *   27/04/2021, 14:56:30
  * Last edited:
- *   01/07/2021, 13:43:30
+ *   29/07/2021, 16:35:08
  * Auto updated?
  *   Yes
  *
@@ -19,7 +19,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
-#include "render_engine/gpu/GPU.hpp"
+#include "../gpu/GPU.hpp"
 
 namespace Rasterizer::Rendering {
     /* The Shader class, which loads, compiles and manages .spv files. */

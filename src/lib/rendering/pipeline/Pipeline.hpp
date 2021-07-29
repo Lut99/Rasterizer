@@ -19,12 +19,12 @@
 #include <unordered_map>
 #include <vulkan/vulkan.h>
 
-#include "render_engine/auxillary/Rectangle.hpp"
-#include "render_engine/auxillary/BinaryString.hpp"
-#include "render_engine/gpu/GPU.hpp"
-#include "render_engine/descriptors/DescriptorSetLayout.hpp"
-#include "render_engine/renderpass/RenderPass.hpp"
-#include "render_engine/commandbuffers/CommandBuffer.hpp"
+#include "../auxillary/Rectangle.hpp"
+#include "../auxillary/BinaryString.hpp"
+#include "../gpu/GPU.hpp"
+#include "../descriptors/DescriptorSetLayout.hpp"
+#include "../renderpass/RenderPass.hpp"
+#include "../commandbuffers/CommandBuffer.hpp"
 #include "Shader.hpp"
 #include "ShaderStage.hpp"
 

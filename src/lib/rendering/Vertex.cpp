@@ -19,7 +19,7 @@
 
 using namespace std;
 using namespace Rasterizer;
-using namespace Rasterizer::Models;
+using namespace Rasterizer::Rendering;
 using namespace CppDebugger::SeverityValues;
 
 

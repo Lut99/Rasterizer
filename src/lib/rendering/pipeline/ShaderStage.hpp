@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <vulkan/vulkan.h>
 
-#include "render_engine/auxillary/BinaryString.hpp"
+#include "../auxillary/BinaryString.hpp"
 #include "Shader.hpp"
 
 namespace Rasterizer::Rendering {

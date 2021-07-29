@@ -17,7 +17,7 @@
 
 #include <vulkan/vulkan.h>
 
-#include "render_engine/gpu/GPU.hpp"
+#include "../gpu/GPU.hpp"
 
 namespace Rasterizer::Rendering {
     /* The Fence class, which wraps a VkFence object and manages its memory. */

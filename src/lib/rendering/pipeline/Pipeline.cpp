@@ -14,8 +14,8 @@
 **/
 
 #include "tools/CppDebugger.hpp"
-#include "render_engine/auxillary/ErrorCodes.hpp"
-#include "render_engine/auxillary/ShaderStages.hpp"
+#include "../auxillary/ErrorCodes.hpp"
+#include "../auxillary/ShaderStages.hpp"
 
 #include "Pipeline.hpp"
 

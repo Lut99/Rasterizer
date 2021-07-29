@@ -19,11 +19,11 @@
 
 #include "window/Window.hpp"
 
-#include "render_engine/instance/Instance.hpp"
-#include "render_engine/gpu/Surface.hpp"
-#include "render_engine/gpu/GPU.hpp"
-#include "render_engine/memory/MemoryPool.hpp"
-#include "render_engine/RenderEngine.hpp"
+#include "rendering/instance/Instance.hpp"
+#include "rendering/gpu/Surface.hpp"
+#include "rendering/gpu/GPU.hpp"
+#include "rendering/memory/MemoryPool.hpp"
+#include "rendering/RenderSystem.hpp"
 
 #include "model_manager/ModelManager.hpp"
 #include "ecs/EntityManager.hpp"
