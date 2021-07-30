@@ -16,6 +16,7 @@
 #include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 #include "../auxillary/ShaderStages.hpp"
+#include "../Vertex.hpp"
 
 #include "Pipeline.hpp"
 
@@ -26,26 +27,6 @@ using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
-/* Populates the given VkPipelineVertexInputStateCreateInfo struct. */
-static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& vertex_state_info, const VkVertexInputBindingDescription& vk_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_attribute_descriptions) {
-    DENTER("populate_vertex_state_info");
-
-    // Set to default
-    vertex_state_info = {};
-    vertex_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-    // Set the bindings
-    vertex_state_info.vertexBindingDescriptionCount = 1;
-    vertex_state_info.pVertexBindingDescriptions = &vk_binding_description;
-    
-    // Set the attributes
-    vertex_state_info.vertexAttributeDescriptionCount = vk_attribute_descriptions.size();
-    vertex_state_info.pVertexAttributeDescriptions = vk_attribute_descriptions.rdata();
-
-    // We're done
-    DRETURN;
-}
-
 /* Populates the given VkPipelineInputAssemblyStateCreateInfo struct. */
 static void populate_assembly_state_info(VkPipelineInputAssemblyStateCreateInfo& assembly_state_info, VkPrimitiveTopology topology, VkBool32 primitive_restart) {
     DENTER("populate_assembly_state_info");
@@ -243,7 +224,8 @@ static void populate_layout_info(VkPipelineLayoutCreateInfo& layout_info, const 
 /* Constructor for the Pipeline class, which takes the GPU on which it should be created. */
 Pipeline::Pipeline(const Rendering::GPU& gpu) :
     gpu(gpu),
-    vk_pipeline_layout(nullptr)
+    vk_pipeline_layout(nullptr),
+    vertex_state_info(Vertex::input_binding_description(), Vertex::input_attribute_descriptions())
 {
     DENTER("Rendering::Pipeline::Pipeline");
     DLOG(info, "Started pipeline initialization.");
@@ -262,7 +244,7 @@ Pipeline::Pipeline(const Pipeline& other) :
     shaders(other.shaders),
     shader_stages(other.shader_stages),
 
-    vk_vertex_state_info(other.vk_vertex_state_info),
+    vertex_state_info(other.vertex_state_info),
     vk_assembly_state_info(other.vk_assembly_state_info),
     vk_depth_stencil_state_info(other.vk_depth_stencil_state_info),
     vk_viewport(other.vk_viewport),
@@ -300,7 +282,7 @@ Pipeline::Pipeline(Pipeline&& other) :
     shaders(std::move(other.shaders)),
     shader_stages(std::move(other.shader_stages)),
 
-    vk_vertex_state_info(std::move(other.vk_vertex_state_info)),
+    vertex_state_info(std::move(other.vertex_state_info)),
     vk_assembly_state_info(std::move(other.vk_assembly_state_info)),
     vk_depth_stencil_state_info(std::move(other.vk_depth_stencil_state_info)),
     vk_viewport(std::move(other.vk_viewport)),
@@ -351,19 +333,6 @@ void Pipeline::init_shader_stage(const Rendering::Shader& shader, VkShaderStageF
     // We're done
     DINDENT;
     DLOG(info, "Initialized Pipeline shader for the " + vk_shader_stage_map[shader_stage] + " stage");
-    DDEDENT;
-    DRETURN;
-}
-
-/* Tells the Pipeline how its vertex input looks like. Takes struct describing how it looks like. */
-void Pipeline::init_vertex_input(const VkVertexInputBindingDescription& vk_input_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_input_attribute_descriptions) {
-    DENTER("Rendering::Pipeline::init_vertex_input");
-
-    // Prepare the interal VkPipelineVertexInputStateCreateInfo struct
-    populate_vertex_state_info(this->vk_vertex_state_info, vk_input_binding_description, vk_input_attribute_descriptions);
-
-    DINDENT;
-    DLOG(info, "Initialized Pipeline vertex input");
     DDEDENT;
     DRETURN;
 }
@@ -565,7 +534,7 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
     pipeline_info.pStages = vk_shader_stages.rdata();
 
     // Next, attach the fixed-function structures
-    pipeline_info.pVertexInputState = &this->vk_vertex_state_info;
+    pipeline_info.pVertexInputState = &this->vertex_state_info.vertex_state_info();
     pipeline_info.pInputAssemblyState = &this->vk_assembly_state_info;
     pipeline_info.pViewportState = &this->vk_viewport_state_info;
     pipeline_info.pRasterizationState = &this->vk_rasterizer_state_info;
@@ -665,7 +634,7 @@ void Rendering::swap(Pipeline& p1, Pipeline& p2) {
     swap(p1.shaders, p2.shaders);
     swap(p1.shader_stages, p2.shader_stages);
 
-    swap(p1.vk_vertex_state_info, p2.vk_vertex_state_info);
+    swap(p1.vertex_state_info, p2.vertex_state_info);
     swap(p1.vk_assembly_state_info, p2.vk_assembly_state_info);
     swap(p1.vk_depth_stencil_state_info, p2.vk_depth_stencil_state_info);
     swap(p1.vk_viewport, p2.vk_viewport);

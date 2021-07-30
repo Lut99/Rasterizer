@@ -163,7 +163,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     // Then, prepare the pipeline by choosing all its settings
     pipeline.init_shader_stage(this->vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
     pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
-    pipeline.init_vertex_input(Vertex::input_binding_description(), Vertex::input_attribute_descriptions());
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     pipeline.init_depth_testing(VK_TRUE, VK_COMPARE_OP_LESS);
     pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));

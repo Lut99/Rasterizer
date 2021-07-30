@@ -176,7 +176,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
     Rendering::Buffer vertices = this->memory_manager.draw_pool.deref_buffer(mesh.vertices_h);
 
     // With it containing the new vertices, copy the data to the large buffer
-    stage_buffer.copyto(vertices, copy_cmd);
+    stage_buffer.copyto(vertices, new_vertices.size() * sizeof(Rendering::Vertex), 0, 0, copy_cmd);
 
 
 
@@ -190,7 +190,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
     Rendering::Buffer indices = this->memory_manager.draw_pool.deref_buffer(mesh.indices_h);
 
     // With it containing the new indices, copy the data to the large buffer
-    stage_buffer.copyto(indices, copy_cmd);
+    stage_buffer.copyto(indices, new_indices.size() * sizeof(Rendering::index_t), 0, 0, copy_cmd);
     mesh.n_instances = new_indices.size();
 
 

@@ -80,7 +80,9 @@ int main(int argc, const char** argv) {
 
     // Prepare a renderable entity
     entity_t squares = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+    entity_t triangle = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
     model_system.load_model(entity_manager, squares, "", Models::ModelFormat::squares);
+    model_system.load_model(entity_manager, triangle, "", Models::ModelFormat::triangle);
 
     // Initialize the engine
     DLOG(auxillary, "");

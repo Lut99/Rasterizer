@@ -27,6 +27,7 @@
 #include "../commandbuffers/CommandBuffer.hpp"
 #include "Shader.hpp"
 #include "ShaderStage.hpp"
+#include "VertexState.hpp"
 
 namespace Rasterizer::Rendering {
     /* The Pipeline class, which functions a as a more convenient wrapper for the internal VkPipeline object. */
@@ -54,7 +55,7 @@ namespace Rasterizer::Rendering {
         Tools::Array<Rendering::ShaderStage> shader_stages;
 
         /* Describes how the vertex input looks like. */
-        VkPipelineVertexInputStateCreateInfo vk_vertex_state_info;
+        Rendering::VertexState vertex_state_info;
         /* Describes what to do with the vertex input. */
         VkPipelineInputAssemblyStateCreateInfo vk_assembly_state_info;
         /* Describes what to do w.r.t. depth testing. */
@@ -86,8 +87,6 @@ namespace Rasterizer::Rendering {
 
         /* Loads a shader in the given shader stage mask. */
         void init_shader_stage(const Rendering::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, BinaryString>& specialization_constants = {});
-        /* Tells the Pipeline how its vertex input looks like. Takes struct describing how it looks like. */
-        void init_vertex_input(const VkVertexInputBindingDescription& vk_input_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_input_attribute_descriptions);
         /* Tells the Pipeline what to do with the vertex we gave it. The topology specifies the geometry of the vertices (i.e., draw points, lines, triangles), and restart_enable does something that is beyond my knowledge. */
         void init_input_assembly(VkPrimitiveTopology topology, VkBool32 restart_enable = VK_FALSE);
         /* Tells the Pipeline what to do with depth stencil testing. */
