@@ -249,18 +249,19 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     // Prepare the command buffer's recording
     this->draw_cmds[swapchain_index].begin();
     this->render_pass.start_scheduling(this->draw_cmds[swapchain_index], this->framebuffers[swapchain_index]);
-    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,                     0, sizeof(glm::mat4), &cam_proj);
-    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,     sizeof(glm::mat4), sizeof(glm::mat4), &cam_view);
-    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 2 * sizeof(glm::mat4), sizeof(glm::mat4), &cam_model);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,                     0, sizeof(glm::mat4), (void*) &cam_proj);
+    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,     sizeof(glm::mat4), sizeof(glm::mat4), (void*) &cam_view);
     this->pipeline.schedule(this->draw_cmds[swapchain_index]);
 
     /* Do draw calls for each entity. */
     const ECS::ComponentList<ECS::Mesh>& list = entity_manager.get_list<ECS::Mesh>();
     for (ECS::component_list_size_t i = 0; i < list.size(); i++) {
-        // Get the mesh component for this entity
+        // Get the relevant components for this entity
         const ECS::Mesh& mesh = list[i];
+        const ECS::Transform& transform = entity_manager.get_component<Transform>(list.get_entity(i));
 
         // Record the command buffer for this entity
+        this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 2 * sizeof(glm::mat4), sizeof(glm::mat4), (void*) &transform.translation);
         this->model_system.schedule(mesh, this->draw_cmds[swapchain_index]);
         this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], mesh.n_instances, 1);
     }

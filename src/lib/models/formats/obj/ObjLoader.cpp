@@ -13,6 +13,9 @@
 **/
 
 #include "tools/CppDebugger.hpp"
+#include "tools/LinkedArray.hpp"
+
+#include "../auxillary/SymbolStack.hpp"
 
 #include "tokenizer/ValueTerminal.hpp"
 #include "tokenizer/Tokenizer.hpp"
@@ -26,13 +29,121 @@ using namespace Rasterizer::Models::Obj;
 using namespace CppDebugger::SeverityValues;
 
 
-/***** MACROS *****/
-
-
-
-
-
 /***** HELPER FUNCTIONS *****/
+/* Deletes symbols from the top of the stack until (and including) the given iterator. Also safely deletes the pointers themselves. */
+static void remove_stack_bottom(Tools::LinkedArray<Terminal*>& symbol_stack, Tools::LinkedArray<Terminal*>::iterator& iter) {
+    DENTER("remove_stack_bottom");
+
+    // First, delete the tokens
+    for (Tools::LinkedArray<Terminal*>::iterator i = symbol_stack.begin(); i != iter; ++i) {
+        delete *i;
+    }
+    delete *iter;
+
+    // Now remove them from the stack itself
+    symbol_stack.erase_until(iter);
+
+    // Done
+    DRETURN;
+}
+
+/* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
+static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, const std::string& path, Tools::LinkedArray<Terminal*>& symbol_stack) {
+    DENTER("reduce");
+
+    // Prepare the iterator over the linked array
+    Tools::LinkedArray<Terminal*>::iterator iter = symbol_stack.begin();
+    size_t i = 0;
+
+
+
+start:
+    {
+        // If we're at the end of the symbol stack, then assume we just have to wait for more
+        if (iter == symbol_stack.end()) { DRETURN ""; }
+        ++i;
+
+        // Get the symbol for this iterator
+        Terminal* term = *iter;
+        switch(term->type) {
+            case TerminalType::vertex:
+                // Start of a vertex
+                goto vertex_start;
+
+            case TerminalType::decimal:
+                // Looking at a decimal without a vector; stop
+                term->debug_info.print_error(cerr, "Encountered stray coordinate.");
+                remove_stack_bottom(symbol_stack, iter);;
+                DRETURN "";
+
+            default:
+                // Unexpected token
+                term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "'.");
+                remove_stack_bottom(symbol_stack, iter);;
+                DRETURN "";
+
+        }
+
+    }
+
+
+
+vertex_start:
+    {
+        // If we're at the end of the symbol stack, then assume we just have to wait for more
+        if (++iter == symbol_stack.end()) { DRETURN ""; }
+        ++i;
+
+        // Get the next symbol off the stack
+        Terminal* term = *iter;
+        switch(term->type) {
+            case TerminalType::decimal:
+                // Simply keep trying to grab more, since too many is good for error handling
+                goto vertex_start;
+
+            case TerminalType::vertex:
+            {
+                // Check if the vertex is too small or large
+                if (i < 4) {
+                    term->debug_info.print_error(cerr, "Too few coordinates given for vector (got " + std::to_string(i - 1) + ", expected 3)");
+                    remove_stack_bottom(symbol_stack, iter);;
+                    DRETURN "";
+                } else if (i > 5) {
+                    term->debug_info.print_error(cerr, "Too few coordinates given for vector (got " + std::to_string(i - 1) + ", expected 4)");
+                    remove_stack_bottom(symbol_stack, iter);;
+                    DRETURN "";
+                }
+
+                // Otherwise, we can parse the vector; get the coordinates
+                Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+                if (i == 5) { --value_iter; }
+                float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+                float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+                float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+
+                // Store the vertex
+                new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+
+                // Remove the used symbols off the top of the stack (except the next one), then return
+                symbol_stack.erase_until(--iter);
+                DRETURN "vertex";
+            }
+
+            default:
+                // Unexpected token
+                term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "'.");
+                remove_stack_bottom(symbol_stack, iter);;
+                DRETURN "";
+
+        }
+    }
+
+
+
+    // Nothing applied
+    DLOG(fatal, "Hole in jump logic encountered.");
+    DRETURN "fatal";
+} 
 
 
 
@@ -45,124 +156,31 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
 
     // Prepare the Tokenizer
     Obj::Tokenizer tokenizer(path);
+    // Prepare the 'symbol stack'
+    Tools::LinkedArray<Terminal*> symbol_stack;
 
-    // Next, iterate through the input stream and find lines separated by the face or vertex tokens
-    int state = 0;
-    uint32_t counter;
-    float f1, f2, f3;
-    uint32_t u1, u2, u3;
-    bool stop = false;
-    for (int i = 0; !stop; i++) {
-        Terminal* term = tokenizer.get();
-        if (state == 0) {
-            // We're in idle state
-            switch(term->type) {
-                case TerminalType::vertex:
-                    // We start parsing as vertex
-                    state = 1;
-                    counter = 0;
-                    break;
-                
-                case TerminalType::face:
-                    // We start parsing as face
-                    state = 2;
-                    counter = 0;
-                    break;
-                
-                case TerminalType::eof:
-                    // We accept this one!
-                    stop = true;
-                    break;
-                
-                default:
-                    // Illegal token
-                    term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "': expected a type identifier for the line.");
-                    break;
+    // Start looping to parse stuff off the stack
+    bool changed = true;
+    while (changed) {
+        // Run the parser
+        std::string rule = reduce(new_vertices, new_indices, path, symbol_stack);
+        changed = !rule.empty();
 
-            }
-        } else if (state == 1) {
-            // We're in parsing vertex state
-            switch(term->type) {
-                case TerminalType::decimal:
-                    // Store the coordinate (or at least, try to)
-                    if (counter == 0){
-                        f1 = ((ValueTerminal<float>*) term)->value;
-                    } else if (counter == 1) {
-                        f2 = ((ValueTerminal<float>*) term)->value;
-                    } else if (counter == 2) {
-                        f3 = ((ValueTerminal<float>*) term)->value;
-
-                        // Now that we have them all anyway, also store it and return to the idle state
-                        while (new_vertices.size() + 1 >= new_vertices.capacity()) { new_vertices.reserve(2 * (new_vertices.capacity() + 1)); }
-                        new_vertices.push_back(Rendering::Vertex({ f1, f2, f3 }, { 1.0, 0.0, 0.0 }));
-                        state = 0;
-                    } else {
-                        term->debug_info.print_error(cerr, "Too many coordinates for three-dimensional vector.");
-                        state = 0;
-                        break;
-                    }
-
-                    // Done
-                    ++counter;
-                    break;
-                
-                case TerminalType::uint:
-                    // Incorrect type
-                    term->debug_info.print_error(cerr, "Incorrect type used for vertex: can only use decimal values for coordinates.");
-                    state = 0;
-                    break;
-                
-                default:
-                    // Quit too soon
-                    term->debug_info.print_error(cerr, "Missing coordinates for three-dimensional vector.");
-                    state = 0;
-                    break;
-
-            }
-        } else if (state == 2) {
-            // We're in parsing face state
-            switch(term->type) {
-                case TerminalType::uint:
-                    // Store the coordinate (or at least, try to)
-                    if (counter == 0){
-                        u1 = ((ValueTerminal<uint32_t>*) term)->value;
-                    } else if (counter == 1) {
-                        u2 = ((ValueTerminal<uint32_t>*) term)->value;
-                    } else if (counter == 2) {
-                        u3 = ((ValueTerminal<uint32_t>*) term)->value;
-
-                        // Now that we have them all anyway, also store it and return to the idle state
-                        while (new_indices.size() + 3 >= new_indices.capacity()) { new_indices.reserve(2 * (new_indices.capacity() + 3)); }
-                        new_indices.push_back(u1);
-                        new_indices.push_back(u2);
-                        new_indices.push_back(u3);
-                        state = 0;
-                    } else {
-                        term->debug_info.print_error(cerr, "Too many indices for triangular face.");
-                        state = 0;
-                        break;
-                    }
-
-                    // Done
-                    ++counter;
-                    break;
-                
-                case TerminalType::decimal:
-                    // Incorrect type
-                    term->debug_info.print_error(cerr, "Incorrect type used for face: can only use unsigned integer values for indices.");
-                    state = 0;
-                    break;
-                
-                default:
-                    // Quit too soon
-                    term->debug_info.print_error(cerr, "Missing indices for triangular face.");
-                    state = 0;
-                    break;
-
+        // If there's no change and we're not at the end, pop a new terminal
+        if (!changed && !tokenizer.eof()) {
+            Terminal* term = tokenizer.get();
+            if (term->type != TerminalType::eof) {
+                symbol_stack.push_back(term);
+                changed = true;
+            } else {
+                // Delete the token again
+                delete term;
             }
         }
+    }
 
-        // When done with an iteration, clear the term
+    // When done, delete everything on the symbol stack
+    for (Terminal* term : symbol_stack) {
         delete term;
     }
 

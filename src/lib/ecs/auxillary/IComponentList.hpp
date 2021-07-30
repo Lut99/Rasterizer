@@ -56,6 +56,11 @@ namespace Rasterizer::ECS {
         /* Removes an 'entity', by de-associating the given entity ID and removing the Component from the internal list. */
         virtual void remove(entity_t entity) = 0;
 
+        /* Returns the index matching with the given entity. */
+        inline component_list_size_t get_index(entity_t entity) const { return this->entity_map.at(entity); }
+        /* Returns the entity matching with the given index. */
+        inline entity_t get_entity(component_list_size_t index) const { return this->index_map.at(index); }
+
         /* Returns the number of entities in the ComponentList. */
         inline component_list_size_t size() const { return this->n_entities; }
         /* Returns the maximum number of entities we can store in the ComponentList before we have to resize. */

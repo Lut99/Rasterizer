@@ -30,6 +30,8 @@ namespace Rasterizer::ECS {
         glm::vec3 rotation;
         /* The scale of the entity along each of the three axis. */
         glm::vec3 scale;
+        /* The resulting translation matrix, usable in the renderer. */
+        glm::mat4 translation;
     };
 
     /* Hash function for the Transform struct, which returns its 'hash' code. */

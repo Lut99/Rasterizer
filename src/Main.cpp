@@ -13,11 +13,15 @@
 **/
 
 #include <chrono>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <GLFW/glfw3.h>
 
 #include "tools/CppDebugger.hpp"
 
 #include "window/Window.hpp"
+
+#include "world/WorldSystem.hpp"
 
 #include "models/ModelSystem.hpp"
 
@@ -71,6 +75,8 @@ int main(int argc, const char** argv) {
     Window window(instance, "Rasterizer", 800, 600);
     // Prepare the memory manager
     Rendering::MemoryManager memory_manager(window.gpu());
+    // Initialize the WorldSystem
+    World::WorldSystem world_system;
     // Initialize the ModelSystem
     Models::ModelSystem model_system(memory_manager);
     // Initialize the RenderSystem
@@ -78,11 +84,25 @@ int main(int argc, const char** argv) {
     // Initialize the entity manager
     ECS::EntityManager entity_manager;
 
-    // Prepare a renderable entity
-    entity_t squares = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-    entity_t triangle = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-    model_system.load_model(entity_manager, squares, "", Models::ModelFormat::squares);
-    model_system.load_model(entity_manager, triangle, "", Models::ModelFormat::triangle);
+    // // Prepare a renderable entity
+    // entity_t square1 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+    // world_system.set(entity_manager, square1, { 0.0, 0.0, 0.5 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+    // model_system.load_model(entity_manager, square1, "", Models::ModelFormat::square);
+
+    // // Prepare another renderable entity
+    // entity_t triangle = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+    // world_system.set(entity_manager, triangle, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+    // model_system.load_model(entity_manager, triangle, "", Models::ModelFormat::triangle);
+
+    // // Prepare a final renderable entity
+    // entity_t square2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+    // world_system.set(entity_manager, square2, { 0.0, 0.0, -0.5 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+    // model_system.load_model(entity_manager, square2, "", Models::ModelFormat::square);
+
+    // Prepare the teddy bear
+    entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+    world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.75 * M_PI, 0.75 * M_PI, 0.0 }, { 0.03, 0.03, 0.03 });
+    model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
 
     // Initialize the engine
     DLOG(auxillary, "");
@@ -137,6 +157,7 @@ int main(int argc, const char** argv) {
     }
 
     // Wait for the GPU to be idle before we stop
+    DLOG(auxillary, "");
     DLOG(info, "Cleaning up...");
     window.gpu().wait_for_idle();
 

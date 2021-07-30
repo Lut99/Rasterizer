@@ -210,6 +210,13 @@ start:
             // printf("--> Found 'face' token, done\n");
             // printf("'\n");
             DRETURN new Terminal(TerminalType::face, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
+        
+        } else if (c == 'm') {
+            // Might be mtllib or something
+            sstr << c;
+            line_start = this->line;
+            col_start = this->col;
+            goto m_start;
 
         } else if (c >= '0' && c <= '9') {
             // It's a digit, but we do not yet known which
@@ -226,6 +233,11 @@ start:
             line_start = this->line;
             col_start = this->col;
             goto float_start;
+        
+        } else if (c == '#') {
+            // It's a comment; ignore until newline
+            // printf("--> Found comment, going comment_start\n");
+            goto comment_start;
 
         } else if (IS_WHITESPACE(c)) {
             // If it's a newline, update the line counters
@@ -250,6 +262,29 @@ start:
             // printf("'\n");
             debug.print_error(cerr, (std::string("Unexpected character '") += c) + "'");
             DRETURN nullptr;
+
+        }
+    }
+
+
+
+m_start:
+    {
+        std::string to_parse = "mtllib";
+        // Possibly store the sentence start
+        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+
+        // Get a character from the stream
+        #ifdef _WIN32
+        GET_CHAR_W(c, this->file, this->col);
+        #else
+        GET_CHAR(c, this->file, this->col);
+        #endif
+        // printf("m_start: %c\n", c);
+
+        // Switch on its value
+        if (c == 't') {
+            // On our way to mtllib, it seems
 
         }
     }
@@ -398,6 +433,35 @@ float_dot:
             // Otherwise, we have a valid value
             // printf("'\n");
             DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        }
+    }
+
+
+
+comment_start:
+    {
+        // Possibly store the sentence start
+        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+
+        // Get a character from the stream
+        #ifdef _WIN32
+        GET_CHAR_W(c, this->file, this->col);
+        #else
+        GET_CHAR(c, this->file, this->col);
+        #endif
+        // printf("comment_start: %c\n", c);
+
+        // Switch on its value
+        if (c == '\n') {
+            // printf("--> Found newline, done\n");
+            // We're done; reset to start
+            fseek(this->file, -1, SEEK_CUR);
+            --this->col;
+            goto start;
+        } else {
+            // printf("--> Found other token, retrying\n");
+            // Continue popping
+            goto comment_start;
         }
     }
 

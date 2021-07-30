@@ -238,16 +238,19 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
         // Loop to print it
         for (size_t x = 0; x < line.size(); x++) {
             // If we're at the start pos, print the start colour
-            if (supports_ansi && !accent_mode && y == this->line_start && x == this->col_start) {
+            if (supports_ansi && !accent_mode && y == this->line_start && x == this->col_start - 1) {
                 os << accent_colour;
                 accent_mode = true;
-            } else if (supports_ansi && accent_mode && y == this->line_end && x == this->col_end) {
-                os << "\033[0m";
-                accent_mode = false;
             }
 
             // Print the character
             os << line[x];
+
+            // If we're at the end pos, print the end colour
+            if (supports_ansi && accent_mode && y == this->line_end && x == this->col_end - 1) {
+                os << "\033[0m";
+                accent_mode = false;
+            }
         }
 
         // When done, print a newline
