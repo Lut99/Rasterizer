@@ -417,11 +417,11 @@ namespace Tools {
         /* Returns a muteable iterator to the beginning of the LinkedArray. */
         inline iterator begin() { return iterator(this->storage.head); }
         /* Returns a muteable iterator to the end of the LinkedArray. */
-        inline iterator end() { return iterator(this->storage.tail); }
+        inline iterator end() { return iterator(nullptr); }
         /* Returns an immuteable iterator to the beginning of the LinkedArray. */
         inline const_iterator begin() const { return const_iterator(this->storage.head); }
         /* Returns an immuteable iterator to the end of the LinkedArray. */
-        inline const_iterator end() const { return const_iterator(this->storage.tail); }
+        inline const_iterator end() const { return const_iterator(nullptr); }
         /* Returns an immuteable iterator to the beginning of the LinkedArray. */
         inline const_iterator cbegin() const { return this->begin(); }
         /* Returns an immuteable iterator to the end of the LinkedArray. */
@@ -429,11 +429,11 @@ namespace Tools {
         /* Returns a muteable iterator to the beginning of the LinkedArray. */
         inline reverse_iterator rbegin() { return reverse_iterator(this->storage.tail); }
         /* Returns a muteable reverse iterator to the end of the LinkedArray. */
-        inline reverse_iterator rend() { return reverse_iterator(this->storage.head); }
+        inline reverse_iterator rend() { return reverse_iterator(nullptr); }
         /* Returns an immuteable reverse iterator to the beginning of the LinkedArray. */
         inline reverse_const_iterator rbegin() const { return reverse_const_iterator(this->storage.tail); }
         /* Returns an immuteable reverse iterator to the end of the LinkedArray. */
-        inline reverse_const_iterator rend() const { return reverse_const_iterator(this->storage.head); }
+        inline reverse_const_iterator rend() const { return reverse_const_iterator(nullptr); }
         /* Returns an immuteable reverse iterator to the beginning of the LinkedArray. */
         inline reverse_const_iterator crbegin() const { return this->rbegin(); }
         /* Returns an immuteable reverse iterator to the end of the LinkedArray. */

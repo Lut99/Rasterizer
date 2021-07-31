@@ -28,24 +28,59 @@ namespace Rasterizer::Models::Obj {
         /* The EOF-symbol. */
         eof = 1,
 
-        /* The f, indicating we're talking about a Face. */
+        /* The f keyword, indicating we're talking about a Face. */
         face = 2,
-        /* The v, indicating we're talking about a Vertex. */
+        /* The v keyword, indicating we're talking about a Vertex. */
         vertex = 3,
+        /* The vn keyword, indicating we're talking about a vertex normal. */
+        normal = 4,
+        /* The vt keyword, indicating we're talking about a vertex texture coordinate. */
+        texture = 5,
+        /* The group keyword, which groups some vertices and faces in, well, a group. */
+        group = 6,
+        /* The mtllib keyword, defining a new material. */
+        mtllib = 7,
+        /* The usemtl keyword, referencing a material defined in another file. */
+        usemtl = 8,
 
+        /* Signed integer value, only occuring for negative values. */
+        sint = 9,
         /* An unsigned integer value. */
-        uint = 4,
+        uint = 10,
         /* A floating-point value. */
-        decimal = 5
+        decimal = 11,
+        /* A combined index of vertex/texture coordinate. */
+        v_vt = 12,
+        /* A combined index of vertex/texture/normal coordinate. */
+        v_vt_vn = 13,
+        /* A combined index of vertex/normal coordinate. */
+        v_vn = 14,
+        /* The name of some external file. */
+        filename = 15,
+        /* Some name used internally in the obj file structure. */
+        name = 16
     };
     /* Converts the given TerminalType to a string. */
     static std::string terminal_type_names[] = {
         "undefined",
         "end-of-file",
+
         "face",
         "vertex",
+        "normal",
+        "texture",
+        "group",
+        "mtllib",
+        "usemtl",
+
+        "sint",
         "uint",
-        "decimal"
+        "decimal",
+        "v/vt",
+        "v/vt/vn",
+        "v//vn",
+        "filename",
+        "name"
     };
 
 
