@@ -4,7 +4,7 @@
  * Created:
  *   16/04/2021, 17:51:33
  * Last edited:
- *   8/1/2021, 3:35:07 PM
+ *   8/1/2021, 4:06:03 PM
  * Auto updated?
  *   Yes
  *
@@ -63,11 +63,19 @@ namespace Rasterizer::Rendering {
         { VK_ERROR_INVALID_SHADER_NV, "One or more shaders failed to compile or link. More details are reported back to the application via VK_EXT_debug_report if enabled." },
         { VK_ERROR_OUT_OF_POOL_MEMORY, "A pool memory allocation has failed. This must only be returned if no attempt to allocate host or device memory was made to accommodate the new allocation. If the failure was definitely due to fragmentation of the pool, VK_ERROR_FRAGMENTED_POOL should be returned instead." },
         { VK_ERROR_INVALID_EXTERNAL_HANDLE, "An external handle is not a valid handle of the specified type." },
+        #ifdef VK_ERROR_FRAGMENTATION
         { VK_ERROR_FRAGMENTATION, "A descriptor pool creation has failed due to fragmentation." },
+        #endif
         { VK_ERROR_INVALID_DEVICE_ADDRESS_EXT, "A buffer creation failed because the requested address is not available." },
+        #ifdef VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS
         { VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS, "A buffer creation or memory allocation failed because the requested address is not available. A shader group handle assignment failed because the requested shader group handle information is no longer valid." },
+        #endif
+        #ifdef VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT
         { VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT, "An operation on a swapchain created with VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT failed as it did not have exlusive full-screen access. This may occur due to implementation-dependent reasons, outside of the application’s control." },
+        #endif
+        #ifdef VK_ERROR_UNKNOWN
         { VK_ERROR_UNKNOWN, "An unknown error has occurred; either the application has provided invalid input, or an implementation failure has occurred." },
+        #endif
         { VK_ERROR_VALIDATION_FAILED_EXT, "Failed to validate." },
         { VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT, "Invalid DRM format modifier plane layout." },
         { VK_ERROR_NOT_PERMITTED_EXT, "Not permitted." }
