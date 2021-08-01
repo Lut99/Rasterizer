@@ -4,7 +4,7 @@
  * Created:
  *   28/06/2021, 17:18:50
  * Last edited:
- *   28/06/2021, 17:18:50
+ *   8/1/2021, 5:42:15 PM
  * Auto updated?
  *   Yes
  *
@@ -26,9 +26,7 @@ layout(location = 0) out vec3 frag_color;
 
 // The camera data as push constants
 layout(push_constant) uniform Camera {
-    mat4 proj;
-    mat4 view;
-    mat4 model;
+    mat4 mat;
 } camera;
 
 
@@ -37,7 +35,7 @@ layout(push_constant) uniform Camera {
 void main() {
     // Return the vertex as a 4D vertex
     // gl_Position = camera.proj * camera.view * camera.model * vec4(vertex, 0.0, 1.0);
-    gl_Position = camera.proj * camera.view * camera.model * vec4(vertex, 1.0);
+    gl_Position = camera.mat * vec4(vertex, 1.0);
     // Also return the color for the fragment shader
     frag_color = color;
 }

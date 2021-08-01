@@ -4,7 +4,7 @@
  * Created:
  *   20/07/2021, 15:10:25
  * Last edited:
- *   8/1/2021, 3:48:31 PM
+ *   8/1/2021, 5:42:03 PM
  * Auto updated?
  *   Yes
  *
@@ -170,7 +170,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     pipeline.init_multisampling();
     pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
     pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
-    pipeline.init_pipeline_layout({}, { { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t) (3ULL * sizeof(glm::mat4)) } });
+    pipeline.init_pipeline_layout({}, { { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t) (sizeof(glm::mat4)) } });
     pipeline.finalize(this->render_pass, 0);
 
     // Done initializing
@@ -245,23 +245,27 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     // Compute new camera matrices
     glm::mat4 cam_proj, cam_view, cam_model;
     compute_camera_matrices(cam_proj, cam_view, cam_model, (float) this->window.swapchain().extent().width / (float) this->window.swapchain().extent().height);
+    // Already combines the projection and view matrices
+    glm::mat4 cam_mat = cam_proj * cam_view;
 
     // Prepare the command buffer's recording
     this->draw_cmds[swapchain_index].begin();
     this->render_pass.start_scheduling(this->draw_cmds[swapchain_index], this->framebuffers[swapchain_index]);
-    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,                     0, sizeof(glm::mat4), (void*) &cam_proj);
-    this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT,     sizeof(glm::mat4), sizeof(glm::mat4), (void*) &cam_view);
     this->pipeline.schedule(this->draw_cmds[swapchain_index]);
 
     /* Do draw calls for each entity. */
     const ECS::ComponentList<ECS::Mesh>& list = entity_manager.get_list<ECS::Mesh>();
+    Tools::Array<glm::mat4> cam_matrices(cam_mat, list.size());
     for (ECS::component_list_size_t i = 0; i < list.size(); i++) {
         // Get the relevant components for this entity
         const ECS::Mesh& mesh = list[i];
         const ECS::Transform& transform = entity_manager.get_component<Transform>(list.get_entity(i));
 
+        // Compute the camera matrix for this entity
+        cam_matrices[i] *= transform.translation;
+
         // Record the command buffer for this entity
-        this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 2 * sizeof(glm::mat4), sizeof(glm::mat4), (void*) &transform.translation);
+        this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), (void*) &cam_matrices[i]);
         this->model_system.schedule(mesh, this->draw_cmds[swapchain_index]);
         this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], mesh.n_instances, 1);
     }
