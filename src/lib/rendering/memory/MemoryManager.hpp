@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 16:22:54
  * Last edited:
- *   27/07/2021, 16:22:54
+ *   8/1/2021, 5:05:57 PM
  * Auto updated?
  *   Yes
  *
@@ -26,12 +26,6 @@
 namespace Rasterizer::Rendering {
     /* The MemoryManager struct, which bundles different kind of pools into one place. */
     struct MemoryManager {
-        /* The size of the draw command pool, in bytes. */
-        static constexpr VkDeviceSize draw_pool_size = 1024 * 1024 * 1024;
-        /* The size of the stage command pool, in bytes. */
-        static constexpr VkDeviceSize stage_pool_size = 1024 * 1024 * 1024;
-
-
         /* The GPU on which the MemoryManager is based. */
         const Rendering::GPU& gpu;
 
@@ -49,8 +43,8 @@ namespace Rasterizer::Rendering {
         Rendering::DescriptorPool descr_pool;
 
 
-        /* Constructor for the MemoryManager class, which takes the GPU where it is defined for. */
-        MemoryManager(const Rendering::GPU& gpu);
+        /* Constructor for the MemoryManager class, which takes the GPU where it is defined for and the sizes of the two memory pools. */
+        MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_size, VkDeviceSize stage_pool_size);
 
     };
 

@@ -4,7 +4,7 @@
  * Created:
  *   25/04/2021, 11:36:42
  * Last edited:
- *   8/1/2021, 4:45:53 PM
+ *   8/1/2021, 4:47:53 PM
  * Auto updated?
  *   Yes
  *
@@ -146,7 +146,7 @@ MemoryPool::MemoryPool(const GPU& gpu, uint32_t memory_type, VkDeviceSize n_byte
 
 
     // Allocate the block of memory that we shall use
-    DLOG(info, "Allocating memory on device '" + gpu.name() + "'...");
+    DLOG(info, "Allocating " + Tools::bytes_to_string(n_bytes) +  " on device '" + gpu.name() + "'...");
     VkMemoryAllocateInfo allocate_info;
     populate_allocate_info(allocate_info, memory_type, n_bytes);
 

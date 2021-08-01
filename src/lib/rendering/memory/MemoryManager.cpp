@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 16:29:22
  * Last edited:
- *   27/07/2021, 16:29:22
+ *   8/1/2021, 5:06:15 PM
  * Auto updated?
  *   Yes
  *
@@ -28,15 +28,15 @@ using namespace CppDebugger::SeverityValues;
 
 
 /***** MEMORYMANAGER CLASS *****/
-/* Constructor for the MemoryManager class, which takes the GPU where it is defined for. */
-MemoryManager::MemoryManager(const Rendering::GPU& gpu) :
+/* Constructor for the MemoryManager class, which takes the GPU where it is defined for and the sizes of the two memory pools. */
+MemoryManager::MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_size, VkDeviceSize stage_pool_size) :
     gpu(gpu),
 
     draw_cmd_pool(this->gpu, this->gpu.queue_info().graphics(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT),
     mem_cmd_pool(this->gpu, this->gpu.queue_info().memory(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT),
 
-    draw_pool(this->gpu, Rendering::MemoryPool::select_memory_type(this->gpu, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), MemoryManager::draw_pool_size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    stage_pool(this->gpu, Rendering::MemoryPool::select_memory_type(this->gpu, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), MemoryManager::stage_pool_size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
+    draw_pool(this->gpu, Rendering::MemoryPool::select_memory_type(this->gpu, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), draw_pool_size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    stage_pool(this->gpu, Rendering::MemoryPool::select_memory_type(this->gpu, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), stage_pool_size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
 
     descr_pool(this->gpu, { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1)
 {}
