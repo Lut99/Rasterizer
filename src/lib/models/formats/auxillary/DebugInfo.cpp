@@ -4,7 +4,7 @@
  * Created:
  *   04/07/2021, 17:30:01
  * Last edited:
- *   04/07/2021, 17:30:01
+ *   8/1/2021, 3:42:53 PM
  * Auto updated?
  *   Yes
  *
@@ -13,6 +13,9 @@
  *   in a file to use in (error) messages.
 **/
 
+#include <cmath>
+#include <cstring>
+#include <cerrno>
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
@@ -98,9 +101,13 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
         // Get the next character
         c = fgetc(file);
         if (c == EOF && ferror(file)) {
+            #ifdef _WIN32
             char buffer[BUFSIZ];
             strerror_s(buffer, errno);
             std::string err = buffer;
+            #else
+            std::string err = strerror(errno);
+            #endif
             DLOG(fatal, "Something went wrong while reading from the stream: " + err);
         }
 

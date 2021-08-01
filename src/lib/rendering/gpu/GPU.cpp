@@ -4,7 +4,7 @@
  * Created:
  *   16/04/2021, 17:21:49
  * Last edited:
- *   25/05/2021, 18:14:13
+ *   8/1/2021, 3:40:08 PM
  * Auto updated?
  *   Yes
  *
@@ -14,6 +14,7 @@
  *   library.
 **/
 
+#include <cstring>
 #include "../auxillary/ErrorCodes.hpp"
 #include "tools/CppDebugger.hpp"
 

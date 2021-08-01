@@ -4,7 +4,7 @@
  * Created:
  *   20/06/2021, 12:29:37
  * Last edited:
- *   28/06/2021, 22:28:47
+ *   8/1/2021, 3:48:45 PM
  * Auto updated?
  *   Yes
  *
@@ -16,7 +16,7 @@
 #include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 #include "../auxillary/ShaderStages.hpp"
-#include "../Vertex.hpp"
+#include "../auxillary/Vertex.hpp"
 
 #include "Pipeline.hpp"
 

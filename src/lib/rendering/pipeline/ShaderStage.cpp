@@ -4,7 +4,7 @@
  * Created:
  *   28/06/2021, 21:34:32
  * Last edited:
- *   28/06/2021, 22:21:41
+ *   8/1/2021, 3:38:46 PM
  * Auto updated?
  *   Yes
  *
@@ -13,6 +13,7 @@
  *   Pipeline to properly manage shader memory.
 **/
 
+#include <cstring>
 #include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 

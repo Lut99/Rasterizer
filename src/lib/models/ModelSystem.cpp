@@ -4,7 +4,7 @@
  * Created:
  *   01/07/2021, 14:09:32
  * Last edited:
- *   01/07/2021, 14:09:32
+ *   8/1/2021, 3:41:39 PM
  * Auto updated?
  *   Yes
  *
@@ -13,6 +13,7 @@
  *   models in the rasterizer.
 **/
 
+#include <cstring>
 #include <algorithm>
 
 #include "tools/Common.hpp"

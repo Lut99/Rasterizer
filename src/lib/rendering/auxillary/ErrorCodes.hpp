@@ -4,7 +4,7 @@
  * Created:
  *   16/04/2021, 17:51:33
  * Last edited:
- *   01/07/2021, 13:43:10
+ *   8/1/2021, 3:35:07 PM
  * Auto updated?
  *   Yes
  *
@@ -29,11 +29,21 @@ namespace Rasterizer::Rendering {
         { VK_EVENT_RESET, "An event is unsignaled." },
         { VK_INCOMPLETE, "A return array was too small for the result." },
         { VK_SUBOPTIMAL_KHR, "A swapchain no longer matches the surface properties exactly, but can still be used to present to the surface successfully." },
+        #ifdef VK_THREAD_IDLE_KHR
         { VK_THREAD_IDLE_KHR, "A deferred operation is not complete but there is currently no work for this thread to do at the time of this call." },
+        #endif
+        #ifdef VK_THREAD_DONE_KHR
         { VK_THREAD_DONE_KHR, "A deferred operation is not complete but there is no work remaining to assign to additional threads." },
+        #endif
+        #ifdef VK_OPERATION_DEFERRED_KHR
         { VK_OPERATION_DEFERRED_KHR, "A deferred operation was requested and at least some of the work was deferred." },
+        #endif
+        #ifdef VK_OPERATION_NOT_DEFERRED_KHR
         { VK_OPERATION_NOT_DEFERRED_KHR, "A deferred operation was requested and no operations were deferred." },
+        #endif
+        #ifdef VK_PIPELINE_COMPILE_REQUIRED_EXT
         { VK_PIPELINE_COMPILE_REQUIRED_EXT, "A requested pipeline creation would have required compilation, but the application requested compilation to not be performed." },
+        #endif
         { VK_ERROR_OUT_OF_HOST_MEMORY, "A host memory allocation has failed." },
         { VK_ERROR_OUT_OF_DEVICE_MEMORY, "A device memory allocation has failed." },
         { VK_ERROR_INITIALIZATION_FAILED, "Initialization of an object could not be completed for implementation-specific reasons." },

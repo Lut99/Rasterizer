@@ -4,7 +4,7 @@
  * Created:
  *   02/07/2021, 13:44:58
  * Last edited:
- *   02/07/2021, 13:44:58
+ *   8/1/2021, 3:41:19 PM
  * Auto updated?
  *   Yes
  *
@@ -174,6 +174,7 @@ void Window::glfw_resize_callback(GLFWwindow* glfw_window, int width, int height
     window->should_resize = true;
 
     // Done
+    (void) width; (void) height;
     DRETURN;
 }
 
@@ -190,6 +191,7 @@ void Window::glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, i
     }
 
     // Done
+    (void) scancode; (void) mods;
     DRETURN;
 }
 

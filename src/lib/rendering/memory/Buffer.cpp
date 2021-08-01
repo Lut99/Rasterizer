@@ -4,7 +4,7 @@
  * Created:
  *   19/06/2021, 12:19:53
  * Last edited:
- *   19/06/2021, 12:19:53
+ *   8/1/2021, 3:39:48 PM
  * Auto updated?
  *   Yes
  *
@@ -13,6 +13,7 @@
  *   object. Only usable in the context of the MemoryPool.
 **/
 
+#include <cstring>
 #include "tools/CppDebugger.hpp"
 #include "tools/Common.hpp"
 

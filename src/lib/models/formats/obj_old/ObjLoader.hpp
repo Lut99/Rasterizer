@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:19
  * Last edited:
- *   03/07/2021, 17:37:19
+ *   8/1/2021, 3:48:11 PM
  * Auto updated?
  *   Yes
  *
@@ -15,8 +15,8 @@
 #ifndef MODELS_OBJ_LOADER_HPP
 #define MODELS_OBJ_LOADER_HPP
 
-#include "rendering/Vertex.hpp"
-#include "rendering/Index.hpp"
+#include "rendering/auxillary/Vertex.hpp"
+#include "rendering/auxillary/Index.hpp"
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Models {

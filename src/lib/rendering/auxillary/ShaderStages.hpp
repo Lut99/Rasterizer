@@ -4,7 +4,7 @@
  * Created:
  *   20/06/2021, 15:08:18
  * Last edited:
- *   20/06/2021, 15:08:18
+ *   8/1/2021, 3:38:07 PM
  * Auto updated?
  *   Yes
  *
@@ -31,12 +31,24 @@ namespace Rasterizer::Rendering {
         { VK_SHADER_STAGE_COMPUTE_BIT , "compute" },
         { VK_SHADER_STAGE_ALL_GRAPHICS , "all (graphics)" },
 
+        #ifdef VK_SHADER_STAGE_RAYGEN_BIT_KHR
         { VK_SHADER_STAGE_RAYGEN_BIT_KHR  , "raytracing raygen" },
+        #endif
+        #ifdef VK_SHADER_STAGE_ANY_HIT_BIT_KHR
         { VK_SHADER_STAGE_ANY_HIT_BIT_KHR  , "raytracing any hit" },
+        #endif
+        #ifdef VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR
         { VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR  , "raytracing closest hit" },
+        #endif
+        #ifdef VK_SHADER_STAGE_MISS_BIT_KHR
         { VK_SHADER_STAGE_MISS_BIT_KHR  , "raytracing miss" },
+        #endif
+        #ifdef VK_SHADER_STAGE_INTERSECTION_BIT_KHR
         { VK_SHADER_STAGE_INTERSECTION_BIT_KHR  , "raytracing intersection" },
+        #endif
+        #ifdef VK_SHADER_STAGE_CALLABLE_BIT_KHR
         { VK_SHADER_STAGE_CALLABLE_BIT_KHR  , "raytracing callable" },
+        #endif
         
         { VK_SHADER_STAGE_TASK_BIT_NV   , "mesh task" },
         { VK_SHADER_STAGE_MESH_BIT_NV   , "mesh mesh" }

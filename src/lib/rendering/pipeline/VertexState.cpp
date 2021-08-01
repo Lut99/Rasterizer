@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 11:53:47
  * Last edited:
- *   30/07/2021, 11:53:47
+ *   8/1/2021, 3:39:34 PM
  * Auto updated?
  *   Yes
  *
@@ -82,9 +82,9 @@ VertexState::VertexState(const VertexState& other) {
 
 /* Move constructor for the VertexState class. */
 VertexState::VertexState(VertexState&& other) :
+    vk_vertex_state_info(other.vk_vertex_state_info),
     vk_vertex_binding(other.vk_vertex_binding),
-    vk_vertex_attributes(std::move(other.vk_vertex_attributes)),
-    vk_vertex_state_info(other.vk_vertex_state_info)
+    vk_vertex_attributes(std::move(other.vk_vertex_attributes))
 {
     other.vk_vertex_binding = nullptr;
 }
@@ -107,7 +107,7 @@ VertexState::~VertexState() {
 void Rendering::swap(VertexState& vs1, VertexState& vs2) {
     using std::swap;
 
+    swap(vs1.vk_vertex_state_info, vs2.vk_vertex_state_info);
     swap(vs1.vk_vertex_binding, vs2.vk_vertex_binding);
     swap(vs1.vk_vertex_attributes, vs2.vk_vertex_attributes);
-    swap(vs1.vk_vertex_state_info, vs2.vk_vertex_state_info);
 }

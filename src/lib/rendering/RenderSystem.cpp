@@ -4,7 +4,7 @@
  * Created:
  *   20/07/2021, 15:10:25
  * Last edited:
- *   20/07/2021, 15:10:25
+ *   8/1/2021, 3:48:31 PM
  * Auto updated?
  *   Yes
  *
@@ -26,8 +26,8 @@
 
 #include "auxillary/ErrorCodes.hpp"
 #include "auxillary/Rectangle.hpp"
+#include "auxillary/Vertex.hpp"
 
-#include "Vertex.hpp"
 #include "RenderSystem.hpp"
 
 using namespace std;

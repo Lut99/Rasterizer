@@ -4,7 +4,7 @@
  * Created:
  *   29/06/2021, 13:30:04
  * Last edited:
- *   29/06/2021, 13:30:04
+ *   8/1/2021, 3:37:09 PM
  * Auto updated?
  *   Yes
  *
@@ -13,6 +13,7 @@
  *   to manage a subpass' memory.
 **/
 
+#include <cstring>
 #include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 

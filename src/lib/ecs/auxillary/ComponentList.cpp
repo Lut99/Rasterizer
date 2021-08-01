@@ -4,7 +4,7 @@
  * Created:
  *   18/07/2021, 12:39:54
  * Last edited:
- *   18/07/2021, 12:39:54
+ *   8/1/2021, 3:43:52 PM
  * Auto updated?
  *   Yes
  *
@@ -13,6 +13,7 @@
  *   return a single component from an entity.
 **/
 
+#include <cstring>
 #include <algorithm>
 
 #include "tools/CppDebugger.hpp"
@@ -163,13 +164,4 @@ void ComponentList<T>::reserve(component_list_size_t new_capacity) {
 template <class T>
 ComponentList<T>* ComponentList<T>::copy() const {
     return new ComponentList<T>(*this);
-}
-
-/* Swap operator for the ComponentList class. */
-template <class T>
-void ECS::swap(ComponentList<T>& cl1, ComponentList<T>& cl2) {
-    using std::swap;
-
-    swap((IComponentList&) cl1, (IComponentList&) cl2);
-    swap(cl1.entities, cl2.entities);
 }

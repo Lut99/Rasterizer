@@ -4,7 +4,7 @@
  * Created:
  *   18/07/2021, 12:39:57
  * Last edited:
- *   18/07/2021, 12:39:57
+ *   8/1/2021, 3:33:46 PM
  * Auto updated?
  *   Yes
  *
@@ -66,14 +66,14 @@ namespace Rasterizer::ECS {
         /* Allows the ComponentList to be copied virtually. */
         virtual ComponentList<T>* copy() const;
         /* Swap operator for the ComponentList class. */
-        friend void swap(ComponentList<T>& cl1, ComponentList<T>& cl2);
+        friend void swap(ComponentList<T>& cl1, ComponentList<T>& cl2) {
+            using std::swap;
+
+            swap((IComponentList&) cl1, (IComponentList&) cl2);
+            swap(cl1.entities, cl2.entities);
+        }
 
     };
-
-    /* Swap operator for the ComponentList class. */
-    template <class T>
-    void swap(ComponentList<T>& cl1, ComponentList<T>& cl2);
-
 }
 
 // Also include the .cpp since it's a template

@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanAuxillary STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Rectangle.cpp)
+add_library(VulkanAuxillary STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Rectangle.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Vertex.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanAuxillary PUBLIC
