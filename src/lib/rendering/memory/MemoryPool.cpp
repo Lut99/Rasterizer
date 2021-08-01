@@ -4,7 +4,7 @@
  * Created:
  *   25/04/2021, 11:36:42
  * Last edited:
- *   8/1/2021, 4:41:45 PM
+ *   8/1/2021, 4:44:25 PM
  * Auto updated?
  *   Yes
  *
@@ -117,6 +117,7 @@ MemoryPool::MemoryPool(const GPU& gpu, uint32_t memory_type, VkDeviceSize n_byte
     DLOG(info, "Memory properties for this pool:");
     DINDENT;
     for (size_t i = 0; i < 8 * sizeof(uint32_t); i++) {
+        printf("%x | %x | %x\n", memory_properties, (memory_properties >> i) & 0x1, (VkMemoryPropertyFlagBits) ((memory_properties >> i) & 0x1));
         VkMemoryPropertyFlagBits bit = (VkMemoryPropertyFlagBits) ((memory_properties >> i) & 0x1);
         if (bit) {
             DLOG(auxillary, vk_memory_property_map.at(bit));
