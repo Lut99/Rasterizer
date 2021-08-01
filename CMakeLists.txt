@@ -28,6 +28,7 @@ set(WARNING_FLAGS "")
 endif()
 
 # Add extra flags needed
+set(FLAGS "-g")
 message("Extra flags: '${FLAGS}'")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${WARNING_FLAGS} ${FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} ${FLAGS}")
