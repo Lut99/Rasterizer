@@ -1,0 +1,2 @@
+start <- "hellothere"     { printf("General Kenobi! You are a bold one!"); }
+       / < . >            { printf("%c", yytext[0]); }
