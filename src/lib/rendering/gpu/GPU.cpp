@@ -4,7 +4,7 @@
  * Created:
  *   16/04/2021, 17:21:49
  * Last edited:
- *   8/1/2021, 3:40:08 PM
+ *   8/1/2021, 4:33:01 PM
  * Auto updated?
  *   Yes
  *
@@ -17,6 +17,7 @@
 #include <cstring>
 #include "../auxillary/ErrorCodes.hpp"
 #include "tools/CppDebugger.hpp"
+#include "tools/Common.hpp"
 
 #include "GPU.hpp"
 
@@ -205,6 +206,7 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
     this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, this->surface);
     DINDENT;
     DLOG(auxillary, std::string("Selected GPU: '") + this->vk_physical_device_properties.deviceName + "'");
+    // DLOG(auxillary, "Maximum device local memory available: " + Tools::bytes_to_string(this->vk_physical_device_properties.limits))
     DDEDENT;
 
     

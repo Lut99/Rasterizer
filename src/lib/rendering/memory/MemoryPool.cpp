@@ -4,7 +4,7 @@
  * Created:
  *   25/04/2021, 11:36:42
  * Last edited:
- *   25/05/2021, 18:14:13
+ *   8/1/2021, 4:41:45 PM
  * Auto updated?
  *   Yes
  *
@@ -17,6 +17,7 @@
 #include "tools/CppDebugger.hpp"
 
 #include "../auxillary/ErrorCodes.hpp"
+#include "../auxillary/MemoryProperties.hpp"
 #include "tools/Common.hpp"
 
 #include "MemoryPool.hpp"
@@ -109,6 +110,19 @@ MemoryPool::MemoryPool(const GPU& gpu, uint32_t memory_type, VkDeviceSize n_byte
     DENTER("Rendering::MemoryPool::MemoryPool");
     DLOG(info, "Initializing MemoryPool...");
     DINDENT;
+
+
+
+    // Print the memory properties enabled
+    DLOG(info, "Memory properties for this pool:");
+    DINDENT;
+    for (size_t i = 0; i < 8 * sizeof(uint32_t); i++) {
+        VkMemoryPropertyFlagBits bit = (VkMemoryPropertyFlagBits) ((memory_properties >> i) & 0x1);
+        if (bit) {
+            DLOG(auxillary, vk_memory_property_map.at(bit));
+        }
+    }
+    DDEDENT;
 
 
 
