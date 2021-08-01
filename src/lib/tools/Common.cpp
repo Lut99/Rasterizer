@@ -13,6 +13,7 @@
 **/
 
 #ifdef _WIN32
+#define NOMINMAX
 #include <windows.h>
 #else
 #include <libgen.h>
@@ -21,6 +22,7 @@
 #endif
 #include <cmath>
 #include <sstream>
+#include <string>
 #include <stdexcept>
 
 #include "CppDebugger.hpp"
@@ -330,5 +332,5 @@ size_t Tools::string_to_bytes(const std::string& text) {
     }
     
     // Otherwise, return the casted version!
-    DRETURN round(inumbers);
+    DRETURN (size_t) round(inumbers);
 }
