@@ -4,7 +4,7 @@
  * Created:
  *   17/07/2021, 12:57:04
  * Last edited:
- *   8/1/2021, 4:02:40 PM
+ *   8/1/2021, 4:09:28 PM
  * Auto updated?
  *   Yes
  *
@@ -59,6 +59,8 @@ namespace Rasterizer::Rendering {
         inline operator VkImage() const { return this->rendering_image->image(); }
         /* Expliticlty returns the internal VkImageView object. */
         inline const VkImageView& view() const { return this->vk_image_view; }
+        /* Implicitly returns the internal VkImageView object. */
+        inline operator VkImageView() const { return this->vk_image_view; }
 
         /* Copy assignment operator for the DepthStencil class. */
         inline DepthStencil& operator=(const DepthStencil& other) { return *this = DepthStencil(other); }
