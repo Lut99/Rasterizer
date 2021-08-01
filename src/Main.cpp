@@ -4,7 +4,7 @@
  * Created:
  *   11/06/2021, 18:03:12
  * Last edited:
- *   8/1/2021, 5:06:25 PM
+ *   8/1/2021, 5:36:04 PM
  * Auto updated?
  *   Yes
  *
@@ -18,6 +18,7 @@
 #include <cmath>
 #include <GLFW/glfw3.h>
 
+#include "tools/Common.hpp"
 #include "tools/CppDebugger.hpp"
 
 #include "window/Window.hpp"
@@ -69,20 +70,27 @@ static Tools::Array<const char*> get_glfw_extensions() {
 }
 
 /* Prints the usage string. */
-static void print_usage(std::ostream& os) {
+static void print_usage(std::ostream& os, const std::string& filename) {
     DENTER("print_usage");
 
-
+    os << "Usage: " << filename << " [options]" << endl;
 
     DRETURN;
 }
 
 /* Prints the help string. */
-static void print_help(std::ostream& os) {
+static void print_help(std::ostream& os, const std::string& filename) {
     DENTER("print_help");
 
+    print_usage(os, filename);
 
+    os << endl;
+    os << "Options:" << endl;
+    os << "     --local <bytes> : The number of bytes we reserve in local device memory." << endl;
+    os << "     --visible <bytes> : The number of bytes we reserve in host visible device memory." << endl;
+    os << endl;
 
+    // Done
     DRETURN;
 }
 
@@ -117,17 +125,15 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                         cerr << "Missing value for option '" << arg << "'.";
                     }
 
-                    // Try to parse as an unsigned integer
+                    // Try to parse as a byte format
                     VkDeviceSize ivalue;
                     try {
-                        unsigned long lvalue = std::stoul(value);
-                        if (lvalue > std::numeric_limits<VkDeviceSize>::max()) { throw std::out_of_range("Manual overflow"); }
-                        ivalue = (VkDeviceSize) lvalue;
+                        ivalue = Tools::string_to_bytes(value);
                     } catch (std::invalid_argument& e) {
-                        cerr << "Cannot convert '" << value << "' to an unsigned integer." << endl;
+                        cerr << e.what() << endl;
                         exit(EXIT_FAILURE);
-                    } catch (std::out_of_range&) {
-                        cerr << "Memory size '" << value << "' is too large." << endl;
+                    } catch (std::out_of_range& e) {
+                        cerr << e.what() << endl;
                         exit(EXIT_FAILURE);
                     }
 
@@ -145,17 +151,15 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                         cerr << "Missing value for option '" << arg << "'.";
                     }
 
-                    // Try to parse as an unsigned integer
+                    // Try to parse as a byte format
                     VkDeviceSize ivalue;
                     try {
-                        unsigned long lvalue = std::stoul(value);
-                        if (lvalue > std::numeric_limits<VkDeviceSize>::max()) { throw std::out_of_range("Manual overflow"); }
-                        ivalue = (VkDeviceSize) lvalue;
+                        ivalue = Tools::string_to_bytes(value);
                     } catch (std::invalid_argument& e) {
-                        cerr << "Cannot convert '" << value << "' to an unsigned integer." << endl;
+                        cerr << e.what() << endl;
                         exit(EXIT_FAILURE);
-                    } catch (std::out_of_range&) {
-                        cerr << "Memory size '" << value << "' is too large." << endl;
+                    } catch (std::out_of_range& e) {
+                        cerr << e.what() << endl;
                         exit(EXIT_FAILURE);
                     }
 
@@ -164,7 +168,7 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                     
                 } else if (option == "help") {
                     // Print the help string!
-                    print_help(cout);
+                    print_help(cout, argv[0]);
                     exit(EXIT_SUCCESS);
 
                 } else {
@@ -179,7 +183,7 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                 switch(arg[2]) {
                     case 'h':
                         // Print the help string!
-                        print_help(cout);
+                        print_help(cout, argv[0]);
                         exit(EXIT_SUCCESS);
                     
                     default:
