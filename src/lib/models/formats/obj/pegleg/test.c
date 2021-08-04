@@ -281,7 +281,7 @@ YY_ACTION(void) yy_2_start(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_2_start\n"));
   {
-#line 0
+#line 2
    printf("%c", yytext[0]); ;
   }
 #undef yythunkpos
@@ -295,7 +295,7 @@ YY_ACTION(void) yy_1_start(yycontext *yy, char *yytext, int yyleng)
 #define yythunkpos yy->__thunkpos
   yyprintf((stderr, "do yy_1_start\n"));
   {
-#line 0
+#line 1
    printf("General Kenobi! You are a bold one!"); ;
   }
 #undef yythunkpos

@@ -4,7 +4,7 @@
  * Created:
  *   01/08/2021, 13:28:22
  * Last edited:
- *   01/08/2021, 13:28:22
+ *   04/08/2021, 13:24:15
  * Auto updated?
  *   Yes
  *
@@ -17,10 +17,6 @@
 #include <cstring>
 #include <cerrno>
 #include "tools/CppDebugger.hpp"
-
-extern "C" {
-#include "pegleg/test.c"
-}
 
 #include "ObjLoader.hpp"
 
@@ -68,6 +64,21 @@ static std::istream* file;
 
 #endif
 
+/* Finally, include the pegleg parser with the updated input macro. */
+extern "C" {
+#include "pegleg/test.c"
+}
+
+
+
+
+
+/***** GLOBALS *****/
+/* Global vertex array used to interface with the pegleg parser. */
+Tools::Array<Rendering::Vertex> new_obj_vertices;
+/* Global index array used to interface with the pegleg parser. */
+Tools::Array<Rendering::index_t> new_obj_indices;
+
 
 
 
@@ -91,10 +102,18 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
         DLOG(fatal, "Could not open input file: " + err);
     }
 
+    // Prepare the output arrays
+    new_obj_vertices = {};
+    new_obj_indices = {};
+
     // Start parsing
     while (yyparse()) {
         // Nothing...
     }
+
+    // Simply move the global arrays to the output
+    new_vertices = std::move(new_obj_vertices);
+    new_indices = std::move(new_obj_indices);
 
     // Done
     DRETURN;

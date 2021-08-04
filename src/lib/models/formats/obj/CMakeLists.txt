@@ -1,7 +1,7 @@
 # Define the command to parse the .peg files
 add_custom_target(
     obj_peg
-    COMMAND peg -o"${CMAKE_CURRENT_SOURCE_DIR}/pegleg/test.c" ${CMAKE_CURRENT_SOURCE_DIR}/pegleg/test.peg
+    COMMAND leg -o"${CMAKE_CURRENT_SOURCE_DIR}/pegleg/test.c" ${CMAKE_CURRENT_SOURCE_DIR}/pegleg/test.leg
 )
 
 # Add the library

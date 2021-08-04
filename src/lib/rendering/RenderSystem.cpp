@@ -4,7 +4,7 @@
  * Created:
  *   20/07/2021, 15:10:25
  * Last edited:
- *   8/1/2021, 5:42:03 PM
+ *   04/08/2021, 13:08:14
  * Auto updated?
  *   Yes
  *
@@ -52,7 +52,7 @@ static void compute_camera_matrices(glm::mat4& proj_mat, glm::mat4& view_mat, gl
     // Compute the projection matrix: field of view and such?
     proj_mat = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.1f, 10.0f);
     // Compute the view matrix: translation from the world space to camera space
-    view_mat = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    view_mat = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     // Compute the model matrix: used to rotate the world to provide the rotating camera
     model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
