@@ -2,14 +2,14 @@
  *   by Lut99
  *
  * Created:
- *   01/08/2021, 13:28:31
+ *   03/07/2021, 17:37:19
  * Last edited:
- *   8/1/2021, 3:48:07 PM
+ *   8/1/2021, 3:48:11 PM
  * Auto updated?
  *   Yes
  *
  * Description:
- *   Contains the loader for .obj model files.
+ *   Contains the code that loads models from .obj files.
 **/
 
 #ifndef MODELS_OBJ_LOADER_HPP

@@ -4,7 +4,7 @@
  * Created:
  *   11/06/2021, 18:03:12
  * Last edited:
- *   04/08/2021, 13:09:49
+ *   04/08/2021, 18:37:53
  * Auto updated?
  *   Yes
  *
@@ -260,10 +260,11 @@ int main(int argc, const char** argv) {
 
     // Prepare the teddy bear
     entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-    // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.75 * M_PI, 0.75 * M_PI, 0.0 }, { 0.03, 0.03, 0.03 });
-    world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 });
+    world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.75 * M_PI, 0.75 * M_PI, 0.0 }, { 0.03, 0.03, 0.03 });
+    // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 });
     // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
-    model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
+    // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
+    model_system.load_model(entity_manager, obj, "bin/models/watermill.obj", Models::ModelFormat::obj);
 
     // Initialize the engine
     DLOG(auxillary, "");

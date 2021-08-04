@@ -2,82 +2,421 @@
  *   by Lut99
  *
  * Created:
- *   01/08/2021, 13:28:22
+ *   03/07/2021, 17:37:15
  * Last edited:
- *   04/08/2021, 13:24:15
+ *   04/08/2021, 18:44:52
  * Auto updated?
  *   Yes
  *
  * Description:
- *   Contains the loader for .obj model files.
+ *   Contains the code that loads models from .obj files.
 **/
 
-#include <fstream>
-#include <cstdio>
-#include <cstring>
-#include <cerrno>
 #include "tools/CppDebugger.hpp"
+#include "tools/LinkedArray.hpp"
+
+#include "../auxillary/SymbolStack.hpp"
+
+#include "tokenizer/ValueTerminal.hpp"
+#include "tokenizer/Tokenizer.hpp"
 
 #include "ObjLoader.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Models;
+using namespace Rasterizer::Models::Obj;
 using namespace CppDebugger::SeverityValues;
 
 
-/***** GLOBALS *****/
-/* The input file stream. */
-static std::istream* file;
-
-
-
-
-
 /***** MACROS *****/
-/* Undefine the pre-defined YYINPUT. */
-#ifdef YY_INPUT
-#undef YY_INPUT
-#endif
-#ifdef _WIN32
+/* If defined, enables extra debug prints tracing the tokenizer's steps. */
+// #define EXTRA_DEBUG
 
-/* Overwrites the default YY_INPUT to load from the text file, using Windows-style error handling. */
-#define YY_INPUT(BUF, RESULT, MAX_SIZE) \
-    file->read((BUF), (MAX_SIZE)); \
-    if (file->fail() && !file->eof()) { \
-        char buffer[BUFSIZ]; \
-        strerror_s(buffer, errno); \
-        std::string err = buffer; \
-        DLOG(fatal, "Cannot read from input file: " + err); \
-    } \
-    (RESULT) = static_cast<int>(file->gcount());
 
-#else
-/* Overwrites the default YY_INPUT to load from the text file, using Windows-style error handling. */
-#define YY_INPUT(BUF, RESULT, MAX_SIZE) \
-    file->read((BUF), (MAX_SIZE)); \
-    if (file->fail() && !file->eof()) { \
-        std::string err = strerror(errno); \
-        DLOG(fatal, "Cannot read from input file: " + err); \
-    } \
-    (RESULT) = static_cast<int>(file->gcount());
 
-#endif
 
-/* Finally, include the pegleg parser with the updated input macro. */
-extern "C" {
-#include "pegleg/test.c"
+
+/***** HELPER FUNCTIONS *****/
+/* Deletes symbols from the top of the stack until (and including) the given iterator. Also safely deletes the pointers themselves. */
+static void remove_stack_bottom(Tools::LinkedArray<Terminal*>& symbol_stack, Tools::LinkedArray<Terminal*>::iterator& iter) {
+    DENTER("remove_stack_bottom");
+
+    // First, delete the tokens
+    for (Tools::LinkedArray<Terminal*>::iterator i = symbol_stack.begin(); i != iter; ++i) {
+        delete *i;
+    }
+    delete *iter;
+
+    // Now remove them from the stack itself
+    symbol_stack.erase_until(iter);
+
+    // Done
+    DRETURN;
+}
+
+/* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
+static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, const std::string& path, Tools::LinkedArray<Terminal*>& symbol_stack) {
+    DENTER("reduce");
+
+    // Prepare the iterator over the linked array
+    Tools::LinkedArray<Terminal*>::iterator iter = symbol_stack.begin();
+    size_t i = 0;
+
+
+
+start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the symbol for this iterator
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::vertex:
+            // Start of a vertex
+            goto vertex_start;
+        
+        case TerminalType::normal:
+            // Start of a normal
+            goto normal_start;
+        
+        case TerminalType::texture:
+            // Start of a texture coordinate
+            goto texture_start;
+
+        case TerminalType::decimal:
+            // Looking at a decimal without a vector; stop
+            term->debug_info.print_error(cerr, "Encountered stray coordinate.");
+            remove_stack_bottom(symbol_stack, iter);;
+            DRETURN "error";
+        
+        case TerminalType::group:
+            // Start of a new group definition
+            goto group_start;
+
+        case TerminalType::mtllib:
+            // Start of a new material definition
+            goto mtllib_start;
+
+        case TerminalType::usemtl:
+            // Start of a material usage
+            goto usemtl_start;
+
+        default:
+            // Unexpected token
+            term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "'.");
+            remove_stack_bottom(symbol_stack, iter);;
+            DRETURN "error";
+
+    }
+
 }
 
 
 
+vertex_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::decimal:
+            // Simply keep trying to grab more, since too many is good for error handling
+            goto vertex_start;
+        
+        case TerminalType::uint:
+            {
+                // Simply keep trying to grab more, except that we first case it to a float
+                float val = (float) ((ValueTerminal<uint32_t>*) (*iter))->value;
+                DebugInfo debug_info = (*iter)->debug_info;
+                delete *iter;
+                *iter = (Terminal*) new ValueTerminal<float>(TerminalType::decimal, val, debug_info);
+                goto vertex_start;
+            }
+        
+        case TerminalType::sint:
+            {
+                // Simply keep trying to grab more, except that we first case it to a float
+                float val = (float) ((ValueTerminal<int32_t>*) (*iter))->value;
+                DebugInfo debug_info = (*iter)->debug_info;
+                delete *iter;
+                *iter = (Terminal*) new ValueTerminal<float>(TerminalType::decimal, val, debug_info);
+                goto vertex_start;
+            }
+
+        default:
+            // Check if the vertex is too small or large
+            if (i - 2 < 3) {
+                term->debug_info.print_error(cerr, "Too few coordinates given for vector (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 4) {
+                term->debug_info.print_error(cerr, "Too many coordinates given for vector (got " + std::to_string(i - 2) + ", expected 4)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // Otherwise, we can parse the vector; get the coordinates
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            if (i - 2 == 4) { --value_iter; }
+            float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+
+            // Store the vertex
+            new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "vertex";
+
+    }
+}
 
 
-/***** GLOBALS *****/
-/* Global vertex array used to interface with the pegleg parser. */
-Tools::Array<Rendering::Vertex> new_obj_vertices;
-/* Global index array used to interface with the pegleg parser. */
-Tools::Array<Rendering::index_t> new_obj_indices;
+
+normal_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::decimal:
+            // Simply keep trying to grab more, since too many is good for error handling
+            goto normal_start;
+        
+        case TerminalType::uint:
+            {
+                // Simply keep trying to grab more, except that we first case it to a float
+                float val = (float) ((ValueTerminal<uint32_t>*) (*iter))->value;
+                DebugInfo debug_info = (*iter)->debug_info;
+                delete *iter;
+                *iter = (Terminal*) new ValueTerminal<float>(TerminalType::decimal, val, debug_info);
+                goto normal_start;
+            }
+        
+        case TerminalType::sint:
+            {
+                // Simply keep trying to grab more, except that we first case it to a float
+                float val = (float) ((ValueTerminal<int32_t>*) (*iter))->value;
+                DebugInfo debug_info = (*iter)->debug_info;
+                delete *iter;
+                *iter = (Terminal*) new ValueTerminal<float>(TerminalType::decimal, val, debug_info);
+                goto normal_start;
+            }
+
+        default:
+            // Check if the vertex is too small or large
+            if (i - 2 < 3) {
+                term->debug_info.print_error(cerr, "Too few coordinates given for normal (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 3) {
+                term->debug_info.print_error(cerr, "Too many coordinates given for normal (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // // Otherwise, we can parse the vector normal; get the coordinates
+            // Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            // float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            // float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            // float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+
+            // // Store the vertex
+            // new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "normal";
+
+    }
+}
+
+
+
+texture_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::decimal:
+            // Simply keep trying to grab more, since too many is good for error handling
+            goto texture_start;
+        
+        case TerminalType::uint:
+            {
+                // Simply keep trying to grab more, except that we first case it to a float
+                float val = (float) ((ValueTerminal<uint32_t>*) (*iter))->value;
+                DebugInfo debug_info = (*iter)->debug_info;
+                delete *iter;
+                *iter = (Terminal*) new ValueTerminal<float>(TerminalType::decimal, val, debug_info);
+                goto texture_start;
+            }
+
+        default:
+            // Check if the vertex is too small or large
+            if (i - 2 < 1) {
+                term->debug_info.print_error(cerr, "Too few coordinates given for texture coordinate (got " + std::to_string(i - 2) + ", expected 2)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 3) {
+                term->debug_info.print_error(cerr, "Too many coordinates given for texture coordinate (got " + std::to_string(i - 2) + ", expected 2)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // // Otherwise, we can parse the vector normal; get the coordinates
+            // Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            // float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            // float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            // float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+
+            // // Store the vertex
+            // new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "texture";
+
+    }
+}
+
+
+
+face_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::uint:
+            // Simply keep trying to grab more, since too many is good for error handling
+            goto face_start;
+        
+        case TerminalType::sint:
+            {
+                // TBD
+                delete *iter;
+                DRETURN "not-yet-implemented";
+            }
+
+        default:
+            // Check if the vertex is too small or large
+            if (i - 2 < 3) {
+                term->debug_info.print_error(cerr, "Too few indices given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 3) {
+                term->debug_info.print_error(cerr, "Too many indices given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // Otherwise, we can parse the vector; get the coordinates
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            if (i - 2 == 4) { --value_iter; }
+            float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+
+            // Store the vertex
+            new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "vertex";
+
+    }
+}
+
+
+
+group_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::name:
+            // Parse the group (for now, simply remove it)
+            remove_stack_bottom(symbol_stack, iter);
+            DRETURN "group";
+        
+        default:
+            // Missing name
+            (*(iter - 1))->debug_info.print_error(cerr, "Missing name after group definition.");
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "error";
+
+    }
+}
+
+
+
+mtllib_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::filename:
+            // Parse the material (for now, simply remove it)
+            remove_stack_bottom(symbol_stack, iter);
+            DRETURN "mtllib";
+        
+        default:
+            // Missing filename
+            (*(iter - 1))->debug_info.print_error(cerr, "Missing filename after material definition.");
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "error";
+
+    }
+}
+
+
+usemtl_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::name:
+            // Parse the material (for now, simply remove it)
+            remove_stack_bottom(symbol_stack, iter);
+            DRETURN "usemtl";
+        
+        default:
+            // Missing filename
+            (*(iter - 1))->debug_info.print_error(cerr, "Missing name after material usage.");
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "error";
+
+    }
+}
+
+
+
+    // Nothing applied
+    DLOG(fatal, "Hole in jump logic encountered.");
+    DRETURN "fatal";
+} 
 
 
 
@@ -88,32 +427,55 @@ Tools::Array<Rendering::index_t> new_obj_indices;
 void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, const std::string& path) {
     DENTER("Models::load_obj_model");
 
-    // Open the file handle
-    file = (std::istream*) new std::ifstream(path);
-    if (!((std::ifstream*) file)->is_open()) {
-        std::string err;
-        #ifdef _WIN32
-        char buffer[BUFSIZ];
-        strerror_s(buffer, errno);
-        err = buffer;
-        #else
-        err = strerror(errno);
-        #endif
-        DLOG(fatal, "Could not open input file: " + err);
+    // Prepare the Tokenizer
+    Obj::Tokenizer tokenizer(path);
+    // Prepare the 'symbol stack'
+    Tools::LinkedArray<Terminal*> symbol_stack;
+
+    // Start looping to parse stuff off the stack
+    bool changed = true;
+    while (changed) {
+        // Run the parser
+        std::string rule = reduce(new_vertices, new_indices, path, symbol_stack);
+        changed = !rule.empty() && rule != "error";
+
+        // If there's no change and we're not at the end, pop a new terminal
+        if (!changed && !tokenizer.eof()) {
+            Terminal* term = tokenizer.get();
+            if (term == nullptr) {
+                // Early quit
+                #ifdef EXTRA_DEBUG
+                printf("[objloader] Tokenizer failed.\n");
+                #endif
+                exit(EXIT_FAILURE);
+            } else if (term->type != TerminalType::eof) {
+                symbol_stack.push_back(term);
+                changed = true;
+                #ifdef EXTRA_DEBUG
+                printf("[objloader] Shifted new token: %s\n", terminal_type_names[(int) term->type].c_str());
+                #endif
+            } else {
+                // Delete the token again
+                #ifdef EXTRA_DEBUG
+                printf("[objloader] No tokens to shift anymore.\n");
+                #endif
+                delete term;
+            }
+        } else if (rule == "error") {
+            // Stop
+            exit(EXIT_FAILURE);
+        } else if (changed) {
+            // Print that it did
+            #ifdef EXTRA_DEBUG
+            printf("[objloader] Applied rule '%s'\n", rule.c_str());
+            #endif
+        }
     }
 
-    // Prepare the output arrays
-    new_obj_vertices = {};
-    new_obj_indices = {};
-
-    // Start parsing
-    while (yyparse()) {
-        // Nothing...
+    // When done, delete everything on the symbol stack
+    for (Terminal* term : symbol_stack) {
+        delete term;
     }
-
-    // Simply move the global arrays to the output
-    new_vertices = std::move(new_obj_vertices);
-    new_indices = std::move(new_obj_indices);
 
     // Done
     DRETURN;

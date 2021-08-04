@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 15:00:56
  * Last edited:
- *   30/07/2021, 15:00:56
+ *   04/08/2021, 18:27:37
  * Auto updated?
  *   Yes
  *
@@ -17,15 +17,11 @@
 
 #include "LinkedArray.hpp"
 
-using namespace std;
-using namespace Tools;
-using namespace Tools::_linked_array_intern;
-
 
 /***** LINKEDARRAYSTORAGE CLASS *****/
 /* Default constructor for the LinkedArrayStorage, which initializes it to empty. */
 template <class T>
-_linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage() :
+Tools::_linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage() :
     head(nullptr),
     tail(nullptr),
     length(0)
@@ -33,7 +29,7 @@ _linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage() :
 
 /* Copy constructor for the LinkedArrayStorage class. */
 template <class T>
-_linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage(const LinkedArrayStorage& other) :
+Tools::_linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage(const LinkedArrayStorage& other) :
     head(nullptr),
     tail(nullptr),
     length(other.length)
@@ -73,7 +69,7 @@ _linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage(const LinkedArra
 
 /* Move constructor for the LinkedArrayStorage class. */
 template <class T>
-_linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage(LinkedArrayStorage&& other) :
+Tools::_linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage(LinkedArrayStorage&& other) :
     head(other.head),
     tail(other.tail),
     length(other.length)
@@ -83,7 +79,7 @@ _linked_array_intern::LinkedArrayStorage<T>::LinkedArrayStorage(LinkedArrayStora
 
 /* Destructor for the LinkedArrayStorage class. */
 template <class T>
-_linked_array_intern::LinkedArrayStorage<T>::~LinkedArrayStorage() {
+Tools::_linked_array_intern::LinkedArrayStorage<T>::~LinkedArrayStorage() {
     LinkedArrayLink<T>* link = this->head;
     while (link != nullptr) {
         // Start deleting the lot
@@ -103,7 +99,7 @@ _linked_array_intern::LinkedArrayStorage<T>::~LinkedArrayStorage() {
 /***** LINKEDARRAYITERATOR CLASS *****/
 /* Increments the iterator by one (prefix). */
 template <class T>
-LinkedArrayIterator<T>& _linked_array_intern::LinkedArrayIterator<T>::operator++() {
+Tools::_linked_array_intern::LinkedArrayIterator<T>& Tools::_linked_array_intern::LinkedArrayIterator<T>::operator++() {
     // If we're not a nullptr, move to the next one
     if (this->link != nullptr) {
         this->link = this->link->next;
@@ -115,7 +111,7 @@ LinkedArrayIterator<T>& _linked_array_intern::LinkedArrayIterator<T>::operator++
 
 /* Increments the iterator by one (postfix). */
 template <class T>
-LinkedArrayIterator<T> _linked_array_intern::LinkedArrayIterator<T>::operator++(int) const {
+Tools::_linked_array_intern::LinkedArrayIterator<T> Tools::_linked_array_intern::LinkedArrayIterator<T>::operator++(int) const {
     // Copy ourselves before returning
     LinkedArrayIterator<T> result = *this;
 
@@ -130,7 +126,7 @@ LinkedArrayIterator<T> _linked_array_intern::LinkedArrayIterator<T>::operator++(
 
 /* Decrements the iterator by one (prefix). */
 template <class T>
-LinkedArrayIterator<T>& _linked_array_intern::LinkedArrayIterator<T>::operator--() {
+Tools::_linked_array_intern::LinkedArrayIterator<T>& Tools::_linked_array_intern::LinkedArrayIterator<T>::operator--() {
     // If we're not a nullptr, move to the previous one
     if (this->link != nullptr) {
         this->link = this->link->prev;
@@ -142,7 +138,7 @@ LinkedArrayIterator<T>& _linked_array_intern::LinkedArrayIterator<T>::operator--
 
 /* Decrements the iterator by one (postfix). */
 template <class T>
-LinkedArrayIterator<T> _linked_array_intern::LinkedArrayIterator<T>::operator--(int) const {
+Tools::_linked_array_intern::LinkedArrayIterator<T> Tools::_linked_array_intern::LinkedArrayIterator<T>::operator--(int) const {
     // Copy ourselves before returning
     LinkedArrayIterator<T> result = *this;
 
@@ -159,7 +155,7 @@ LinkedArrayIterator<T> _linked_array_intern::LinkedArrayIterator<T>::operator--(
 
 /* Increments the iterator by N steps. */
 template <class T>
-LinkedArrayIterator<T>& _linked_array_intern::LinkedArrayIterator<T>::operator+=(linked_array_size_t N) {
+Tools::_linked_array_intern::LinkedArrayIterator<T>& Tools::_linked_array_intern::LinkedArrayIterator<T>::operator+=(linked_array_size_t N) {
     // Loop as far as we can
     for (linked_array_size_t i = 0; i < N && this->link != nullptr; i++) {
         this->link = this->link->next;
@@ -171,7 +167,7 @@ LinkedArrayIterator<T>& _linked_array_intern::LinkedArrayIterator<T>::operator+=
 
 /* Decrements the iterator by N steps. */
 template <class T>
-LinkedArrayIterator<T>& _linked_array_intern::LinkedArrayIterator<T>::operator-=(linked_array_size_t N) {
+Tools::_linked_array_intern::LinkedArrayIterator<T>& Tools::_linked_array_intern::LinkedArrayIterator<T>::operator-=(linked_array_size_t N) {
     // Loop as far as we can
     for (linked_array_size_t i = 0; i < N && this->link != nullptr; i++) {
         this->link = this->link->prev;
@@ -194,6 +190,8 @@ Tools::LinkedArray<T, D, C, M>::LinkedArray() {}
 template <class T, bool D, bool C, bool M>
 template <typename U, typename>
 Tools::LinkedArray<T, D, C, M>::LinkedArray(const T& elem, linked_array_size_t n_repeats) {
+    using namespace Tools::_linked_array_intern;
+
     // If we don't allocate anything, stop
     if (n_repeats == 0) { return; }
 
@@ -228,6 +226,8 @@ Tools::LinkedArray<T, D, C, M>::LinkedArray(const T& elem, linked_array_size_t n
 template <class T, bool D, bool C, bool M>
 template <typename U, typename>
 Tools::LinkedArray<T, D, C, M>::LinkedArray(const std::initializer_list<T>& list) {
+    using namespace Tools::_linked_array_intern;
+
     // If we don't need to allocate anything, stop
     if (list.size() == 0) { return; }
 
@@ -265,6 +265,8 @@ Tools::LinkedArray<T, D, C, M>::LinkedArray(const std::initializer_list<T>& list
 template <class T, bool D, bool C, bool M>
 template <typename U, typename>
 Tools::LinkedArray<T, D, C, M>::LinkedArray(const T* list, linked_array_size_t list_size) {
+    using namespace Tools::_linked_array_intern;
+
     // If we don't need to allocate anything, stop
     if (list_size == 0) { return; }
 
@@ -299,6 +301,8 @@ Tools::LinkedArray<T, D, C, M>::LinkedArray(const T* list, linked_array_size_t l
 template <class T, bool D, bool C, bool M>
 template <typename U, typename>
 Tools::LinkedArray<T, D, C, M>::LinkedArray(const std::vector<T>& list) {
+    using namespace Tools::_linked_array_intern;
+
     // If we don't need to allocate anything, stop
     if (list.size() == 0) { return; }
 
@@ -334,6 +338,8 @@ Tools::LinkedArray<T, D, C, M>::LinkedArray(const std::vector<T>& list) {
 /* Private helper function that actually appends a given element to the linked array. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::_push_back(_linked_array_intern::LinkedArrayLink<T>* new_link) {
+    using namespace Tools::_linked_array_intern;
+
     // Decide if to set or append
     if (this->storage.length == 0) {
         // We don't have a head, so set it as ours
@@ -356,6 +362,8 @@ void Tools::LinkedArray<T, D, C, M>::_push_back(_linked_array_intern::LinkedArra
 /* Private helper function that actually prepends a given element to the linked array. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::_push_front(_linked_array_intern::LinkedArrayLink<T>* new_link) {
+    using namespace Tools::_linked_array_intern;
+
     // Decide if to set or append
     if (this->storage.length == 0) {
         // We don't have a tail, so set it as ours
@@ -380,6 +388,8 @@ void Tools::LinkedArray<T, D, C, M>::_push_front(_linked_array_intern::LinkedArr
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::operator+=(const Tools::LinkedArray<T>& elems) -> std::enable_if_t<C, U> {
+    using namespace Tools::_linked_array_intern;
+
     // If we're empty, then simply copy the other Array
     if (this->storage.length == 0) {
         return *this = Tools::LinkedArray<T>(elems);
@@ -409,14 +419,16 @@ auto Tools::LinkedArray<T, D, C, M>::operator+=(const Tools::LinkedArray<T>& ele
 
 /* Adds a whole linked array worth of new elements to this linked array, leaving the original array in an unused state (moving it). Does not require a move constructor to be defined. */
 template <class T, bool D, bool C, bool M>
-void Tools::LinkedArray<T, D, C, M>::operator+=(Tools::LinkedArray<T>&& elems) {
+Tools::LinkedArray<T, D, C, M>& Tools::LinkedArray<T, D, C, M>::operator+=(Tools::LinkedArray<T>&& elems) {
+    using namespace Tools::_linked_array_intern;
+
     // If we're empty, then move over
     if (this->storage.length == 0) {
         return *this = Tools::LinkedArray<T>(std::move(elems));
     }
     // Do nothing if the other is empty
     if (elems.storage.length == 0) {
-        return;
+        return *this;
     }
 
     // Otherwise, paste their elements at the end of our tail
@@ -435,6 +447,8 @@ void Tools::LinkedArray<T, D, C, M>::operator+=(Tools::LinkedArray<T>&& elems) {
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::push_back() -> std::enable_if_t<D, U> {
+    using namespace Tools::_linked_array_intern;
+
     // Create the new node
     LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
     if (new_link == nullptr) { throw std::bad_alloc(); }
@@ -453,6 +467,8 @@ auto Tools::LinkedArray<T, D, C, M>::push_back() -> std::enable_if_t<D, U> {
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::push_back(const T& elem) -> std::enable_if_t<C, U> {
+    using namespace Tools::_linked_array_intern;
+
     // Create the new node
     LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
     if (new_link == nullptr) { throw std::bad_alloc(); }
@@ -471,6 +487,8 @@ auto Tools::LinkedArray<T, D, C, M>::push_back(const T& elem) -> std::enable_if_
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::push_back(T&& elem) -> std::enable_if_t<M, U> {
+    using namespace Tools::_linked_array_intern;
+
     // Create the new node
     LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
     if (new_link == nullptr) { throw std::bad_alloc(); }
@@ -488,6 +506,8 @@ auto Tools::LinkedArray<T, D, C, M>::push_back(T&& elem) -> std::enable_if_t<M, 
 /* Removes the last element from the array. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::pop_back() {
+    using namespace Tools::_linked_array_intern;
+
     // If we have no tail, ez
     if (this->storage.length == 0) { return; }
 
@@ -518,6 +538,8 @@ void Tools::LinkedArray<T, D, C, M>::pop_back() {
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::push_front() -> std::enable_if_t<D, U> {
+    using namespace Tools::_linked_array_intern;
+
     // Create the new node
     LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
     if (new_link == nullptr) { throw std::bad_alloc(); }
@@ -536,6 +558,8 @@ auto Tools::LinkedArray<T, D, C, M>::push_front() -> std::enable_if_t<D, U> {
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::push_front(const T& elem) -> std::enable_if_t<C, U> {
+    using namespace Tools::_linked_array_intern;
+
     // Create the new node
     LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
     if (new_link == nullptr) { throw std::bad_alloc(); }
@@ -554,6 +578,8 @@ auto Tools::LinkedArray<T, D, C, M>::push_front(const T& elem) -> std::enable_if
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::push_front(T&& elem) -> std::enable_if_t<M, U> {
+    using namespace Tools::_linked_array_intern;
+
     // Create the new node
     LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
     if (new_link == nullptr) { throw std::bad_alloc(); }
@@ -571,6 +597,8 @@ auto Tools::LinkedArray<T, D, C, M>::push_front(T&& elem) -> std::enable_if_t<M,
 /* Removes the first element from the array. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::pop_front() {
+    using namespace Tools::_linked_array_intern;
+
     // If we have no head, ez
     if (this->storage.length == 0) { return; }
 
@@ -600,6 +628,8 @@ void Tools::LinkedArray<T, D, C, M>::pop_front() {
 /* Erases an element with the given index from the linked array. Does nothing if the index is out-of-bounds. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::erase(linked_array_size_t index) {
+    using namespace Tools::_linked_array_intern;
+
     // Make sure we have enough elements
     if (index >= this->storage.length) {
         throw std::out_of_range("Index " + std::to_string(index) + " is out of range for LinkedArray of length " + std::to_string(this->storage.length));
@@ -637,6 +667,8 @@ void Tools::LinkedArray<T, D, C, M>::erase(linked_array_size_t index) {
 /* Erases an element referenced by the given iterator. Note that this invalidates the iterator. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::erase(const iterator& iter) {
+    using namespace Tools::_linked_array_intern;
+
     // Simply get the target link directly from the iterator
     LinkedArrayLink<T>* link = iter.link;
     if (link == nullptr) { throw std::invalid_argument("Cannot delete iterator pointing beyond the LinkedArray."); }
@@ -668,6 +700,8 @@ void Tools::LinkedArray<T, D, C, M>::erase(const iterator& iter) {
 /* Erases all elements until (and including) the element referenced by the given iterator. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::erase_until(const iterator& iter) {
+    using namespace Tools::_linked_array_intern;
+
     // Get the link pointer to by the iterator
     LinkedArrayLink<T>* link = iter.link;
     if (link == nullptr) { throw std::invalid_argument("Cannot delete elements up to an iterator that is beyond the LinkedArray."); }
@@ -699,6 +733,8 @@ void Tools::LinkedArray<T, D, C, M>::erase_until(const iterator& iter) {
 /* Erases all elements from (and including) the element referenced by the given iterator. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::erase_from(const iterator& iter) {
+    using namespace Tools::_linked_array_intern;
+
     // Get the link pointer to by the iterator
     LinkedArrayLink<T>* link = iter.link;
     if (link == nullptr) { throw std::invalid_argument("Cannot delete elements from an iterator that is beyond the LinkedArray."); }
@@ -730,6 +766,8 @@ void Tools::LinkedArray<T, D, C, M>::erase_from(const iterator& iter) {
 /* Erases everything from the linked array, thus deallocating all its elements. */
 template <class T, bool D, bool C, bool M>
 void Tools::LinkedArray<T, D, C, M>::reset() {
+    using namespace Tools::_linked_array_intern;
+
     // Simply delete everything
     LinkedArrayLink<T>* link = this->storage.head;
     while (link != nullptr) {
@@ -754,6 +792,8 @@ void Tools::LinkedArray<T, D, C, M>::reset() {
 template <class T, bool D, bool C, bool M>
 template <typename U>
 auto Tools::LinkedArray<T, D, C, M>::resize(linked_array_size_t new_size) -> std::enable_if_t<D, U> {
+    using namespace Tools::_linked_array_intern;
+
     // Check if we need to scale down or size up
     if (new_size < this->storage.length) {
         // Scale down; remove the N last elements
@@ -773,6 +813,8 @@ auto Tools::LinkedArray<T, D, C, M>::resize(linked_array_size_t new_size) -> std
 /* Returns a muteable reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
 template <class T, bool D, bool C, bool M>
 T& Tools::LinkedArray<T, D, C, M>::at(linked_array_size_t index) {
+    using namespace Tools::_linked_array_intern;
+
     // Make sure we have enough elements
     if (index >= this->storage.length) {
         throw std::out_of_range("Index " + std::to_string(index) + " is out of range for LinkedArray of length " + std::to_string(this->storage.length));

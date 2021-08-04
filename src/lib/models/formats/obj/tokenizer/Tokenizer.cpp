@@ -4,7 +4,7 @@
  * Created:
  *   04/07/2021, 16:28:49
  * Last edited:
- *   04/07/2021, 16:28:49
+ *   04/08/2021, 18:41:06
  * Auto updated?
  *   Yes
  *
@@ -94,7 +94,7 @@ using namespace CppDebugger::SeverityValues;
 
 /* Helper macro for determining if the given character is a whitespce. */
 #define IS_WHITESPACE(C) \
-    ((C) == ' ' || (C) == '\n' || (C) == '\t')
+    ((C) == ' ' || (C) == '\n' || (C) == '\t' || (C) == '\r')
 
 
 
@@ -224,7 +224,7 @@ static void split_string(const std::string& to_split, std::string& part1, std::s
     std::stringstream sstr;
     size_t i = 0;
     for ( ; i < to_split.size(); i++) {
-        if (to_split[i] == '/') { break; }
+        if (to_split[i] == '/') { ++i; break; }
         sstr << to_split[i];
     }
     part1 = sstr.str();
@@ -248,7 +248,7 @@ static void split_string(const std::string& to_split, std::string& part1, std::s
     std::stringstream sstr;
     size_t i = 0;
     for ( ; i < to_split.size(); i++) {
-        if (to_split[i] == '/') { break; }
+        if (to_split[i] == '/') { ++i; break; }
         sstr << to_split[i];
     }
     part1 = sstr.str();
@@ -256,7 +256,7 @@ static void split_string(const std::string& to_split, std::string& part1, std::s
     // Do the same for the second half
     sstr.str("");
     for ( ; i < to_split.size(); i++) {
-        if (to_split[i] == '/') { break; }
+        if (to_split[i] == '/') { ++i; break; }
         sstr << to_split[i];
     }
     part2 = sstr.str();
@@ -456,7 +456,7 @@ start: {
     } else {
         // Unexpected token
         DebugInfo debug(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) });
-        debug.print_error(cerr, (std::string("Unexpected character '") += c) + "'");
+        debug.print_error(cerr, std::string("Unexpected character '") + readable_char(c) + "'");
         DRETURN nullptr;
 
     }

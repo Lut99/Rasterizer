@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 14:52:35
  * Last edited:
- *   30/07/2021, 14:52:35
+ *   04/08/2021, 18:24:37
  * Auto updated?
  *   Yes
  *
@@ -332,12 +332,12 @@ namespace Tools {
         template <typename U = LinkedArray<T>>
         inline auto operator+(const LinkedArray<T>& elems) const -> std::enable_if_t<M, U> { return LinkedArray<T>(*this).operator+=(elems); }
         /* Creates a new linked array that is a copy of this linked array with the elements in the given array appended to them (moved). Does not require a move constructor to be defined. */
-        inline void operator+(LinkedArray<T>&& elems) const { return LinkedArray<T>(*this).operator+=(std::move(elems)); }
+        inline Tools::LinkedArray<T, D, C, M>& operator+(LinkedArray<T>&& elems) const { return LinkedArray<T>(*this).operator+=(std::move(elems)); }
         /* Adds a whole linked array worth of new elements to this linked array, copying them. Note that this requires the elements to be copy constructible. */
         template <typename U = LinkedArray<T>&>
         auto operator+=(const LinkedArray<T>& elems) -> std::enable_if_t<C, U>;
         /* Adds a whole linked array worth of new elements to this linked array, leaving the original array in an unused state (moving it). Does not require a move constructor to be defined. */
-        void operator+=(LinkedArray<T>&& elems);
+        Tools::LinkedArray<T, D, C, M>& operator+=(LinkedArray<T>&& elems);
 
         /* Adds a new element of type T to the back of the linked array, initializing it with its default constructor. Only needs a default constructor to be present. */
         template <typename U = void>
