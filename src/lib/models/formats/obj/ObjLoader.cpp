@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:15
  * Last edited:
- *   04/08/2021, 18:44:52
+ *   05/08/2021, 21:22:54
  * Auto updated?
  *   Yes
  *
@@ -301,8 +301,8 @@ face_start: {
     Terminal* term = *iter;
     switch(term->type) {
         case TerminalType::uint:
-            // Simply keep trying to grab more, since too many is good for error handling
-            goto face_start;
+            // Simply keep trying to grab more, but except only these
+            goto face_uint;
         
         case TerminalType::sint:
             {
@@ -310,32 +310,24 @@ face_start: {
                 delete *iter;
                 DRETURN "not-yet-implemented";
             }
+        
+        case TerminalType::v_vt:
+            // Simply keep trying to grab more, but allow only these
+            goto face_v_vt;
+
+        case TerminalType::v_vn:
+            // Simply keep trying to grab more, but allow only these
+            goto face_v_vn;
+
+        case TerminalType::v_vt_vn:
+            // Simply keep trying to grab more, but allow only these
+            goto face_v_vt_vn;
 
         default:
-            // Check if the vertex is too small or large
-            if (i - 2 < 3) {
-                term->debug_info.print_error(cerr, "Too few indices given for face (got " + std::to_string(i - 2) + ", expected 3)");
-                remove_stack_bottom(symbol_stack, --iter);
-                DRETURN "error";
-            } else if (i - 2 > 3) {
-                term->debug_info.print_error(cerr, "Too many indices given for face (got " + std::to_string(i - 2) + ", expected 3)");
-                remove_stack_bottom(symbol_stack, --iter);
-                DRETURN "error";
-            }
-
-            // Otherwise, we can parse the vector; get the coordinates
-            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
-            if (i - 2 == 4) { --value_iter; }
-            float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
-            float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
-            float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
-
-            // Store the vertex
-            new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
-
-            // Remove the used symbols off the top of the stack (except the next one), then return
+            // Definitely too small
+            term->debug_info.print_error(cerr, "Too few indices given for face (got 0, expected 3)");
             remove_stack_bottom(symbol_stack, --iter);
-            DRETURN "vertex";
+            DRETURN "error";
 
     }
 }
