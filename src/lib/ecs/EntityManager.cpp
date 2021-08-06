@@ -4,7 +4,7 @@
  * Created:
  *   18/07/2021, 15:49:49
  * Last edited:
- *   18/07/2021, 15:49:49
+ *   06/08/2021, 13:25:00
  * Auto updated?
  *   Yes
  *
@@ -16,6 +16,8 @@
 
 #include "components/Transform.hpp"
 #include "components/Mesh.hpp"
+#include "components/Camera.hpp"
+#include "components/Controllable.hpp"
 
 #include "EntityManager.hpp"
 
@@ -34,6 +36,8 @@ EntityManager::EntityManager() {
     this->components = new IComponentList*[EntityManager::max_components];
     this->components[0] = (IComponentList*) new ComponentList<Transform>(ComponentFlags::transform);
     this->components[1] = (IComponentList*) new ComponentList<Mesh>(ComponentFlags::mesh);
+    this->components[2] = (IComponentList*) new ComponentList<Camera>(ComponentFlags::camera);
+    this->components[3] = (IComponentList*) new ComponentList<Controllable>(ComponentFlags::controllable);
 
     // Done
     DLEAVE;
