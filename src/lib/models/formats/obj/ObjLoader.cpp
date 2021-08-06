@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:15
  * Last edited:
- *   06/08/2021, 13:03:24
+ *   06/08/2021, 13:11:35
  * Auto updated?
  *   Yes
  *
@@ -386,7 +386,7 @@ face_v: {
             uint32_t v1 = ((ValueTerminal<uint32_t>*) (*(--value_iter)))->value;
 
             // Store the indices
-            new_indices += { v1, v2, v3 };
+            new_indices += { v1 - 1, v2 - 1, v3 - 1 };
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
@@ -437,7 +437,7 @@ face_v_vt: {
             const std::tuple<uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
 
             // Store the indices
-            new_indices += { std::get<0>(v1), std::get<0>(v2), std::get<0>(v3) };
+            new_indices += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
 
             // Ignore the texture coordinates for now
 
@@ -490,7 +490,7 @@ face_v_vn: {
             const std::tuple<uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
 
             // Store the indices
-            new_indices += { std::get<0>(v1), std::get<0>(v2), std::get<0>(v3) };
+            new_indices += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
 
             // Ignore the normal coordinates for now
 
@@ -543,7 +543,7 @@ face_v_vt_vn: {
             const std::tuple<uint32_t, uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>*) (*(--value_iter)))->value;
 
             // Store the indices
-            new_indices += { std::get<0>(v1), std::get<0>(v2), std::get<0>(v3) };
+            new_indices += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
 
             // Ignore the texture & normal coordinates for now
 
