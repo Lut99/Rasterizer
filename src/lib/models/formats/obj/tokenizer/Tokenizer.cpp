@@ -4,7 +4,7 @@
  * Created:
  *   04/07/2021, 16:28:49
  * Last edited:
- *   04/08/2021, 18:41:06
+ *   06/08/2021, 12:53:32
  * Auto updated?
  *   Yes
  *
@@ -1011,7 +1011,7 @@ v_vt_start: {
     
     } else if (c == '/') {
         // We're for sure looking at a v_vn now
-        DEBUG_PATH("slash", "going v_vn_start");
+        DEBUG_PATH("slash", "going v_vn");
         sstr << c;
         goto v_vn;
 
@@ -1157,7 +1157,7 @@ v_vt_vn_start: {
         DEBUG_PATH("digit", "going v_vt_vn");
         sstr << c;
         goto v_vt_vn;
-    
+
     } else if (c == '/') {
         // Too many slashes!
         DEBUG_PATH("slash", "going too_many_slashes");
@@ -1218,7 +1218,6 @@ v_vt_vn: {
         // Try to parse the string as a uint32_t value
         std::string vertex, texture, normal;
         split_string(sstr.str(), vertex, texture, normal);
-        printf("[v_vt_vn] Split into: %s, %s and %s\n", vertex.c_str(), texture.c_str(), normal.c_str());
         uint32_t ivertex, itexture, inormal;
         PARSE_UINT(ivertex, vertex, DebugInfo(this->path, line_start, col_start, this->line, col_start + vertex.size() - 1, lines));
         PARSE_UINT(itexture, texture, DebugInfo(this->path, line_start, col_start + vertex.size() + 1, this->line, col_start + vertex.size() + texture.size(), lines));

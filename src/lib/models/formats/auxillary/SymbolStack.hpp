@@ -4,7 +4,7 @@
  * Created:
  *   13/11/2020, 15:33:42
  * Last edited:
- *   08/07/2021, 13:44:27
+ *   06/08/2021, 12:39:45
  * Auto updated?
  *   Yes
  *
@@ -114,13 +114,16 @@ namespace Rasterizer::Models {
         /* Move assignment operator for the SymbolStack class. */
         SymbolStack<T>& operator=(SymbolStack<T>&& other);
         /* Swap operator for the SymbolStack class. */
-        friend void swap(SymbolStack<T>& ss1, SymbolStack<T>& ss2);
+        friend void swap(SymbolStack<T>& ss1, SymbolStack<T>& ss2) {
+            using std::swap;
+
+            swap(ss1.symbols, ss2.symbols);
+            swap(ss1.length, ss2.length);
+            swap(ss1.max_length, ss2.max_length);
+            swap(ss1.empty_symbol, ss2.empty_symbol);
+        }
 
     };
-    
-    /* Swap operator for the SymbolStack class. */
-    template <class T>
-    void swap(SymbolStack<T>& ss1, SymbolStack<T>& ss2);
 
 }
 

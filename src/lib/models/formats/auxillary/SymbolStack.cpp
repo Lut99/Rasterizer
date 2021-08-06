@@ -4,7 +4,7 @@
  * Created:
  *   13/11/2020, 15:33:50
  * Last edited:
- *   12/07/2021, 17:12:09
+ *   06/08/2021, 12:39:38
  * Auto updated?
  *   Yes
  *
@@ -256,15 +256,4 @@ template <class T>
 SymbolStack<T>& SymbolStack<T>::operator=(SymbolStack<T>&& other) {
     if (this != &other) { swap(*this, other); }
     return *this;
-}
-
-/* Swap operator for the SymbolStack class. */
-template <class T>
-void Rasterizer::Models::swap(SymbolStack<T>& ss1, SymbolStack<T>& ss2) {
-    using std::swap;
-
-    swap(ss1.symbols, ss2.symbols);
-    swap(ss1.length, ss2.length);
-    swap(ss1.max_length, ss2.max_length);
-    swap(ss1.empty_symbol, ss2.empty_symbol);
 }

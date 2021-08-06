@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:15
  * Last edited:
- *   05/08/2021, 21:22:54
+ *   06/08/2021, 13:03:24
  * Auto updated?
  *   Yes
  *
@@ -65,7 +65,7 @@ static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::
 
 
 
-start: {
+/* start */ {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
     if (iter == symbol_stack.end()) { DRETURN ""; }
     ++i;
@@ -84,6 +84,10 @@ start: {
         case TerminalType::texture:
             // Start of a texture coordinate
             goto texture_start;
+        
+        case TerminalType::face:
+            // Start of a face definition
+            goto face_start;
 
         case TerminalType::decimal:
             // Looking at a decimal without a vector; stop
@@ -167,7 +171,7 @@ vertex_start: {
             float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
 
             // Store the vertex
-            new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+            new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + ((0.5 * rand()) / RAND_MAX), 0.0f, 0.0f }));
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
@@ -302,12 +306,13 @@ face_start: {
     switch(term->type) {
         case TerminalType::uint:
             // Simply keep trying to grab more, but except only these
-            goto face_uint;
+            goto face_v;
         
         case TerminalType::sint:
             {
                 // TBD
                 delete *iter;
+                symbol_stack.erase(iter);
                 DRETURN "not-yet-implemented";
             }
         
@@ -328,6 +333,223 @@ face_start: {
             term->debug_info.print_error(cerr, "Too few indices given for face (got 0, expected 3)");
             remove_stack_bottom(symbol_stack, --iter);
             DRETURN "error";
+
+    }
+}
+
+face_v: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::uint:
+            // Parse more
+            goto face_v;
+        
+        case TerminalType::sint:
+            {
+                // Also parse more but take relative coordinates
+                delete *iter;
+                symbol_stack.erase(iter);
+                DRETURN "not-yet-implemented";
+            }
+
+        case TerminalType::v_vt:
+        case TerminalType::v_vn:
+        case TerminalType::v_vt_vn:
+            // Invalid argument type
+            term->debug_info.print_error(cerr, "Cannot mix vertex-only indices with other indices.");
+            (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
+            delete *iter;
+            symbol_stack.erase(iter);
+            DRETURN "error";
+        
+        default:
+            // We're done parsing the face; determine if we seen enough indices
+            if (i - 2 < 3) {
+                term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 3) {
+                term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // Otherwise, we can parse the face; get the coordinates
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            uint32_t v3 = ((ValueTerminal<uint32_t>*) (*(--value_iter)))->value;
+            uint32_t v2 = ((ValueTerminal<uint32_t>*) (*(--value_iter)))->value;
+            uint32_t v1 = ((ValueTerminal<uint32_t>*) (*(--value_iter)))->value;
+
+            // Store the indices
+            new_indices += { v1, v2, v3 };
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "face(v)";
+
+    }
+}
+
+face_v_vt: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::v_vt:
+            // Parse as many as we can
+            goto face_v_vt;
+
+        case TerminalType::uint:
+        case TerminalType::sint:
+        case TerminalType::v_vn:
+        case TerminalType::v_vt_vn:
+            // Invalid argument type
+            term->debug_info.print_error(cerr, "Cannot mix vertex/texture indices with other indices.");
+            (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
+            delete *iter;
+            symbol_stack.erase(iter);
+            DRETURN "error";
+        
+        default:
+            // We're done parsing the face; determine if we seen enough indices
+            if (i - 2 < 3) {
+                term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 3) {
+                term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // Otherwise, we can parse the face; get the indices
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            const std::tuple<uint32_t, uint32_t>& v3 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+            const std::tuple<uint32_t, uint32_t>& v2 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+            const std::tuple<uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+
+            // Store the indices
+            new_indices += { std::get<0>(v1), std::get<0>(v2), std::get<0>(v3) };
+
+            // Ignore the texture coordinates for now
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "face(v_vt)";
+
+    }
+}
+
+face_v_vn: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::v_vn:
+            // Parse as many as we can
+            goto face_v_vn;
+
+        case TerminalType::uint:
+        case TerminalType::sint:
+        case TerminalType::v_vt:
+        case TerminalType::v_vt_vn:
+            // Invalid argument type
+            term->debug_info.print_error(cerr, "Cannot mix vertex/normal indices with other indices.");
+            (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
+            delete *iter;
+            symbol_stack.erase(iter);
+            DRETURN "error";
+        
+        default:
+            // We're done parsing the face; determine if we seen enough indices
+            if (i - 2 < 3) {
+                term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 3) {
+                term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // Otherwise, we can parse the face; get the indices
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            const std::tuple<uint32_t, uint32_t>& v3 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+            const std::tuple<uint32_t, uint32_t>& v2 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+            const std::tuple<uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+
+            // Store the indices
+            new_indices += { std::get<0>(v1), std::get<0>(v2), std::get<0>(v3) };
+
+            // Ignore the normal coordinates for now
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "face(v_vn)";
+
+    }
+}
+
+face_v_vt_vn: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::v_vt_vn:
+            // Parse as many as we can
+            goto face_v_vt_vn;
+
+        case TerminalType::uint:
+        case TerminalType::sint:
+        case TerminalType::v_vt:
+        case TerminalType::v_vn:
+            // Invalid argument type
+            term->debug_info.print_error(cerr, "Cannot mix vertex/texture/normal indices with other indices.");
+            (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
+            delete *iter;
+            symbol_stack.erase(iter);
+            DRETURN "error";
+        
+        default:
+            // We're done parsing the face; determine if we seen enough indices
+            if (i - 2 < 3) {
+                term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            } else if (i - 2 > 3) {
+                term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
+                remove_stack_bottom(symbol_stack, --iter);
+                DRETURN "error";
+            }
+
+            // Otherwise, we can parse the face; get the indices
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            const std::tuple<uint32_t, uint32_t, uint32_t>& v3 = ((ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+            const std::tuple<uint32_t, uint32_t, uint32_t>& v2 = ((ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+            const std::tuple<uint32_t, uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>*) (*(--value_iter)))->value;
+
+            // Store the indices
+            new_indices += { std::get<0>(v1), std::get<0>(v2), std::get<0>(v3) };
+
+            // Ignore the texture & normal coordinates for now
+
+            // Remove the used symbols off the top of the stack (except the next one), then return
+            remove_stack_bottom(symbol_stack, --iter);
+            DRETURN "face(v_vt_vn)";
 
     }
 }
@@ -462,6 +684,15 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
             printf("[objloader] Applied rule '%s'\n", rule.c_str());
             #endif
         }
+
+        #ifdef EXTRA_DEBUG
+        // Print the symbol stack
+        cout << "Symbol stack:";
+        for (Terminal* term : symbol_stack) {
+            cout << ' ' << terminal_type_names[(int) term->type];
+        }
+        cout << endl;
+        #endif
     }
 
     // When done, delete everything on the symbol stack
