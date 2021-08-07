@@ -4,7 +4,7 @@
  * Created:
  *   02/07/2021, 13:44:58
  * Last edited:
- *   8/1/2021, 3:41:19 PM
+ *   07/08/2021, 18:22:26
  * Auto updated?
  *   Yes
  *
@@ -42,17 +42,9 @@ Window::Window(const Rendering::Instance& instance, const std::string& title, ui
     // Get the window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
 
-    // Set the mouse input mode
-    glfwSetInputMode(this->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    if (glfwRawMouseMotionSupported()) {
-        glfwSetInputMode(this->glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-    }
-
-    // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
-    glfwSetWindowUserPointer(this->glfw_window, (void*) this);
-    glfwSetFramebufferSizeCallback(this->glfw_window, Window::glfw_resize_callback);
-    glfwSetKeyCallback(this->glfw_window, Window::glfw_key_callback);
-    glfwSetCursorPosCallback(this->glfw_window, Window::glfw_cursor_callback);
+    // Set the mouse input mode & register the callbacks
+    this->set_input_mode(this->glfw_window);
+    this->register_callbacks(this->glfw_window);
 
     // Initialize the other classes
     this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
@@ -76,7 +68,7 @@ Window::Window(const Window& other) :
 
     old_mouse_pos(other.old_mouse_pos),
     new_mouse_pos(other.new_mouse_pos),
-    mouse_callbacks(other.mouse_callbacks),
+    focused(other.focused),
 
     should_resize(other.should_resize),
     should_close(other.should_close)
@@ -86,17 +78,9 @@ Window::Window(const Window& other) :
     // First, copy the glfw window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
 
-    // Set the mouse input mode
-    glfwSetInputMode(this->glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    if (glfwRawMouseMotionSupported()) {
-        glfwSetInputMode(this->glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-    }
-
-    // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
-    glfwSetWindowUserPointer(this->glfw_window, (void*) this);
-    glfwSetFramebufferSizeCallback(this->glfw_window, Window::glfw_resize_callback);
-    glfwSetKeyCallback(this->glfw_window, Window::glfw_key_callback);
-    glfwSetCursorPosCallback(this->glfw_window, Window::glfw_cursor_callback);
+    // Set the mouse input mode & register the callbacks
+    this->set_input_mode(this->glfw_window);
+    this->register_callbacks(this->glfw_window);
 
     // Also copy the other classes
     this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
@@ -123,7 +107,7 @@ Window::Window(Window&& other) :
 
     old_mouse_pos(other.old_mouse_pos),
     new_mouse_pos(other.new_mouse_pos),
-    mouse_callbacks(other.mouse_callbacks),
+    focused(other.focused),
 
     should_resize(other.should_resize),
     should_close(other.should_close)
@@ -178,6 +162,20 @@ void Window::glfw_resize_callback(GLFWwindow* glfw_window, int width, int height
     DRETURN;
 }
 
+/* Callback for GLFW window focus events. */
+void Window::glfw_focus_callback(GLFWwindow* glfw_window, int focused) {
+    DENTER("Window::glfw_focus_callback");
+
+    // First, get the window back
+    Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
+
+    // Set the focused status
+    window->focused = focused == 1;
+
+    // Done
+    DRETURN;
+}
+
 /* Callback for GLFW window key events. */
 void Window::glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
     DENTER("Window::glfw_key_callback");
@@ -207,12 +205,37 @@ void Window::glfw_cursor_callback(GLFWwindow* glfw_window, double x, double y) {
     window->new_mouse_pos.x = (float) x;
     window->new_mouse_pos.y = (float) y;
 
-    // Call the relevant callbacks
-    for (uint32_t i = 0; i < window->mouse_callbacks.size(); i++) {
-        window->mouse_callbacks[i].func(window->mouse_callbacks[i].extra_data, window->new_mouse_pos, window->old_mouse_pos);
+    // Done
+    DRETURN;
+}
+
+
+
+/* Private helper function that sets the input mode for the given window. */
+void Window::set_input_mode(GLFWwindow* glfw_window) {
+    DENTER("Window::set_input_mode");
+
+    // Do it
+    glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if (glfwRawMouseMotionSupported()) {
+        glfwSetInputMode(glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     }
 
     // Done
+    DRETURN;
+}
+
+/* Private helper function that registers all callbacks and sets this instance as the window's user pointer. */
+void Window::register_callbacks(GLFWwindow* glfw_window) {
+    DENTER("Window::register_callbacks");
+
+    // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
+    glfwSetWindowUserPointer(glfw_window, (void*) this);
+    glfwSetFramebufferSizeCallback(glfw_window, Window::glfw_resize_callback);
+    glfwSetWindowFocusCallback(glfw_window, Window::glfw_focus_callback);
+    glfwSetKeyCallback(glfw_window, Window::glfw_key_callback);
+    glfwSetCursorPosCallback(glfw_window, Window::glfw_cursor_callback);
+
     DRETURN;
 }
 
@@ -289,19 +312,6 @@ bool Window::loop() const {
 
 
 
-/* Registers the given function as a new mouse callback. Optionally, some extra datapoint or object can be given that can be accessed during the callback. */
-void Window::register_mouse_callback(void (*callback)(void*, const glm::vec2&, const glm::vec2&), void* extra_data) {
-    DENTER("Window::register_mouse_callback");
-
-    // Simply add to the list
-    this->mouse_callbacks.push_back({ callback, extra_data });
-
-    // Done
-    DRETURN;
-}
-
-
-
 /* Swap operator for the Window class. */
 void Rasterizer::swap(Window& w1, Window& w2) {
     DENTER("Rasterizer::swap(Window)");
@@ -327,7 +337,7 @@ void Rasterizer::swap(Window& w1, Window& w2) {
 
     swap(w1.old_mouse_pos, w2.old_mouse_pos);
     swap(w1.new_mouse_pos, w2.new_mouse_pos);
-    swap(w1.mouse_callbacks, w2.mouse_callbacks);
+    swap(w1.focused, w2.focused);
     
     swap(w1.should_resize, w2.should_resize);
     swap(w1.should_close, w2.should_close);

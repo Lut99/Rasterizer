@@ -4,7 +4,7 @@
  * Created:
  *   02/07/2021, 13:45:00
  * Last edited:
- *   02/07/2021, 13:45:00
+ *   07/08/2021, 18:20:38
  * Auto updated?
  *   Yes
  *
@@ -68,8 +68,8 @@ namespace Rasterizer {
         glm::vec2 old_mouse_pos;
         /* The currently recorded cursor position. */
         glm::vec2 new_mouse_pos;
-        /* List of mouse callbacks. */
-        Tools::Array<MouseCallback> mouse_callbacks;
+        /* The current focus status of the window. */
+        bool focused;
 
         /* Variable that indicates if the Window wants to resize or not. */
         bool should_resize;
@@ -79,10 +79,17 @@ namespace Rasterizer {
 
         /* Callback for the GLFW window resize event. */
         static void glfw_resize_callback(GLFWwindow* glfw_window, int width, int height);
+        /* Callback for GLFW window focus events. */
+        static void glfw_focus_callback(GLFWwindow* glfw_window, int focused);
         /* Callback for GLFW window key events. */
         static void glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, int action, int mods);
         /* Callback for GLFW window cursor move events. */
         static void glfw_cursor_callback(GLFWwindow* glfw_window, double x, double y);
+
+        /* Private helper function that sets the input mode for the given window. */
+        void set_input_mode(GLFWwindow* glfw_window);
+        /* Private helper function that registers all callbacks and sets this instance as the window's user pointer. */
+        void register_callbacks(GLFWwindow* glfw_window);
     
     public:
         /* Constructor for the Window class, which takes the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
@@ -104,13 +111,16 @@ namespace Rasterizer {
         /* Runs window events. Returns whether or not the window should close. */
         bool loop() const;
 
+        /* Returns whether or not the window thinks it needs resizing. */
+        inline bool needs_resize() const { return this->should_resize; }
+        /* Returns whether or not the Window has focus. */
+        inline bool has_focus() const { return this->focused; }
         /* Checks if the given key is pressed or not. */
         inline bool key_pressed(int key) const { return glfwGetKey(this->glfw_window, key) == GLFW_PRESS; }
-
-        /* Registers the given function as a new mouse callback. The callback's first vector is the new position, and the second vector is the old position. Optionally, some extra datapoint or object can be given that can be accessed during the callback. */
-        void register_mouse_callback(void (*callback)(void*, const glm::vec2&, const glm::vec2&), void* extra_data = nullptr);
         /* Returns the current position of the mouse. */
         inline glm::vec2 mouse_pos() const { return this->new_mouse_pos; }
+        /* Returns the velocity of the mouse. */
+        inline glm::vec2 mouse_vel() const { return this->new_mouse_pos - this->old_mouse_pos; }
 
         /* Returns the title of the window. */
         inline const std::string& title() const { return this->t; }
@@ -126,9 +136,6 @@ namespace Rasterizer {
         inline uint32_t real_height() const { return this->rh; }
         /* Returns the actual dimensions of the window as a Vulkan extent, in pixels. */
         inline VkExtent2D real_extent() const { return VkExtent2D({ this->rw, this->rh }); }
-
-        /* Returns whether or not the window thinks it needs resizing. */
-        inline bool needs_resize() const { return this->should_resize; }
 
         /* Explicitly returns the internal surface object. */
         inline const Rendering::Surface& surface() const { return *this->rendering_surface; }

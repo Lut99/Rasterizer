@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 12:17:08
  * Last edited:
- *   07/08/2021, 17:59:47
+ *   07/08/2021, 18:21:53
  * Auto updated?
  *   Yes
  *
@@ -242,78 +242,80 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
     float yspeed = mouse.y - this->last_mouse.y;
 
     // First, handle Controllable updates
-    ComponentList<Controllable>& controllables = entity_manager.get_list<Controllable>();
-    for (component_list_size_t i = 0; i < controllables.size(); i++) {
-        entity_t entity = controllables.get_entity(i);
+    if (window.has_focus()) {
+        ComponentList<Controllable>& controllables = entity_manager.get_list<Controllable>();
+        for (component_list_size_t i = 0; i < controllables.size(); i++) {
+            entity_t entity = controllables.get_entity(i);
 
-        // Get the controllable for the speeds, but also the transform to update position
-        Controllable& controllable = controllables[i];
-        Transform& transform = entity_manager.get_component<Transform>(entity);
+            // Get the controllable for the speeds, but also the transform to update position
+            Controllable& controllable = controllables[i];
+            Transform& transform = entity_manager.get_component<Transform>(entity);
 
-        // Define the actual speeds based on the time passed
-        float mov_speed = passed / 1000.0 * controllable.mov_speed;
-        float rot_speed = passed / 1000.0 * controllable.rot_speed;
-
-
-
-        // Compute the new rotation vector
-        transform.rotation.y -= rot_speed * xspeed;
-        transform.rotation.x += rot_speed * yspeed;
-
-        // Bind the y rotation
-        if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
-        else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
-        if (xspeed > 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
-        if (yspeed > 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
+            // Define the actual speeds based on the time passed
+            float mov_speed = passed / 1000.0 * controllable.mov_speed;
+            float rot_speed = passed / 1000.0 * controllable.rot_speed;
 
 
 
-        // Use that to update movement with the keyboard input
-        if (window.key_pressed(GLFW_KEY_TAB)) {
-            // Double that speed
-            mov_speed *= 2;
-        }
+            // Compute the new rotation vector
+            transform.rotation.y -= rot_speed * xspeed;
+            transform.rotation.x += rot_speed * yspeed;
 
-        // Compute the rotational vector forward and the one tangent to that
-        glm::vec3 dir_forward = -compute_direction_vector(transform.rotation.y, transform.rotation.x);
-        glm::vec3 dir_up      =  glm::vec3(0.0f, 1.0f, 0.0f);
-        glm::vec3 dir_right   =  glm::normalize(glm::cross(dir_forward, dir_up));
-        if (xspeed > 0.0 || yspeed > 0.0) {
-            printf("Forward: %f %f %f\n", dir_forward.x, dir_forward.y, dir_forward.z);
-            printf("Up:      %f %f %f\n", dir_up.x, dir_up.y, dir_up.z);
-            printf("Right:   %f %f %f\n", dir_right.x, dir_right.y, dir_right.z);
-        }
-
-        // Check the directional keys for movement
-        if (window.key_pressed(GLFW_KEY_W) || window.key_pressed(GLFW_KEY_UP)) {
-            // Move forward with the given speed
-            transform.position += mov_speed * dir_forward;
-        } else if (window.key_pressed(GLFW_KEY_S) || window.key_pressed(GLFW_KEY_DOWN)) {
-            // Move backward with the given speed
-            transform.position -= mov_speed * dir_forward;   
-        }
-        if (window.key_pressed(GLFW_KEY_D) || window.key_pressed(GLFW_KEY_RIGHT)) {
-            // Move right with the given speed
-            transform.position += mov_speed * dir_right;
-        } else if (window.key_pressed(GLFW_KEY_A) || window.key_pressed(GLFW_KEY_LEFT)) {
-            // Move left with the given speed
-            transform.position -= mov_speed * dir_right;
-        }
-        if (window.key_pressed(GLFW_KEY_SPACE)) {
-            // Move up
-            transform.position -= mov_speed * dir_up;
-        } else if (window.key_pressed(GLFW_KEY_LEFT_SHIFT) || window.key_pressed(GLFW_KEY_RIGHT_SHIFT)) {
-            // Move down
-            transform.position += mov_speed * dir_up;
-        }
+            // Bind the y rotation
+            if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
+            else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
+            if (xspeed > 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
+            if (yspeed > 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
 
 
 
-        // When done, update the transform matrix, and update the camera matrix too if the entity is a camera
-        transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
-        if (entity_manager.has_component(entity, ComponentFlags::camera)) {
-            Camera& camera = entity_manager.get_component<Camera>(entity);
-            camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
+            // Use that to update movement with the keyboard input
+            if (window.key_pressed(GLFW_KEY_TAB)) {
+                // Double that speed
+                mov_speed *= 2;
+            }
+
+            // Compute the rotational vector forward and the one tangent to that
+            glm::vec3 dir_forward = -compute_direction_vector(transform.rotation.y, transform.rotation.x);
+            glm::vec3 dir_up      =  glm::vec3(0.0f, 1.0f, 0.0f);
+            glm::vec3 dir_right   =  glm::normalize(glm::cross(dir_forward, dir_up));
+            if (xspeed > 0.0 || yspeed > 0.0) {
+                printf("Forward: %f %f %f\n", dir_forward.x, dir_forward.y, dir_forward.z);
+                printf("Up:      %f %f %f\n", dir_up.x, dir_up.y, dir_up.z);
+                printf("Right:   %f %f %f\n", dir_right.x, dir_right.y, dir_right.z);
+            }
+
+            // Check the directional keys for movement
+            if (window.key_pressed(GLFW_KEY_W) || window.key_pressed(GLFW_KEY_UP)) {
+                // Move forward with the given speed
+                transform.position += mov_speed * dir_forward;
+            } else if (window.key_pressed(GLFW_KEY_S) || window.key_pressed(GLFW_KEY_DOWN)) {
+                // Move backward with the given speed
+                transform.position -= mov_speed * dir_forward;   
+            }
+            if (window.key_pressed(GLFW_KEY_D) || window.key_pressed(GLFW_KEY_RIGHT)) {
+                // Move right with the given speed
+                transform.position += mov_speed * dir_right;
+            } else if (window.key_pressed(GLFW_KEY_A) || window.key_pressed(GLFW_KEY_LEFT)) {
+                // Move left with the given speed
+                transform.position -= mov_speed * dir_right;
+            }
+            if (window.key_pressed(GLFW_KEY_SPACE)) {
+                // Move up
+                transform.position -= mov_speed * dir_up;
+            } else if (window.key_pressed(GLFW_KEY_LEFT_SHIFT) || window.key_pressed(GLFW_KEY_RIGHT_SHIFT)) {
+                // Move down
+                transform.position += mov_speed * dir_up;
+            }
+
+
+
+            // When done, update the transform matrix, and update the camera matrix too if the entity is a camera
+            transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
+            if (entity_manager.has_component(entity, ComponentFlags::camera)) {
+                Camera& camera = entity_manager.get_component<Camera>(entity);
+                camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
+            }
         }
     }
 
