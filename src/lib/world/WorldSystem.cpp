@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 12:17:08
  * Last edited:
- *   07/08/2021, 15:50:28
+ *   07/08/2021, 17:59:47
  * Auto updated?
  *   Yes
  *
@@ -32,6 +32,16 @@ using namespace CppDebugger::SeverityValues;
 
 
 /***** HELPER FUNCTIONS *****/
+/* Computes a direction vector based on some yaw and pitch (in degrees). */
+static inline glm::vec3 compute_direction_vector(float yaw, float pitch) {
+    printf("yaw: %f\n", yaw);
+    return glm::normalize(glm::vec3(
+        cos(glm::radians(yaw)) * cos(glm::radians(pitch)),
+        sin(glm::radians(pitch)),
+        sin(glm::radians(yaw)) * cos(glm::radians(pitch))
+    ));
+}
+
 /* Computes the translation matrix for one entity based on the given position, rotation and scale. */
 static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale) {
     DENTER("compute_translation_matrix");
@@ -45,6 +55,22 @@ static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm
 
     // DOne
     DRETURN result;
+}
+
+/* Computes the camera matrix given a position, a yaw and pitch (in degrees), a field of view and an aspect ratio. */
+static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, float pitch, float fov, float aspect_ratio) {
+    DENTER("compute_camera_matrix");
+
+    // Compute the direction vector from the yaw and the pitch
+    glm::vec3 direction = compute_direction_vector(yaw, pitch);
+
+    // Use that to compute the projection and the view matrices
+    glm::mat4 proj = glm::perspective(fov, aspect_ratio, 0.001f, 10.0f);
+    glm::mat4 view = glm::lookAt(position, position + direction, glm::vec3(0.0f, 1.0f, 0.0f));
+    proj[1][1] *= -1;
+
+    // Done, so multiple and return
+    DRETURN proj * view;
 }
 
 
@@ -122,10 +148,7 @@ void WorldSystem::set_cam(ECS::EntityManager& entity_manager, entity_t entity, c
 
     // Compute the transform translation matrix and the camera matrices
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
-    glm::mat4 proj = glm::perspective(camera.fov, camera.ratio, 0.1f, 10.0f);
-    glm::mat4 view = glm::lookAt(transform.position, transform.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    proj[1][1] *= -1;
-    camera.proj_view = proj * view;
+    camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
 
     // Done!
     DRETURN;
@@ -231,55 +254,66 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
         float mov_speed = passed / 1000.0 * controllable.mov_speed;
         float rot_speed = passed / 1000.0 * controllable.rot_speed;
 
+
+
         // Compute the new rotation vector
-        transform.rotation.z += rot_speed * xspeed;
-        transform.rotation.y += rot_speed * yspeed;
+        transform.rotation.y -= rot_speed * xspeed;
+        transform.rotation.x += rot_speed * yspeed;
 
         // Bind the y rotation
-        if (transform.rotation.y > 0.49f * M_PI) { transform.rotation.y = 0.49f * M_PI; }
-        else if (transform.rotation.y < -0.49f * M_PI) { transform.rotation.y = -0.49f * M_PI; }
+        if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
+        else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
+        if (xspeed > 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
+        if (yspeed > 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
 
-        // Compute the lookat vector
-        glm::vec3 direction;
-        direction.x = cos(glm::radians(transform.rotation.z)) * cos(glm::radians(transform.rotation.y));
-        direction.y = sin(glm::radians(transform.rotation.y));
-        direction.z = sin(glm::radians(transform.rotation.z)) * cos(glm::radians(transform.rotation.y));
-        direction = glm::normalize(direction);
-        
+
+
         // Use that to update movement with the keyboard input
-        if (window.key_pressed(GLFW_KEY_LEFT_SHIFT) || window.key_pressed(GLFW_KEY_RIGHT_SHIFT)) {
+        if (window.key_pressed(GLFW_KEY_TAB)) {
             // Double that speed
             mov_speed *= 2;
         }
 
+        // Compute the rotational vector forward and the one tangent to that
+        glm::vec3 dir_forward = -compute_direction_vector(transform.rotation.y, transform.rotation.x);
+        glm::vec3 dir_up      =  glm::vec3(0.0f, 1.0f, 0.0f);
+        glm::vec3 dir_right   =  glm::normalize(glm::cross(dir_forward, dir_up));
+        if (xspeed > 0.0 || yspeed > 0.0) {
+            printf("Forward: %f %f %f\n", dir_forward.x, dir_forward.y, dir_forward.z);
+            printf("Up:      %f %f %f\n", dir_up.x, dir_up.y, dir_up.z);
+            printf("Right:   %f %f %f\n", dir_right.x, dir_right.y, dir_right.z);
+        }
+
+        // Check the directional keys for movement
         if (window.key_pressed(GLFW_KEY_W) || window.key_pressed(GLFW_KEY_UP)) {
             // Move forward with the given speed
-            transform.position.y -= mov_speed;
+            transform.position += mov_speed * dir_forward;
         } else if (window.key_pressed(GLFW_KEY_S) || window.key_pressed(GLFW_KEY_DOWN)) {
             // Move backward with the given speed
-            transform.position.y += mov_speed;   
+            transform.position -= mov_speed * dir_forward;   
         }
         if (window.key_pressed(GLFW_KEY_D) || window.key_pressed(GLFW_KEY_RIGHT)) {
             // Move right with the given speed
-            transform.position.x -= mov_speed;
+            transform.position += mov_speed * dir_right;
         } else if (window.key_pressed(GLFW_KEY_A) || window.key_pressed(GLFW_KEY_LEFT)) {
             // Move left with the given speed
-            transform.position.x += mov_speed;
+            transform.position -= mov_speed * dir_right;
         }
+        if (window.key_pressed(GLFW_KEY_SPACE)) {
+            // Move up
+            transform.position -= mov_speed * dir_up;
+        } else if (window.key_pressed(GLFW_KEY_LEFT_SHIFT) || window.key_pressed(GLFW_KEY_RIGHT_SHIFT)) {
+            // Move down
+            transform.position += mov_speed * dir_up;
+        }
+
+
 
         // When done, update the transform matrix, and update the camera matrix too if the entity is a camera
         transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
         if (entity_manager.has_component(entity, ComponentFlags::camera)) {
-            // Get the camera component
             Camera& camera = entity_manager.get_component<Camera>(entity);
-
-            // When done, compute the projection & view matrix, not forgetting to flip the Y-axis
-            glm::mat4 proj = glm::perspective(camera.fov, camera.ratio, 0.001f, 10.0f);
-            glm::mat4 view = glm::lookAt(transform.position, transform.position + direction, glm::vec3(0.0f, 0.0f, 1.0f));
-            proj[1][1] *= -1;
-
-            // Store the result in one glorious matrix
-            camera.proj_view = proj * view;
+            camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
         }
     }
 

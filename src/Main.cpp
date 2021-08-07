@@ -4,7 +4,7 @@
  * Created:
  *   11/06/2021, 18:03:12
  * Last edited:
- *   07/08/2021, 15:30:48
+ *   07/08/2021, 18:00:21
  * Auto updated?
  *   Yes
  *
@@ -253,7 +253,7 @@ int main(int argc, const char** argv) {
         // // Prepare another renderable entity
         // entity_t triangle = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
         // world_system.set(entity_manager, triangle, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
-        // model_system.load_model(entity_manager, triangle, "", Models::ModelFormat::triangle);
+        // model_system.load_model(entity_manager, triangle, "", Models::ModelFosin(glm::radians(transform.rotation.z)) * cos(glm::radians(transform.rotation.y));rmat::triangle);
 
         // // Prepare a final renderable entity
         // entity_t square2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
@@ -263,15 +263,15 @@ int main(int argc, const char** argv) {
         // Prepare the camera
         entity_t cam = entity_manager.add(ECS::ComponentFlags::camera | ECS::ComponentFlags::controllable | ECS::ComponentFlags::transform);
         world_system.set_cam(entity_manager, cam, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, 45, (float) width / (float) height);
-        world_system.set_controllable(entity_manager, cam, 1.0f, 1.0f);
+        world_system.set_controllable(entity_manager, cam, 1.0f, 3.0f);
 
         // Prepare the teddy bear
         entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-        // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.75 * M_PI, 0.75 * M_PI, 0.0 }, { 0.03, 0.03, 0.03 });
-        world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.5 * M_PI, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
+        // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
+        world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
         // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
         // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
-        model_system.load_model(entity_manager, obj, "bin/models/watermill.obj", Models::ModelFormat::obj);
+        model_system.load_model(entity_manager, obj, "bin/models/teddy.obj", Models::ModelFormat::obj);
 
         // Initialize the engine
         DLOG(auxillary, "");
