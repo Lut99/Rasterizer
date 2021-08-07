@@ -1,5 +1,6 @@
 # Add the subdirectories
 add_subdirectory(obj)
+add_subdirectory(mtl)
 add_subdirectory(auxillary)
 
 # Carry the list to the parent scope

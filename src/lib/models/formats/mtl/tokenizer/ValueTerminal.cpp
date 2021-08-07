@@ -2,21 +2,21 @@
  *   by Lut99
  *
  * Created:
- *   04/07/2021, 16:53:59
+ *   07/08/2021, 18:38:40
  * Last edited:
- *   07/08/2021, 18:39:35
+ *   07/08/2021, 18:39:31
  * Auto updated?
  *   Yes
  *
  * Description:
- *   Contains the ValueTerminal class, which derives from a standard
- *   Terminal and carries a certain value.
+ *   Contains the ValueTerminal class, which is a Terminal - but then with
+ *   a value of some type T.
 **/
 
 #include "ValueTerminal.hpp"
 
 using namespace std;
-using namespace Rasterizer::Models::Obj;
+using namespace Rasterizer::Models::Mtl;
 
 
 /***** VALUETERMINAL CLASS *****/
