@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 12:17:08
  * Last edited:
- *   07/08/2021, 15:27:49
+ *   07/08/2021, 15:50:28
  * Auto updated?
  *   Yes
  *
@@ -55,13 +55,17 @@ static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm
 /* (Default) Constructor for the WorldSystem, which initializes the world to an empty state. Stores the given time ratio internally. */
 WorldSystem::WorldSystem(float time_ratio) :
     time_ratio(time_ratio),
-    last_update(std::chrono::system_clock::now())
+
+    last_update(std::chrono::system_clock::now()),
+    last_mouse(0.0f, 0.0f)
 {}
 
 /* Constructor for the WorldSystem, which takes an entity manager and generates an empty world (but with a floor). */
 WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
     time_ratio(time_ratio),
-    last_update(std::chrono::system_clock::now())
+
+    last_update(std::chrono::system_clock::now()),
+    last_mouse(0.0f, 0.0f)
 {
     DENTER("World::WorldSystem::WorldSystem(floor)");
 
@@ -73,7 +77,9 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
 /* Constructor for the WorldSystem, which takes an entity manager to spawn entities with an the path to a scene JSON. */
 WorldSystem::WorldSystem(ECS::EntityManager& entity_manager, const std::string& scene_path, float time_ratio) :
     time_ratio(time_ratio),
-    last_update(std::chrono::system_clock::now())
+
+    last_update(std::chrono::system_clock::now()),
+    last_mouse(0.0f, 0.0f)
 {
     DENTER("World::WorldSystem::WorldSystem(file)");
 
@@ -207,6 +213,11 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
     float passed = std::chrono::duration_cast<std::chrono::milliseconds>(this->last_update - now).count();
 
+    // Compute the relative mouse speed
+    glm::vec2 mouse = window.mouse_pos();
+    float xspeed = mouse.x - this->last_mouse.x;
+    float yspeed = mouse.y - this->last_mouse.y;
+
     // First, handle Controllable updates
     ComponentList<Controllable>& controllables = entity_manager.get_list<Controllable>();
     for (component_list_size_t i = 0; i < controllables.size(); i++) {
@@ -215,41 +226,65 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
         // Get the controllable for the speeds, but also the transform to update position
         Controllable& controllable = controllables[i];
         Transform& transform = entity_manager.get_component<Transform>(entity);
+
+        // Define the actual speeds based on the time passed
+        float mov_speed = passed / 1000.0 * controllable.mov_speed;
+        float rot_speed = passed / 1000.0 * controllable.rot_speed;
+
+        // Compute the new rotation vector
+        transform.rotation.z += rot_speed * xspeed;
+        transform.rotation.y += rot_speed * yspeed;
+
+        // Bind the y rotation
+        if (transform.rotation.y > 0.49f * M_PI) { transform.rotation.y = 0.49f * M_PI; }
+        else if (transform.rotation.y < -0.49f * M_PI) { transform.rotation.y = -0.49f * M_PI; }
+
+        // Compute the lookat vector
+        glm::vec3 direction;
+        direction.x = cos(glm::radians(transform.rotation.z)) * cos(glm::radians(transform.rotation.y));
+        direction.y = sin(glm::radians(transform.rotation.y));
+        direction.z = sin(glm::radians(transform.rotation.z)) * cos(glm::radians(transform.rotation.y));
+        direction = glm::normalize(direction);
         
-        // Check keyboard input
-        float speed = passed / 1000.0 * controllable.mov_speed;
+        // Use that to update movement with the keyboard input
         if (window.key_pressed(GLFW_KEY_LEFT_SHIFT) || window.key_pressed(GLFW_KEY_RIGHT_SHIFT)) {
             // Double that speed
-            speed *= 2;
+            mov_speed *= 2;
         }
 
         if (window.key_pressed(GLFW_KEY_W) || window.key_pressed(GLFW_KEY_UP)) {
             // Move forward with the given speed
-            transform.position.y -= speed;
+            transform.position.y -= mov_speed;
         } else if (window.key_pressed(GLFW_KEY_S) || window.key_pressed(GLFW_KEY_DOWN)) {
             // Move backward with the given speed
-            transform.position.y += speed;   
+            transform.position.y += mov_speed;   
         }
         if (window.key_pressed(GLFW_KEY_D) || window.key_pressed(GLFW_KEY_RIGHT)) {
             // Move right with the given speed
-            transform.position.x -= speed;
+            transform.position.x -= mov_speed;
         } else if (window.key_pressed(GLFW_KEY_A) || window.key_pressed(GLFW_KEY_LEFT)) {
             // Move left with the given speed
-            transform.position.x += speed;
+            transform.position.x += mov_speed;
         }
 
         // When done, update the transform matrix, and update the camera matrix too if the entity is a camera
         transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
         if (entity_manager.has_component(entity, ComponentFlags::camera)) {
+            // Get the camera component
             Camera& camera = entity_manager.get_component<Camera>(entity);
-            glm::mat4 proj = glm::perspective(camera.fov, camera.ratio, 0.1f, 10.0f);
-            glm::mat4 view = glm::lookAt(transform.position, transform.position + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+            // When done, compute the projection & view matrix, not forgetting to flip the Y-axis
+            glm::mat4 proj = glm::perspective(camera.fov, camera.ratio, 0.001f, 10.0f);
+            glm::mat4 view = glm::lookAt(transform.position, transform.position + direction, glm::vec3(0.0f, 0.0f, 1.0f));
             proj[1][1] *= -1;
+
+            // Store the result in one glorious matrix
             camera.proj_view = proj * view;
         }
     }
 
     // When done, update the last-update-time and quit
     this->last_update = now;
+    this->last_mouse = mouse;
     DRETURN;
 }

@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 12:17:02
  * Last edited:
- *   07/08/2021, 15:02:16
+ *   07/08/2021, 15:35:35
  * Auto updated?
  *   Yes
  *
@@ -32,8 +32,11 @@ namespace Rasterizer::World {
     private:
         /* The update speed of the world system, i.e., how many faster or slower time should run in the simulation. */
         float time_ratio;
+
         /* The last time update() was called. */
         std::chrono::system_clock::time_point last_update;
+        /* The last recorded mouse position. */
+        glm::vec2 last_mouse;
 
     public:
         /* (Default) Constructor for the WorldSystem, which initializes the world to an empty state. Stores the given time ratio internally. */
