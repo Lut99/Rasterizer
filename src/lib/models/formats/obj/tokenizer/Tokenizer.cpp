@@ -4,7 +4,7 @@
  * Created:
  *   04/07/2021, 16:28:49
  * Last edited:
- *   06/08/2021, 12:53:32
+ *   07/08/2021, 22:08:39
  * Auto updated?
  *   Yes
  *
@@ -20,6 +20,7 @@
 #include <tuple>
 #include "tools/CppDebugger.hpp"
 
+#include "../../auxillary/TokenizerTools.hpp"
 #include "ValueTerminal.hpp"
 #include "Tokenizer.hpp"
 
@@ -27,253 +28,6 @@ using namespace std;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Obj;
 using namespace CppDebugger::SeverityValues;
-
-
-/***** MACROS *****/
-/* If defined, enables extra debug prints tracing the tokenizer's steps. */
-// #define EXTRA_DEBUG
-
-/* Allows tokens to be converted to a string. */
-#define STRINGIFY(x) #x
-#define STR(x) STRINGIFY(x)
-
-#ifdef EXTRA_DEBUG
-/* Helper macro that prints what the token was we got for this label. */
-#define DEBUG_LABEL(LABEL, C) \
-    printf("[tokenizer] Label " STR(LABEL) ": '%s'\n", readable_char((C)));
-/* Helper macro that prints the path we took. */
-#define DEBUG_PATH(C, NEXT) \
-    printf("[tokenizer] --> Found %s, %s\n", (C), (NEXT));
-#else
-/* Helper macro that prints what the token was we got for this label. */
-#define DEBUG_LABEL(LABEL, C);
-/* Helper macro that prints the path we took. */
-#define DEBUG_PATH(C, NEXT);
-#endif
-
-/* Helper macro for fetching characters of the input stream. Uses Unix-style error handling */
-#define GET_CHAR(C, FILE, COL, I) \
-    (C) = fgetc((FILE)); \
-    if ((C) == EOF && ferror((FILE))) { \
-        std::string err = strerror(errno); \
-        DLOG(fatal, "Something went wrong while reading from the stream: " + err); \
-    } \
-    ++(COL); \
-    ++(I);
-
-/* Helper macro for fetching characters of the input stream. Uses Windows-style error handling */
-#define GET_CHAR_W(C, FILE, COL, I) \
-    (C) = fgetc((FILE)); \
-    if ((C) == EOF && ferror((FILE))) { \
-        char buffer[BUFSIZ]; \
-        strerror_s(buffer, errno); \
-        std::string err = buffer; \
-        DLOG(fatal, "Something went wrong while reading from the stream: " + err); \
-    } \
-    ++(COL); \
-    ++(I);
-    
-/* Helper macro for ungetting the last fetched character. */
-#define UNGET_CHAR(FILE, COL) \
-    fseek((FILE), -1, SEEK_CUR); \
-    --(COL);
-
-/* Parses an unsigned integer. */
-#define PARSE_UINT(VALUE, RAW_VALUE, DEBUG_INFO) \
-    try { \
-        unsigned long lvalue = std::stoul((RAW_VALUE)); \
-        if (lvalue > std::numeric_limits<uint32_t>::max()) { throw std::out_of_range("Manual overflow"); } \
-        (VALUE) = (uint32_t) lvalue; \
-    } catch (std::invalid_argument& e) { \
-        (DEBUG_INFO).print_error(cerr, "Illegal character parsing an unsigned integer: " + std::string(e.what())); \
-        DRETURN nullptr; \
-    } catch (std::out_of_range&) { \
-        (DEBUG_INFO).print_error(cerr, "Value is out-of-range for a 32-bit unsigned integer (maximum: " + std::to_string(std::numeric_limits<uint32_t>::max()) + ")."); \
-        DRETURN nullptr; \
-    }
-
-/* Helper macro for determining if the given character is a whitespce. */
-#define IS_WHITESPACE(C) \
-    ((C) == ' ' || (C) == '\n' || (C) == '\t' || (C) == '\r')
-
-
-
-
-
-/***** HELPER FUNCTIONS *****/
-/* Function that, given a file stream and the start of this line, parses an entire line. */
-static std::string get_line(FILE* file, long sentence_start) {
-    DENTER("get_line");
-
-    // Backup the current cursor and go to the start of the line
-    long old_cursor = ftell(file);
-    // Go to the start of the line
-    fseek(file, sentence_start, SEEK_SET);
-
-    // Loop to assemble the line
-    char c;
-    int col = 0;
-    int i = 0;
-    std::stringstream sstr;
-    while (true) {
-        // Get the character
-        #ifdef _WIN32
-        GET_CHAR_W(c, file, col, i);
-        #else
-        GET_CHAR(c, file, col, i);
-        #endif
-
-        // If it's a newline, stop
-        if (c == '\n' || c == EOF) {
-            fseek(file, old_cursor, SEEK_SET);
-            DRETURN sstr.str();
-        }
-
-        // Otherwise, store and re-try
-        sstr << c;
-    }
-
-    // We should never get here
-    DRETURN "";
-}
-
-/* Given a char, returns a readable string representation of it. */
-static const char* readable_char(char c) {
-    switch(c) {
-        case 'a': return "a";
-        case 'b': return "b";
-        case 'c': return "c";
-        case 'd': return "d";
-        case 'e': return "e";
-        case 'f': return "f";
-        case 'g': return "g";
-        case 'h': return "h";
-        case 'i': return "i";
-        case 'j': return "j";
-        case 'k': return "k";
-        case 'l': return "l";
-        case 'm': return "m";
-        case 'n': return "n";
-        case 'o': return "o";
-        case 'p': return "p";
-        case 'q': return "q";
-        case 'r': return "r";
-        case 's': return "s";
-        case 't': return "t";
-        case 'u': return "u";
-        case 'v': return "v";
-        case 'w': return "w";
-        case 'x': return "x";
-        case 'y': return "y";
-        case 'z': return "z";
-        case 'A': return "A";
-        case 'B': return "B";
-        case 'C': return "C";
-        case 'D': return "D";
-        case 'E': return "E";
-        case 'F': return "F";
-        case 'G': return "G";
-        case 'H': return "H";
-        case 'I': return "I";
-        case 'J': return "J";
-        case 'K': return "K";
-        case 'L': return "L";
-        case 'M': return "M";
-        case 'N': return "N";
-        case 'O': return "O";
-        case 'P': return "P";
-        case 'Q': return "Q";
-        case 'R': return "R";
-        case 'S': return "S";
-        case 'T': return "T";
-        case 'U': return "U";
-        case 'V': return "V";
-        case 'W': return "W";
-        case 'X': return "X";
-        case 'Y': return "Y";
-        case 'Z': return "Z";
-        case ' ': return " ";
-        case '\n': return "newline";
-        case '\r': return "carriage return";
-        case '\t': return "tab";
-        case '\0': return "null";
-        default: return "special char";
-    }
-}
-
-/* Returns a string representing the given number, padded with enough spaces to be at least N character long. */
-template <class T>
-static std::string pad_spaces(T value, size_t N) {
-    DENTER("pad_zeros");
-    
-    // Convert to string
-    std::string result = std::to_string(value);
-    while (result.size() < N) {
-        result = ' ' + result;
-    }
-
-    // DOne
-    DRETURN result;
-}
-
-/* Splits a given string in two strings on the first slash it finds. */
-static void split_string(const std::string& to_split, std::string& part1, std::string& part2) {
-    DENTER("split_string(2)");
-
-    // Loop to find the slash, noting everything in the stringstream
-    std::stringstream sstr;
-    size_t i = 0;
-    for ( ; i < to_split.size(); i++) {
-        if (to_split[i] == '/') { ++i; break; }
-        sstr << to_split[i];
-    }
-    part1 = sstr.str();
-
-    // Do the same for the second half
-    sstr.str("");
-    for ( ; i < to_split.size(); i++) {
-        sstr << to_split[i];
-    }
-    part2 = sstr.str();
-
-    // Done
-    DRETURN;
-}
-
-/* Splits a given string in three strings on the first and second slash it finds. */
-static void split_string(const std::string& to_split, std::string& part1, std::string& part2, std::string& part3) {
-    DENTER("split_string(3)");
-
-    // Loop to find the slash, noting everything in the stringstream
-    std::stringstream sstr;
-    size_t i = 0;
-    for ( ; i < to_split.size(); i++) {
-        if (to_split[i] == '/') { ++i; break; }
-        sstr << to_split[i];
-    }
-    part1 = sstr.str();
-
-    // Do the same for the second half
-    sstr.str("");
-    for ( ; i < to_split.size(); i++) {
-        if (to_split[i] == '/') { ++i; break; }
-        sstr << to_split[i];
-    }
-    part2 = sstr.str();
-
-    // And for the third
-    sstr.str("");
-    for ( ; i < to_split.size(); i++) {
-        sstr << to_split[i];
-    }
-    part3 = sstr.str();
-
-    // Done
-    DRETURN;
-}
-
-
-
 
 
 /***** TOKENIZER CLASS *****/
@@ -1266,63 +1020,69 @@ too_many_slashes: {
 
 
 float_start: {
-        // Possibly store the sentence start
-        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    // Possibly store the sentence start
+    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
 
-        // Get a character from the stream
-        #ifdef _WIN32
-        GET_CHAR_W(c, this->file, this->col, i);
-        #else
-        GET_CHAR(c, this->file, this->col, i);
-        #endif
-        DEBUG_LABEL(float_start, c);
+    // Get a character from the stream
+    #ifdef _WIN32
+    GET_CHAR_W(c, this->file, this->col, i);
+    #else
+    GET_CHAR(c, this->file, this->col, i);
+    #endif
+    DEBUG_LABEL(float_start, c);
 
-        // Switch on its value
-        if (c >= '0' && c <= '9') {
-            // Keep parsing as normal number
-            DEBUG_PATH("digit", "continuing");
-            sstr << c;
-            goto float_start;
+    // Switch on its value
+    if (c >= '0' && c <= '9') {
+        // Keep parsing as normal number
+        DEBUG_PATH("digit", "continuing");
+        sstr << c;
+        goto float_start;
 
-        } else if (c == '.') {
-            // It's a floating-point for real
-            DEBUG_PATH("dot", "going float_dot");
-            sstr << c;
-            goto float_dot;
+    } else if (c == '.') {
+        // It's a floating-point for real
+        DEBUG_PATH("dot", "going float_dot");
+        sstr << c;
+        goto float_dot;
 
-        } else if (IS_WHITESPACE(c)) {
-            // We haven't seen a dot yet! So parse as int
-            DEBUG_PATH("whitespace", "done (but returning as sint)");
-            UNGET_CHAR(this->file, this->col);
+    } else if (c == 'E' || c == 'e') {
+        // It's definitely a float now, but then with scientific notation
+        DEBUG_PATH("E", "going float_e");
+        sstr << c;
+        goto float_e_start;
 
-            // Create the debug info
-            DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+    } else if (IS_WHITESPACE(c)) {
+        // We haven't seen a dot yet! So parse as int
+        DEBUG_PATH("whitespace", "done (but returning as sint)");
+        UNGET_CHAR(this->file, this->col);
 
-            // Try to parse the string as a uint32_t value
-            int32_t value;
-            try {
-                value = std::stoi(sstr.str());
-            } catch (std::invalid_argument& e) {
-                // printf("'\n");
-                debug_info.print_error(cerr, "Illegal character parsing an unsigned integer: " + std::string(e.what()));
-                DRETURN nullptr;
-            } catch (std::out_of_range&) {
-                // printf("'\n");
-                debug_info.print_error(cerr, "Value is out-of-range for a 32-bit integer (maximum: " + std::to_string(std::numeric_limits<uint32_t>::max()) + ").");
-                DRETURN nullptr;
-            }
+        // Create the debug info
+        DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
 
-            // Otherwise, we have a valid value
-            DRETURN (Terminal*) new ValueTerminal<int32_t>(TerminalType::sint, value, debug_info);
-
-        } else {
-            // Parse as unknown token
-            DEBUG_PATH("other", "parsing as unknown token");
-            UNGET_CHAR(this->file, this->col);
-            goto unknown_token;
-
+        // Try to parse the string as a uint32_t value
+        int32_t value;
+        try {
+            value = std::stoi(sstr.str());
+        } catch (std::invalid_argument& e) {
+            // printf("'\n");
+            debug_info.print_error(cerr, "Illegal character parsing an unsigned integer: " + std::string(e.what()));
+            DRETURN nullptr;
+        } catch (std::out_of_range&) {
+            // printf("'\n");
+            debug_info.print_error(cerr, "Value is out-of-range for a 32-bit integer (maximum: " + std::to_string(std::numeric_limits<uint32_t>::max()) + ").");
+            DRETURN nullptr;
         }
+
+        // Otherwise, we have a valid value
+        DRETURN (Terminal*) new ValueTerminal<int32_t>(TerminalType::sint, value, debug_info);
+
+    } else {
+        // Parse as unknown token
+        DEBUG_PATH("other", "parsing as unknown token");
+        UNGET_CHAR(this->file, this->col);
+        goto unknown_token;
+
     }
+}
 
 float_dot: {
     // Possibly store the sentence start

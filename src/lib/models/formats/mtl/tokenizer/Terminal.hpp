@@ -4,7 +4,7 @@
  * Created:
  *   07/08/2021, 18:36:59
  * Last edited:
- *   07/08/2021, 18:37:39
+ *   07/08/2021, 22:04:32
  * Auto updated?
  *   Yes
  *
@@ -26,16 +26,28 @@ namespace Rasterizer::Models::Mtl {
         /* The undefined symbol. */
         undefined = 0,
         /* The EOF-symbol. */
-        eof = 1
+        eof = 1,
 
-        
+        /* The newmtl keyword, indicating that we define a new material. */
+        newmtl = 2,
+        /* The Kd-keyword, indicating a diffusing color. */
+        Kd = 3,
+
+        /* A floating-point value. */
+        decimal = 4,
+        /* The name value, carrying some name. */
+        name = 5
     };
     /* Converts the given TerminalType to a string. */
     static std::string terminal_type_names[] = {
         "undefined",
-        "end-of-file"
+        "end-of-file",
 
-        
+        "newmtl",
+        "Kd",
+
+        "decimal",
+        "name"
     };
 
 

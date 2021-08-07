@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:15
  * Last edited:
- *   07/08/2021, 15:12:35
+ *   07/08/2021, 22:37:49
  * Auto updated?
  *   Yes
  *
@@ -20,6 +20,9 @@
 #include "tokenizer/ValueTerminal.hpp"
 #include "tokenizer/Tokenizer.hpp"
 
+#include "../mtl/MtlLoader.hpp"
+
+#include "../auxillary/ParserTools.hpp"
 #include "ObjLoader.hpp"
 
 using namespace std;
@@ -38,25 +41,8 @@ using namespace CppDebugger::SeverityValues;
 
 
 /***** HELPER FUNCTIONS *****/
-/* Deletes symbols from the top of the stack until (and including) the given iterator. Also safely deletes the pointers themselves. */
-static void remove_stack_bottom(Tools::LinkedArray<Terminal*>& symbol_stack, Tools::LinkedArray<Terminal*>::iterator& iter) {
-    DENTER("remove_stack_bottom");
-
-    // First, delete the tokens
-    for (Tools::LinkedArray<Terminal*>::iterator i = symbol_stack.begin(); i != iter; ++i) {
-        delete *i;
-    }
-    delete *iter;
-
-    // Now remove them from the stack itself
-    symbol_stack.erase_until(iter);
-
-    // Done
-    DRETURN;
-}
-
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
-static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, Tools::LinkedArray<Terminal*>& symbol_stack) {
+static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, std::string& current_mtl, std::unordered_map<std::string, glm::vec3>& mtl_map, Tools::LinkedArray<Terminal*>& symbol_stack) {
     DENTER("reduce");
 
     // Prepare the iterator over the linked array
@@ -589,7 +575,10 @@ mtllib_start: {
     Terminal* term = *iter;
     switch(term->type) {
         case TerminalType::filename:
-            // Parse the material (for now, simply remove it)
+            // Parse the material file
+            load_mtl_lib(mtl_map, ((ValueTerminal<std::string>*) term)->value);
+
+            // Done with this one
             remove_stack_bottom(symbol_stack, iter);
             DRETURN "mtllib";
         
@@ -611,10 +600,20 @@ usemtl_start: {
     // Get the next symbol off the stack
     Terminal* term = *iter;
     switch(term->type) {
-        case TerminalType::name:
-            // Parse the material (for now, simply remove it)
+        case TerminalType::name: {
+            // Set this material as current, but only if we know it
+            std::string material = ((ValueTerminal<std::string>*) term)->value;
+            if (mtl_map.find(material) != mtl_map.end()) {
+                term->debug_info.print_error(cerr, "Unknown material name '" + material + "'.");
+                remove_stack_bottom(symbol_stack, iter);
+                DRETURN "error";
+            }
+
+            // Else, set as current and return
+            current_mtl = material;
             remove_stack_bottom(symbol_stack, iter);
             DRETURN "usemtl";
+        }
         
         default:
             // Missing filename
@@ -646,11 +645,15 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
     // Prepare the 'symbol stack'
     Tools::LinkedArray<Terminal*> symbol_stack;
 
+    // Prepare the material map
+    std::string current_mtl;
+    std::unordered_map<std::string, glm::vec3> mtl_map;
+
     // Start looping to parse stuff off the stack
     bool changed = true;
     while (changed) {
         // Run the parser
-        std::string rule = reduce(new_vertices, new_indices, symbol_stack);
+        std::string rule = reduce(new_vertices, new_indices, current_mtl, mtl_map, symbol_stack);
         changed = !rule.empty() && rule != "error";
 
         // If there's no change and we're not at the end, pop a new terminal

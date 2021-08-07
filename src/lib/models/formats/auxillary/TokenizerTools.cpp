@@ -1,0 +1,184 @@
+/* TOKENIZER TOOLS.cpp
+ *   by Lut99
+ *
+ * Created:
+ *   07/08/2021, 21:39:42
+ * Last edited:
+ *   07/08/2021, 21:44:17
+ * Auto updated?
+ *   Yes
+ *
+ * Description:
+ *   Contains common macros and functions for Tokenizers.
+**/
+
+#include <sstream>
+
+#include "tools/CppDebugger.hpp"
+#include "TokenizerTools.hpp"
+
+using namespace std;
+using namespace Rasterizer;
+
+
+/***** LIBRARY FUNCTIONS *****/
+/* Function that, given a file stream and the start of this line, parses an entire line. */
+std::string Models::get_line(FILE* file, long sentence_start) {
+    DENTER("Models::get_line");
+
+    // Backup the current cursor and go to the start of the line
+    long old_cursor = ftell(file);
+    // Go to the start of the line
+    fseek(file, sentence_start, SEEK_SET);
+
+    // Loop to assemble the line
+    char c;
+    int col = 0;
+    int i = 0;
+    std::stringstream sstr;
+    while (true) {
+        // Get the character
+        #ifdef _WIN32
+        GET_CHAR_W(c, file, col, i);
+        #else
+        GET_CHAR(c, file, col, i);
+        #endif
+
+        // If it's a newline, stop
+        if (c == '\n' || c == EOF) {
+            fseek(file, old_cursor, SEEK_SET);
+            DRETURN sstr.str();
+        }
+
+        // Otherwise, store and re-try
+        sstr << c;
+    }
+
+    // We should never get here
+    DRETURN "";
+}
+
+
+
+/* Given a char, returns a readable string representation of it. */
+const char* Models::readable_char(char c) {
+    switch(c) {
+        case 'a': return "a";
+        case 'b': return "b";
+        case 'c': return "c";
+        case 'd': return "d";
+        case 'e': return "e";
+        case 'f': return "f";
+        case 'g': return "g";
+        case 'h': return "h";
+        case 'i': return "i";
+        case 'j': return "j";
+        case 'k': return "k";
+        case 'l': return "l";
+        case 'm': return "m";
+        case 'n': return "n";
+        case 'o': return "o";
+        case 'p': return "p";
+        case 'q': return "q";
+        case 'r': return "r";
+        case 's': return "s";
+        case 't': return "t";
+        case 'u': return "u";
+        case 'v': return "v";
+        case 'w': return "w";
+        case 'x': return "x";
+        case 'y': return "y";
+        case 'z': return "z";
+        case 'A': return "A";
+        case 'B': return "B";
+        case 'C': return "C";
+        case 'D': return "D";
+        case 'E': return "E";
+        case 'F': return "F";
+        case 'G': return "G";
+        case 'H': return "H";
+        case 'I': return "I";
+        case 'J': return "J";
+        case 'K': return "K";
+        case 'L': return "L";
+        case 'M': return "M";
+        case 'N': return "N";
+        case 'O': return "O";
+        case 'P': return "P";
+        case 'Q': return "Q";
+        case 'R': return "R";
+        case 'S': return "S";
+        case 'T': return "T";
+        case 'U': return "U";
+        case 'V': return "V";
+        case 'W': return "W";
+        case 'X': return "X";
+        case 'Y': return "Y";
+        case 'Z': return "Z";
+        case ' ': return " ";
+        case '\n': return "newline";
+        case '\r': return "carriage return";
+        case '\t': return "tab";
+        case '\0': return "null";
+        default: return "special char";
+    }
+}
+
+
+
+/* Splits a given string in two strings on the first slash it finds. */
+void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2) {
+    DENTER("split_string(2)");
+
+    // Loop to find the slash, noting everything in the stringstream
+    std::stringstream sstr;
+    size_t i = 0;
+    for ( ; i < to_split.size(); i++) {
+        if (to_split[i] == '/') { ++i; break; }
+        sstr << to_split[i];
+    }
+    part1 = sstr.str();
+
+    // Do the same for the second half
+    sstr.str("");
+    for ( ; i < to_split.size(); i++) {
+        sstr << to_split[i];
+    }
+    part2 = sstr.str();
+
+    // Done
+    DRETURN;
+}
+
+/* Splits a given string in three strings on the first and second slash it finds. */
+void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2, std::string& part3) {
+    DENTER("split_string(3)");
+
+    // Loop to find the slash, noting everything in the stringstream
+    std::stringstream sstr;
+    size_t i = 0;
+    for ( ; i < to_split.size(); i++) {
+        if (to_split[i] == '/') { ++i; break; }
+        sstr << to_split[i];
+    }
+    part1 = sstr.str();
+
+    // Do the same for the second half
+    sstr.str("");
+    for ( ; i < to_split.size(); i++) {
+        if (to_split[i] == '/') { ++i; break; }
+        sstr << to_split[i];
+    }
+    part2 = sstr.str();
+
+    // And for the third
+    sstr.str("");
+    for ( ; i < to_split.size(); i++) {
+        sstr << to_split[i];
+    }
+    part3 = sstr.str();
+
+    // Done
+    DRETURN;
+}
+
