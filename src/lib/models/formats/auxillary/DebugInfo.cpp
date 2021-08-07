@@ -4,7 +4,7 @@
  * Created:
  *   04/07/2021, 17:30:01
  * Last edited:
- *   8/1/2021, 3:42:53 PM
+ *   07/08/2021, 15:08:55
  * Auto updated?
  *   Yes
  *
@@ -222,7 +222,7 @@ DebugInfo& DebugInfo::operator+=(const DebugInfo& other) {
 
 
 /* Private helper function that does most of the printing. */
-void DebugInfo::_print(std::ostream& os, const std::string& message, const std::string& accent_colour, int relevant_line) {
+void DebugInfo::_print(std::ostream& os, const std::string& message, const std::string& accent_colour) {
     DENTER("Tools::DebugInfo::_print");
 
     // First, print the error message properly
@@ -269,40 +269,40 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
     DRETURN;
 }
 
-/* Pretty prints a given note to the CLI using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. The relevant line can be optionally given to print another line but the first one, and also supports negative indexing to index from the end. */
-void DebugInfo::print_note(std::ostream& os, const std::string& note, int relevant_line) {
+/* Pretty prints a given note to the CLI using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. */
+void DebugInfo::print_note(std::ostream& os, const std::string& note) {
     DENTER("Tools::DebugInfo::print_note");
 
     if (terminal_supports_colours()) {
-        this->_print(os, std::string(DebugInfo::note_accent) + "note: \033[0m" + note, DebugInfo::note_accent, relevant_line);
+        this->_print(os, std::string(DebugInfo::note_accent) + "note: \033[0m" + note, DebugInfo::note_accent);
     } else {
-        this->_print(os, "note: " + note, "", relevant_line);
+        this->_print(os, "note: " + note, "");
     }
 
     DRETURN;
 }
 
-/* Pretty prints a given warning message to the CLI using the internal debug information about the symbol. The relevant line can be optionally given to print another line but the first one, and also supports negative indexing to index from the end. */
-void DebugInfo::print_warning(std::ostream& os, const std::string& warning_message, int relevant_line) {
+/* Pretty prints a given warning message to the CLI using the internal debug information about the symbol. */
+void DebugInfo::print_warning(std::ostream& os, const std::string& warning_message) {
     DENTER("Tools::DebugInfo::print_warning");
 
     if (terminal_supports_colours()) {
-        this->_print(os, std::string(DebugInfo::warning_accent) + "warning: \033[0m" + warning_message, DebugInfo::warning_accent, relevant_line);
+        this->_print(os, std::string(DebugInfo::warning_accent) + "warning: \033[0m" + warning_message, DebugInfo::warning_accent);
     } else {
-        this->_print(os, "warning: " + warning_message, "", relevant_line);
+        this->_print(os, "warning: " + warning_message, "");
     }
 
     DRETURN;
 }
 
-/* Pretty prints a given error message to the CLI using the internal debug information about the symbol. The relevant line can be optionally given to print another line but the first one, and also supports negative indexing to index from the end. */
-void DebugInfo::print_error(std::ostream& os, const std::string& error_message, int relevant_line) {
+/* Pretty prints a given error message to the CLI using the internal debug information about the symbol. */
+void DebugInfo::print_error(std::ostream& os, const std::string& error_message) {
     DENTER("Tools::DebugInfo::print_error");
 
     if (terminal_supports_colours()) {
-        this->_print(os, std::string(DebugInfo::error_accent) + "error: \033[0m" + error_message, DebugInfo::error_accent, relevant_line);
+        this->_print(os, std::string(DebugInfo::error_accent) + "error: \033[0m" + error_message, DebugInfo::error_accent);
     } else {
-        this->_print(os, "error: " + error_message, "", relevant_line);
+        this->_print(os, "error: " + error_message, "");
     }
 
     DRETURN;

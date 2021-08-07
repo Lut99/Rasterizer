@@ -4,7 +4,7 @@
  * Created:
  *   06/08/2021, 13:17:30
  * Last edited:
- *   06/08/2021, 13:20:13
+ *   07/08/2021, 15:21:59
  * Auto updated?
  *   Yes
  *
@@ -24,10 +24,12 @@
 namespace Rasterizer::ECS {
     /* The Camera component, which carries the camera matrices around for that camera. Its position and rotation are defined by the Transform component. Also thus determines how many times we have to render a scene. */
     struct Camera {
-        /* The projection matrix for the camera. */
-        glm::mat4 proj;
-        /* The view matrix for the camera. */
-        glm::mat4 view;
+        /* The field-of-view for the camera. */
+        float fov;
+        /* The aspect ratio of the camera. */
+        float ratio;
+        /* The projection & view matrix for the camera, combined. */
+        glm::mat4 proj_view;
     };
 
     /* Hash function for the Camera struct, which returns its 'hash' code. */

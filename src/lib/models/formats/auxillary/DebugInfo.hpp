@@ -4,7 +4,7 @@
  * Created:
  *   04/07/2021, 17:29:59
  * Last edited:
- *   04/07/2021, 17:29:59
+ *   07/08/2021, 15:07:40
  * Auto updated?
  *   Yes
  *
@@ -53,7 +53,7 @@ namespace Rasterizer::Models {
 
 
         /* Private helper function that does most of the printing. */
-        void _print(std::ostream& os, const std::string& message, const std::string& accent_colour, int relevant_line);
+        void _print(std::ostream& os, const std::string& message, const std::string& accent_colour);
 
     public:
         /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column and a file handle to read the relevant lines from. Although the given file object isn't constant, it should be reinstated back to its original state once the constructor is done. */
@@ -75,12 +75,12 @@ namespace Rasterizer::Models {
         /* Adds another DebugInfo to this one s.t. we end at the given DebugInfo's end line and end column. Note that if the DebugInfo's aren't (line) adjacent, the unknown lines will be interpreted as empty. */
         DebugInfo& operator+=(const DebugInfo& other);
 
-        /* Pretty prints a given note to the given stream using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. The relevant line can be optionally given to print another line but the first one, and also supports negative indexing to index from the end. */
-        void print_note(std::ostream& os, const std::string& note, int relevant_line = 0);
-        /* Pretty prints a given warning message to the given stream using the internal debug information about the symbol. The relevant line can be optionally given to print another line but the first one, and also supports negative indexing to index from the end. */
-        void print_warning(std::ostream& os, const std::string& warning_message, int relevant_line = 0);
-        /* Pretty prints a given error message to the given stream using the internal debug information about the symbol. The relevant line can be optionally given to print another line but the first one, and also supports negative indexing to index from the end. */
-        void print_error(std::ostream& os, const std::string& error_message, int relevant_line = 0);
+        /* Pretty prints a given note to the given stream using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. */
+        void print_note(std::ostream& os, const std::string& note);
+        /* Pretty prints a given warning message to the given stream using the internal debug information about the symbol. */
+        void print_warning(std::ostream& os, const std::string& warning_message);
+        /* Pretty prints a given error message to the given stream using the internal debug information about the symbol. */
+        void print_error(std::ostream& os, const std::string& error_message);
 
         /* Returns the filename of the file. */
         inline const std::string& path() const { return this->filename; }

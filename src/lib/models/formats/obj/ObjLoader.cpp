@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:15
  * Last edited:
- *   06/08/2021, 13:11:35
+ *   07/08/2021, 15:12:35
  * Auto updated?
  *   Yes
  *
@@ -56,7 +56,7 @@ static void remove_stack_bottom(Tools::LinkedArray<Terminal*>& symbol_stack, Too
 }
 
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
-static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, const std::string& path, Tools::LinkedArray<Terminal*>& symbol_stack) {
+static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, Tools::LinkedArray<Terminal*>& symbol_stack) {
     DENTER("reduce");
 
     // Prepare the iterator over the linked array
@@ -650,7 +650,7 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
     bool changed = true;
     while (changed) {
         // Run the parser
-        std::string rule = reduce(new_vertices, new_indices, path, symbol_stack);
+        std::string rule = reduce(new_vertices, new_indices, symbol_stack);
         changed = !rule.empty() && rule != "error";
 
         // If there's no change and we're not at the end, pop a new terminal

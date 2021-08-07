@@ -4,7 +4,7 @@
  * Created:
  *   20/07/2021, 15:10:25
  * Last edited:
- *   04/08/2021, 13:08:14
+ *   07/08/2021, 15:23:48
  * Auto updated?
  *   Yes
  *
@@ -22,6 +22,7 @@
 
 #include "ecs/components/Transform.hpp"
 #include "ecs/components/Mesh.hpp"
+#include "ecs/components/Camera.hpp"
 #include "models/ModelSystem.hpp"
 
 #include "auxillary/ErrorCodes.hpp"
@@ -35,36 +36,6 @@ using namespace Rasterizer;
 using namespace Rasterizer::ECS;
 using namespace Rasterizer::Rendering;
 using namespace CppDebugger::SeverityValues;
-
-
-/***** HELPER FUNCTIONS *****/
-/* Computes the three new camera matrices. */
-static void compute_camera_matrices(glm::mat4& proj_mat, glm::mat4& view_mat, glm::mat4& model_mat, float aspect_ratio) {
-    DENTER("compute_camera_matrices");
-
-    // Note that start time of the rendering process as a static - i.e., continious between calls
-    static std::chrono::high_resolution_clock::time_point startTime = std::chrono::high_resolution_clock::now();
-    // Get the current time too
-    std::chrono::high_resolution_clock::time_point currentTime = std::chrono::high_resolution_clock::now();
-    // Compute the difference between them
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-    // Compute the projection matrix: field of view and such?
-    proj_mat = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.1f, 10.0f);
-    // Compute the view matrix: translation from the world space to camera space
-    view_mat = glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    // Compute the model matrix: used to rotate the world to provide the rotating camera
-    model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    // Don't forget to flip the Y in the projection matrix, since GLM Y and Vulkan Y are actually inverted
-    proj_mat[1][1] *= -1;
-
-    // Done
-    DRETURN;
-}
-
-
-
 
 
 /***** POPULATE FUNCTIONS *****/
@@ -242,11 +213,8 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
 
     /***** RENDERING *****/
-    // Compute new camera matrices
-    glm::mat4 cam_proj, cam_view, cam_model;
-    compute_camera_matrices(cam_proj, cam_view, cam_model, (float) this->window.swapchain().extent().width / (float) this->window.swapchain().extent().height);
-    // Already combines the projection and view matrices
-    glm::mat4 cam_mat = cam_proj * cam_view;
+    // Get the camera matrix
+    const glm::mat4& cam_mat = entity_manager.get_list<Camera>()[0].proj_view;
 
     // Prepare the command buffer's recording
     this->draw_cmds[swapchain_index].begin();

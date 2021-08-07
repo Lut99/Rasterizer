@@ -4,7 +4,7 @@
  * Created:
  *   18/07/2021, 12:19:10
  * Last edited:
- *   18/07/2021, 12:19:10
+ *   07/08/2021, 15:20:06
  * Auto updated?
  *   Yes
  *
@@ -33,7 +33,7 @@ namespace Rasterizer::ECS {
         /* The maximum number of entities supported by the EntityManager. */
         static constexpr const entity_t max_entities = 1024;
         /* The maximum number of components supported by the EntityManager. */
-        static constexpr const uint32_t max_components = 2;
+        static constexpr const uint32_t max_components = 4;
 
     private:
         /* List describing all entities. In particular, each entity is defined by having an index in this list. */

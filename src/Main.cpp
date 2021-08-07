@@ -4,7 +4,7 @@
  * Created:
  *   11/06/2021, 18:03:12
  * Last edited:
- *   06/08/2021, 13:03:55
+ *   07/08/2021, 15:30:05
  * Auto updated?
  *   Yes
  *
@@ -212,118 +212,139 @@ static void parse_args(Options& opts, int argc, const char** argv) {
 int main(int argc, const char** argv) {
     DSTART("main"); DENTER("main");
 
-    // Parse the arguments
-    Options opts;
-    parse_args(opts, argc, argv);
+    try {
+        // Parse the arguments
+        Options opts;
+        parse_args(opts, argc, argv);
 
-    // Print some nice entry message
-    DLOG(auxillary, "");
-    DLOG(auxillary, "<<< RASTERIZER >>>");
-    DLOG(auxillary, "");
+        // Print some nice entry message
+        DLOG(auxillary, "");
+        DLOG(auxillary, "<<< RASTERIZER >>>");
+        DLOG(auxillary, "");
 
-    // Initialize the GLFW library
-    DLOG(info, "Initializing GLFW...");
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        // Initialize the GLFW library
+        DLOG(info, "Initializing GLFW...");
+        glfwInit();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    // Prepare the Vulkan instance first
-    Rendering::Instance instance(Rendering::instance_extensions + get_glfw_extensions());
+        // Prepare the Vulkan instance first
+        Rendering::Instance instance(Rendering::instance_extensions + get_glfw_extensions());
+        
+        // Use that to prepare the Window class
+        uint32_t width = 800, height = 600;
+        Window window(instance, "Rasterizer", width, height);
+        // Prepare the memory manager
+        Rendering::MemoryManager memory_manager(window.gpu(), opts.local_memory_size, opts.visible_memory_size);
+        // Initialize the WorldSystem
+        World::WorldSystem world_system;
+        // Initialize the ModelSystem
+        Models::ModelSystem model_system(memory_manager);
+        // Initialize the RenderSystem
+        Rendering::RenderSystem render_system(window, memory_manager, model_system);
+        // Initialize the entity manager
+        ECS::EntityManager entity_manager;
 
-    // Use that to prepare the Window class
-    Window window(instance, "Rasterizer", 800, 600);
-    // Prepare the memory manager
-    Rendering::MemoryManager memory_manager(window.gpu(), opts.local_memory_size, opts.visible_memory_size);
-    // Initialize the WorldSystem
-    World::WorldSystem world_system;
-    // Initialize the ModelSystem
-    Models::ModelSystem model_system(memory_manager);
-    // Initialize the RenderSystem
-    Rendering::RenderSystem render_system(window, memory_manager, model_system);
-    // Initialize the entity manager
-    ECS::EntityManager entity_manager;
+        // // Prepare a renderable entity
+        // entity_t square1 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+        // world_system.set(entity_manager, square1, { 0.0, 0.0, 0.5 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+        // model_system.load_model(entity_manager, square1, "", Models::ModelFormat::square);
 
-    // // Prepare a renderable entity
-    // entity_t square1 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-    // world_system.set(entity_manager, square1, { 0.0, 0.0, 0.5 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
-    // model_system.load_model(entity_manager, square1, "", Models::ModelFormat::square);
+        // // Prepare another renderable entity
+        // entity_t triangle = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+        // world_system.set(entity_manager, triangle, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+        // model_system.load_model(entity_manager, triangle, "", Models::ModelFormat::triangle);
 
-    // // Prepare another renderable entity
-    // entity_t triangle = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-    // world_system.set(entity_manager, triangle, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
-    // model_system.load_model(entity_manager, triangle, "", Models::ModelFormat::triangle);
+        // // Prepare a final renderable entity
+        // entity_t square2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+        // world_system.set(entity_manager, square2, { 0.0, 0.0, -0.5 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
+        // model_system.load_model(entity_manager, square2, "", Models::ModelFormat::square);
 
-    // // Prepare a final renderable entity
-    // entity_t square2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-    // world_system.set(entity_manager, square2, { 0.0, 0.0, -0.5 }, { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 1.0 });
-    // model_system.load_model(entity_manager, square2, "", Models::ModelFormat::square);
+        // Prepare the camera
+        entity_t cam = entity_manager.add(ECS::ComponentFlags::camera | ECS::ComponentFlags::controllable | ECS::ComponentFlags::transform);
+        world_system.set_cam(entity_manager, cam, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, 45, (float) width / (float) height);
+        world_system.set_controllable(entity_manager, cam, 1.0f, 1.0f);
 
-    // Prepare the teddy bear
-    entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
-    world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.75 * M_PI, 0.75 * M_PI, 0.0 }, { 0.03, 0.03, 0.03 });
-    // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 });
-    // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
-    // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
-    model_system.load_model(entity_manager, obj, "bin/models/teddy.obj", Models::ModelFormat::obj);
+        // Prepare the teddy bear
+        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+        // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.75 * M_PI, 0.75 * M_PI, 0.0 }, { 0.03, 0.03, 0.03 });
+        world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.5 * M_PI, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
+        // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
+        // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
+        model_system.load_model(entity_manager, obj, "bin/models/teddy.obj", Models::ModelFormat::obj);
 
-    // Initialize the engine
-    DLOG(auxillary, "");
+        // Initialize the engine
+        DLOG(auxillary, "");
 
-    // Do the render
-    uint32_t fps = 0;
-    DLOG(info, "Entering game loop...");
-    chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
-    bool busy = true;
-    uint32_t count = 0;
-    while (busy) {
-        // Run the render engine
-        busy = render_system.render_frame(entity_manager);
+        // Do the render
+        uint32_t fps = 0;
+        DLOG(info, "Entering game loop...");
+        chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
+        bool busy = true;
+        uint32_t count = 0;
+        while (busy) {
+            // Run the render engine
+            busy = render_system.render_frame(entity_manager);
+            // Update the world
+            world_system.update(entity_manager, window);
 
-        // Keep track of the fps
-        ++fps;
-        if (chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - last_fps_update).count() >= 1000) {
-            // Reset the timer
-            last_fps_update += chrono::milliseconds(1000);
+            // Keep track of the fps
+            ++fps;
+            if (chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now() - last_fps_update).count() >= 1000) {
+                // Reset the timer
+                last_fps_update += chrono::milliseconds(1000);
 
-            // Show the FPS
-            window.set_title("Rasterizer (FPS: " + std::to_string(fps) + ")");
-            fps = 0;
+                // Show the FPS
+                window.set_title("Rasterizer (FPS: " + std::to_string(fps) + ")");
+                fps = 0;
 
-            // Add another model???
-            // if (count == 0) {
-            //     model_manager.unload_model("squares");
-            //     model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
-            //     render_engine.refresh();
-            //     ++count;
-            // }
-            // if (count == 0) {
-            //     model_manager.unload_model("triangle");
-            //     render_engine.refresh();
-            //     ++count;
-            // } else if (count == 1) {
-            //     model_manager.load_model("triangle", Models::ModelFormat::triangle);
-            //     render_engine.refresh();
-            //     ++count;
-            // } else if (count == 2) {
-            //     model_manager.unload_model("triangle");
-            //     model_manager.load_model("triangle", Models::ModelFormat::triangle);
-            //     render_engine.refresh();
-            //     ++count;
-            // } else if (count == 3) {
-            //     model_manager.unload_model("triangle");
-            //     model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
-            //     render_engine.refresh();
-            //     ++count;
-            // }
+                // Add another model???
+                // if (count == 0) {
+                //     model_manager.unload_model("squares");
+                //     model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
+                //     render_engine.refresh();
+                //     ++count;
+                // }
+                // if (count == 0) {
+                //     model_manager.unload_model("triangle");
+                //     render_engine.refresh();
+                //     ++count;
+                // } else if (count == 1) {
+                //     model_manager.load_model("triangle", Models::ModelFormat::triangle);
+                //     render_engine.refresh();
+                //     ++count;
+                // } else if (count == 2) {
+                //     model_manager.unload_model("triangle");
+                //     model_manager.load_model("triangle", Models::ModelFormat::triangle);
+                //     render_engine.refresh();
+                //     ++count;
+                // } else if (count == 3) {
+                //     model_manager.unload_model("triangle");
+                //     model_manager.load_model("bin/models/teddy.obj", Models::ModelFormat::obj);
+                //     render_engine.refresh();
+                //     ++count;
+                // }
+            }
+        }
+
+        // Wait for the GPU to be idle before we stop
+        DLOG(auxillary, "");
+        DLOG(info, "Cleaning up...");
+        window.gpu().wait_for_idle();
+
+        // We're done
+        glfwTerminate();
+        DRETURN EXIT_SUCCESS;
+        
+    } catch (CppDebugger::Fatal& e) {
+        // Simply quit, as the error is already printed
+        return EXIT_FAILURE;
+    } catch (std::exception& e) {
+        // Otherwise, re-throw with the debugger
+        try {
+            DLOG(fatal, e.what());
+        } catch (CppDebugger::Fatal& e) {
+            return EXIT_FAILURE;
         }
     }
-
-    // Wait for the GPU to be idle before we stop
-    DLOG(auxillary, "");
-    DLOG(info, "Cleaning up...");
-    window.gpu().wait_for_idle();
-
-    // We're done
-    glfwTerminate();
-    DRETURN 0;
 }
