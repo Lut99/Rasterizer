@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 12:17:08
  * Last edited:
- *   07/08/2021, 18:21:53
+ *   07/08/2021, 22:50:54
  * Auto updated?
  *   Yes
  *
@@ -34,7 +34,6 @@ using namespace CppDebugger::SeverityValues;
 /***** HELPER FUNCTIONS *****/
 /* Computes a direction vector based on some yaw and pitch (in degrees). */
 static inline glm::vec3 compute_direction_vector(float yaw, float pitch) {
-    printf("yaw: %f\n", yaw);
     return glm::normalize(glm::vec3(
         cos(glm::radians(yaw)) * cos(glm::radians(pitch)),
         sin(glm::radians(pitch)),
@@ -264,8 +263,8 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             // Bind the y rotation
             if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
             else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
-            if (xspeed > 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
-            if (yspeed > 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
+            // if (xspeed > 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
+            // if (yspeed > 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
 
 
 
@@ -279,11 +278,11 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             glm::vec3 dir_forward = -compute_direction_vector(transform.rotation.y, transform.rotation.x);
             glm::vec3 dir_up      =  glm::vec3(0.0f, 1.0f, 0.0f);
             glm::vec3 dir_right   =  glm::normalize(glm::cross(dir_forward, dir_up));
-            if (xspeed > 0.0 || yspeed > 0.0) {
-                printf("Forward: %f %f %f\n", dir_forward.x, dir_forward.y, dir_forward.z);
-                printf("Up:      %f %f %f\n", dir_up.x, dir_up.y, dir_up.z);
-                printf("Right:   %f %f %f\n", dir_right.x, dir_right.y, dir_right.z);
-            }
+            // if (xspeed > 0.0 || yspeed > 0.0) {
+            //     printf("Forward: %f %f %f\n", dir_forward.x, dir_forward.y, dir_forward.z);
+            //     printf("Up:      %f %f %f\n", dir_up.x, dir_up.y, dir_up.z);
+            //     printf("Right:   %f %f %f\n", dir_right.x, dir_right.y, dir_right.z);
+            // }
 
             // Check the directional keys for movement
             if (window.key_pressed(GLFW_KEY_W) || window.key_pressed(GLFW_KEY_UP)) {

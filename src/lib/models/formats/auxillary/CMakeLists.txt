@@ -1,5 +1,5 @@
 # Add the library
-add_library(ModelsAuxillary STATIC ${CMAKE_CURRENT_SOURCE_DIR}/DebugInfo.cpp)
+add_library(ModelsAuxillary STATIC ${CMAKE_CURRENT_SOURCE_DIR}/DebugInfo.cpp ${CMAKE_CURRENT_SOURCE_DIR}/TokenizerTools.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(ModelsAuxillary PUBLIC

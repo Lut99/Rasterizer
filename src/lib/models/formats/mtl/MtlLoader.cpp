@@ -4,7 +4,7 @@
  * Created:
  *   07/08/2021, 18:31:35
  * Last edited:
- *   07/08/2021, 22:31:22
+ *   07/08/2021, 23:13:33
  * Auto updated?
  *   Yes
  *
@@ -110,7 +110,7 @@ Kd_start: {
             float r = ((ValueTerminal<float>*) (*(--value_iter)))->value;
 
             // Store the colour for this material
-            new_materials[current_mtl] = glm::vec3(r, g, b);
+            new_materials.at(current_mtl) = glm::vec3(r, g, b);
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
@@ -132,6 +132,7 @@ newmtl_start: {
         case TerminalType::name:
             // Parse the material and set it as current
             current_mtl = ((ValueTerminal<std::string>*) term)->value;
+            new_materials.insert(make_pair(current_mtl, glm::vec3(-1.0, -1.0, -1.0)));
             remove_stack_bottom(symbol_stack, iter);
             DRETURN "newmtl";
         

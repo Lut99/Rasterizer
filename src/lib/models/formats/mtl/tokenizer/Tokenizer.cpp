@@ -4,7 +4,7 @@
  * Created:
  *   07/08/2021, 18:40:45
  * Last edited:
- *   07/08/2021, 22:08:56
+ *   07/08/2021, 23:12:11
  * Auto updated?
  *   Yes
  *
@@ -688,7 +688,6 @@ name_contd: {
         // Reached the endof the filename
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        if (c == '\n') { ++this->line; }
         this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
         DRETURN to_return;
 

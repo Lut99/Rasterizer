@@ -4,13 +4,15 @@
  * Created:
  *   03/07/2021, 17:37:15
  * Last edited:
- *   07/08/2021, 22:37:49
+ *   07/08/2021, 23:11:09
  * Auto updated?
  *   Yes
  *
  * Description:
  *   Contains the code that loads models from .obj files.
 **/
+
+#include <sstream>
 
 #include "tools/CppDebugger.hpp"
 #include "tools/LinkedArray.hpp"
@@ -42,7 +44,7 @@ using namespace CppDebugger::SeverityValues;
 
 /***** HELPER FUNCTIONS *****/
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
-static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, std::string& current_mtl, std::unordered_map<std::string, glm::vec3>& mtl_map, Tools::LinkedArray<Terminal*>& symbol_stack) {
+static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::Array<Rendering::index_t>& new_indices, std::string& current_mtl, std::unordered_map<std::string, glm::vec3>& mtl_map, const std::string& path, Tools::LinkedArray<Terminal*>& symbol_stack) {
     DENTER("reduce");
 
     // Prepare the iterator over the linked array
@@ -374,6 +376,14 @@ face_v: {
             // Store the indices
             new_indices += { v1 - 1, v2 - 1, v3 - 1 };
 
+            // If there's a material, update the relevant vertex coordinates
+            if (!current_mtl.empty()) {
+                const glm::vec3& colour = mtl_map.at(current_mtl);
+                new_vertices[v1 - 1].colour = colour;
+                new_vertices[v2 - 1].colour = colour;
+                new_vertices[v3 - 1].colour = colour;
+            }
+
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
             DRETURN "face(v)";
@@ -426,6 +436,14 @@ face_v_vt: {
             new_indices += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
 
             // Ignore the texture coordinates for now
+
+            // If there's a material, update the relevant vertex coordinates
+            if (!current_mtl.empty()) {
+                const glm::vec3& colour = mtl_map.at(current_mtl);
+                new_vertices[std::get<0>(v1) - 1].colour = colour;
+                new_vertices[std::get<0>(v2) - 1].colour = colour;
+                new_vertices[std::get<0>(v3) - 1].colour = colour;
+            }
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
@@ -480,6 +498,15 @@ face_v_vn: {
 
             // Ignore the normal coordinates for now
 
+            // If there's a material, update the relevant vertex coordinates
+            if (!current_mtl.empty()) {
+                const glm::vec3& colour = mtl_map.at(current_mtl);
+                new_vertices[std::get<0>(v1) - 1].colour = colour;
+                new_vertices[std::get<0>(v2) - 1].colour = colour;
+                new_vertices[std::get<0>(v3) - 1].colour = colour;
+            }
+
+
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
             DRETURN "face(v_vn)";
@@ -509,7 +536,7 @@ face_v_vt_vn: {
             delete *iter;
             symbol_stack.erase(iter);
             DRETURN "error";
-        
+
         default:
             // We're done parsing the face; determine if we seen enough indices
             if (i - 2 < 3) {
@@ -532,6 +559,15 @@ face_v_vt_vn: {
             new_indices += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
 
             // Ignore the texture & normal coordinates for now
+
+            // If there's a material, update the relevant vertex coordinates
+            if (!current_mtl.empty()) {
+                const glm::vec3& colour = mtl_map.at(current_mtl);
+                new_vertices[std::get<0>(v1) - 1].colour = colour;
+                new_vertices[std::get<0>(v2) - 1].colour = colour;
+                new_vertices[std::get<0>(v3) - 1].colour = colour;
+            }
+
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
@@ -574,13 +610,38 @@ mtllib_start: {
     // Get the next symbol off the stack
     Terminal* term = *iter;
     switch(term->type) {
-        case TerminalType::filename:
+        case TerminalType::filename: {
+            // Fetch a material file relative to the obj file
+            std::string filepath = path;
+            size_t slash_pos = filepath.find_last_of('/');
+            if (slash_pos == std::string::npos) {
+                slash_pos = filepath.find_last_of('\\');
+            }
+            if (slash_pos != std::string::npos) {
+                filepath = filepath.substr(0, slash_pos + 1);
+            } else {
+                filepath += "/";
+            }
+            filepath += ((ValueTerminal<std::string>*) term)->value;
+
             // Parse the material file
-            load_mtl_lib(mtl_map, ((ValueTerminal<std::string>*) term)->value);
+            DINDENT;
+            DLOG(info, "Loading '" + filepath + "' as .mtl file...");
+            load_mtl_lib(mtl_map, filepath);
+            stringstream sstr;
+            bool first = true;
+            for (const std::pair<std::string, glm::vec3>& p : mtl_map) {
+                if (first) { first = false; }
+                else { sstr << ", "; }
+                sstr << '\'' << p.first << '\'';
+            }
+            DLOG(info, "Loaded materials: " + sstr.str());
+            DDEDENT;
 
             // Done with this one
             remove_stack_bottom(symbol_stack, iter);
             DRETURN "mtllib";
+        }
         
         default:
             // Missing filename
@@ -590,7 +651,6 @@ mtllib_start: {
 
     }
 }
-
 
 usemtl_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
@@ -603,7 +663,7 @@ usemtl_start: {
         case TerminalType::name: {
             // Set this material as current, but only if we know it
             std::string material = ((ValueTerminal<std::string>*) term)->value;
-            if (mtl_map.find(material) != mtl_map.end()) {
+            if (mtl_map.find(material) == mtl_map.end()) {
                 term->debug_info.print_error(cerr, "Unknown material name '" + material + "'.");
                 remove_stack_bottom(symbol_stack, iter);
                 DRETURN "error";
@@ -653,7 +713,7 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
     bool changed = true;
     while (changed) {
         // Run the parser
-        std::string rule = reduce(new_vertices, new_indices, current_mtl, mtl_map, symbol_stack);
+        std::string rule = reduce(new_vertices, new_indices, current_mtl, mtl_map, path, symbol_stack);
         changed = !rule.empty() && rule != "error";
 
         // If there's no change and we're not at the end, pop a new terminal
