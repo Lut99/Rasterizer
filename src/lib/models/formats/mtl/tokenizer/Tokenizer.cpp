@@ -13,6 +13,17 @@
  *   a more abstract way.
 **/
 
+
+/***** MACROS *****/
+/* Uncomment to enable very detailed debug prints. */
+#define EXTRA_DEBUG
+
+
+
+
+
+/***** INCLUDES *****/
+#include <fstream>
 #include <sstream>
 #include "tools/CppDebugger.hpp"
 
@@ -27,6 +38,9 @@ using namespace Rasterizer::Models::Mtl;
 using namespace CppDebugger::SeverityValues;
 
 
+
+
+
 /***** TOKENIZER CLASS *****/
 /* Constructor for the Tokenizer class, which takes the path to the file to tokenizer. */
 Tokenizer::Tokenizer(const std::string& path) :
@@ -38,28 +52,25 @@ Tokenizer::Tokenizer(const std::string& path) :
     DENTER("Models::Mtl::Tokenizer::Tokenizer");
 
     // First, open a handle
-    #ifdef _WIN32
-    int res = fopen_s(&this->file, this->path.c_str(), "r");
-    if (res != 0) {
-        // Get the error number
+    std::ifstream* is = new std::ifstream(this->path, ios_base::in | ios_base::end);
+    if (!is->is_open()) {
+        #ifdef _WIN32
         char buffer[BUFSIZ];
         strerror_s(buffer, errno);
         std::string err = buffer;
-
-        // Show the error message
-        DLOG(fatal, "Could not open file handle: " + err)
-    }
-
-    #else
-    this->file = fopen(this->path.c_str(), "r");
-    if (this->file == NULL) {
-        // Get the error number
+        #else
         std::string err = strerror(errno);
-
-        // Show the error message
+        #endif
         DLOG(fatal, "Could not open file handle: " + err)
     }
-    #endif
+    this->file = static_cast<std::istream*>(is);
+
+    // Store the current state as the size of the file
+    this->file_size = static_cast<size_t>(is->tellg());
+
+    // Reset the file to the start
+    is->seekg(0);
+    is->clear();
 
     // Done
     DLEAVE;
@@ -69,6 +80,7 @@ Tokenizer::Tokenizer(const std::string& path) :
 Tokenizer::Tokenizer(Tokenizer&& other) :
     file(other.file),
     path(other.path),
+    file_size(other.file_size),
 
     line(other.line),
     col(other.col),
@@ -76,7 +88,7 @@ Tokenizer::Tokenizer(Tokenizer&& other) :
     terminal_buffer(other.terminal_buffer)
 {
     // Clear the other's list of terminal buffers to not deallocate them
-    other.file = NULL;
+    other.file = nullptr;
     other.terminal_buffer.clear();
 }
 
@@ -87,8 +99,8 @@ Tokenizer::~Tokenizer() {
     for (uint32_t i = 0; i < this->terminal_buffer.size(); i++) {
         delete this->terminal_buffer[i];
     }
-    if (this->file != NULL) {
-        fclose(this->file);
+    if (this->file != nullptr) {
+        delete this->file;
     }
 
     DLEAVE;
@@ -118,14 +130,10 @@ Terminal* Tokenizer::get() {
 
 start: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(start, c);
 
     // Switch on its value
@@ -187,14 +195,10 @@ start: {
 
 n_start: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(n_start, c);
 
     // Switch on its value
@@ -215,14 +219,10 @@ n_start: {
 
 ne: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(ne, c);
 
     // Switch on its value
@@ -243,14 +243,10 @@ ne: {
 
 _new: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(_new, c);
 
     // Switch on its value
@@ -271,14 +267,10 @@ _new: {
 
 newm: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(newm, c);
 
     // Switch on its value
@@ -299,14 +291,10 @@ newm: {
 
 newmt: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(newmt, c);
 
     // Switch on its value
@@ -327,14 +315,10 @@ newmt: {
 
 newmtl: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(newmtl, c);
 
     // Switch on its value
@@ -358,14 +342,10 @@ newmtl: {
 
 K_start: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(K_start, c);
 
     // Switch on its value
@@ -386,14 +366,10 @@ K_start: {
 
 Kd: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(Kd, c);
 
     // Switch on its value
@@ -416,14 +392,10 @@ Kd: {
 
 float_start: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(float_start, c);
 
     // Switch on its value
@@ -481,14 +453,10 @@ float_start: {
 
 float_dot: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(float_dot, c);
 
     // Switch on its value
@@ -540,14 +508,10 @@ float_dot: {
 
 float_e_start: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(float_e_start, c);
 
     // Switch on its value
@@ -575,14 +539,10 @@ float_e_start: {
 
 float_e: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(float_e, c);
 
     // Switch on its value
@@ -630,14 +590,10 @@ float_e: {
 
 name_start: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(name_start, c);
 
     // Switch on the character's value
@@ -673,14 +629,10 @@ name_start: {
 
 name_contd: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(name_contd, c);
 
     // Switch on the character's value
@@ -711,14 +663,10 @@ name_contd: {
 
 comment_start: {
     // Possibly store the sentence start
-    if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
     // Get a character from the stream
-    #ifdef _WIN32
-    GET_CHAR_W(c, this->file, this->col, i);
-    #else
     GET_CHAR(c, this->file, this->col, i);
-    #endif
     DEBUG_LABEL(comment_start, c);
 
     // Switch on its value
@@ -735,31 +683,27 @@ comment_start: {
 }
 
 unknown_token: {
-        // Possibly store the sentence start
-        if (this->col == 0) { this->last_sentence_start = ftell(this->file); }
+    // Possibly store the sentence start
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
 
-        // Get a character from the stream
-        #ifdef _WIN32
-        GET_CHAR_W(c, this->file, this->col, i);
-        #else
-        GET_CHAR(c, this->file, this->col, i);
-        #endif
-        DEBUG_LABEL(unknown_token, c);
+    // Get a character from the stream
+    GET_CHAR(c, this->file, this->col, i);
+    DEBUG_LABEL(unknown_token, c);
 
-        // Switch on the character's value
-        if (IS_WHITESPACE(c)) {
-            // We found the end of the token; unget it, then throw an error
-            UNGET_CHAR(this->file, this->col);
-            DebugInfo debug(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
-            debug.print_error(cerr, "Unknown token '" + sstr.str() + "'.");
-            DRETURN nullptr;
-        } else {
-            // Keep consuming
-            DEBUG_PATH("other", "retrying");
-            sstr << c;
-            goto unknown_token;
-        }
-     }
+    // Switch on the character's value
+    if (IS_WHITESPACE(c)) {
+        // We found the end of the token; unget it, then throw an error
+        UNGET_CHAR(this->file, this->col);
+        DebugInfo debug(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+        debug.print_error(cerr, "Unknown token '" + sstr.str() + "'.");
+        DRETURN nullptr;
+    } else {
+        // Keep consuming
+        DEBUG_PATH("other", "retrying");
+        sstr << c;
+        goto unknown_token;
+    }
+}
 
 
 
@@ -787,6 +731,7 @@ void Mtl::swap(Tokenizer& t1, Tokenizer& t2) {
 
     swap(t1.file, t2.file);
     swap(t1.path, t2.path);
+    swap(t1.file_size, t2.file_size);
     
     swap(t1.line, t2.line);
     swap(t1.col, t2.col);

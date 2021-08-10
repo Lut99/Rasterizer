@@ -21,15 +21,47 @@ using namespace std;
 using namespace Rasterizer;
 
 
-/***** LIBRARY FUNCTIONS *****/
+// /***** LIBRARY FUNCTIONS *****/
+// /* Function that, given a file stream and the start of this line, parses an entire line. */
+// std::string Models::get_line(FILE* file, long sentence_start) {
+//     DENTER("Models::get_line");
+
+//     // Backup the current cursor and go to the start of the line
+//     long old_cursor = ftell(file);
+//     // Go to the start of the line
+//     fseek(file, sentence_start, SEEK_SET);
+
+//     // Loop to assemble the line
+//     char c;
+//     int col = 0;
+//     int i = 0;
+//     std::stringstream sstr;
+//     while (true) {
+//         // Get the character
+//         GET_CHAR(c, file, col, i);
+
+//         // If it's a newline, stop
+//         if (c == '\n' || c == EOF) {
+//             fseek(file, old_cursor, SEEK_SET);
+//             DRETURN sstr.str();
+//         }
+
+//         // Otherwise, store and re-try
+//         sstr << c;
+//     }
+
+//     // We should never get here
+//     DRETURN "";
+// }
+
 /* Function that, given a file stream and the start of this line, parses an entire line. */
-std::string Models::get_line(FILE* file, long sentence_start) {
+std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
     DENTER("Models::get_line");
 
     // Backup the current cursor and go to the start of the line
-    long old_cursor = ftell(file);
+    std::streampos old_cursor = is->tellg();
     // Go to the start of the line
-    fseek(file, sentence_start, SEEK_SET);
+    is->seekg(sentence_start);
 
     // Loop to assemble the line
     char c;
@@ -38,15 +70,12 @@ std::string Models::get_line(FILE* file, long sentence_start) {
     std::stringstream sstr;
     while (true) {
         // Get the character
-        #ifdef _WIN32
-        GET_CHAR_W(c, file, col, i);
-        #else
-        GET_CHAR(c, file, col, i);
-        #endif
+        GET_CHAR(c, is, col, i);
 
         // If it's a newline, stop
         if (c == '\n' || c == EOF) {
-            fseek(file, old_cursor, SEEK_SET);
+            is->clear();
+            is->seekg(old_cursor);
             DRETURN sstr.str();
         }
 

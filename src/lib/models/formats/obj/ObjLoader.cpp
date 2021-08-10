@@ -12,6 +12,16 @@
  *   Contains the code that loads models from .obj files.
 **/
 
+
+/***** MACROS *****/
+/* If defined, enables extra debug prints tracing the tokenizer's steps. */
+#define EXTRA_DEBUG
+
+
+
+
+
+/***** INCLUDES *****/
 #include <sstream>
 
 #include "tools/CppDebugger.hpp"
@@ -32,11 +42,6 @@ using namespace Rasterizer;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Obj;
 using namespace CppDebugger::SeverityValues;
-
-
-/***** MACROS *****/
-/* If defined, enables extra debug prints tracing the tokenizer's steps. */
-#define EXTRA_DEBUG
 
 
 
@@ -702,7 +707,6 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
 
     // Prepare the Tokenizer
     Obj::Tokenizer tokenizer(path);
-    size_t tokenizer_size = tokenizer.size();
     // Prepare the 'symbol stack'
     Tools::LinkedArray<Terminal*> symbol_stack;
 
@@ -712,6 +716,9 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
 
     // Start looping to parse stuff off the stack
     bool changed = true;
+    #ifdef EXTRA_DEBUG
+    printf("[objloader] Starting parsing.\n");
+    #endif
     while (changed) {
         // Run the parser
         std::string rule = reduce(new_vertices, new_indices, current_mtl, mtl_map, path, symbol_stack);
@@ -731,9 +738,9 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
                 changed = true;
                 #ifdef EXTRA_DEBUG
                 printf("[objloader] Shifted new token: %s\n", terminal_type_names[(int) term->type].c_str());
-                printf("            Total progress: %.2f%%\n", (float) tokenizer.bytes() / (float) tokenizer_size * 100.0f);
+                printf("            Total progress: %.2f%%\n", (float) tokenizer.bytes() / (float) tokenizer.size() * 100.0f);
                 #else
-                printf("Progress: %.2f%%\r", (float) tokenizer.bytes() / (float) tokenizer_size * 100.0f);
+                printf("Progress: %.2f%%\r", (float) tokenizer.bytes() / (float) tokenizer.size() * 100.0f);
                 #endif
             } else {
                 // Delete the token again

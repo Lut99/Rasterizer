@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cerrno>
+#include <istream>
 #include <string>
 #include "tools/Typenames.hpp"
 
@@ -42,20 +43,13 @@
 #define DEBUG_PATH(C, NEXT);
 #endif
 
-/* Helper macro for fetching characters of the input stream. Uses Unix-style error handling */
-#define GET_CHAR(C, FILE, COL, I) \
-    (C) = fgetc((FILE)); \
-    if ((C) == EOF && ferror((FILE))) { \
-        std::string err = strerror(errno); \
-        DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
-    } \
-    ++(COL); \
-    ++(I);
-
+#ifdef _WIN32
 /* Helper macro for fetching characters of the input stream. Uses Windows-style error handling */
-#define GET_CHAR_W(C, FILE, COL, I) \
-    (C) = fgetc((FILE)); \
-    if ((C) == EOF && ferror((FILE))) { \
+#define GET_CHAR(C, FILE, COL, I) \
+    (FILE)->get((C)); \
+    if ((FILE)->eof()) { \
+        (C) = EOF; \
+    } else if ((FILE)->fail()) { \
         char buffer[BUFSIZ]; \
         strerror_s(buffer, errno); \
         std::string err = buffer; \
@@ -63,10 +57,25 @@
     } \
     ++(COL); \
     ++(I);
+
+#else
+/* Helper macro for fetching characters of the input stream. Uses Unix-style error handling */
+#define GET_CHAR(C, FILE, COL, I) \
+    (FILE)->get((C)); \
+    if ((FILE)->eof()) { \
+        (C) = EOF; \
+    } else if ((FILE)->fail()) { \
+        std::string err = strerror(errno); \
+        DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
+    } \
+    ++(COL); \
+    ++(I);
+
+#endif
     
 /* Helper macro for ungetting the last fetched character. */
 #define UNGET_CHAR(FILE, COL) \
-    fseek((FILE), -1, SEEK_CUR); \
+    (FILE)->seekg(-1, ios_base::cur); \
     --(COL);
 
 /* Parses an unsigned integer. */
@@ -90,8 +99,10 @@
 
 
 namespace Rasterizer::Models {
+    // /* Function that, given a file stream and the start of this line, parses an entire line. */
+    // std::string get_line(FILE* file, long sentence_start);
     /* Function that, given a file stream and the start of this line, parses an entire line. */
-    std::string get_line(FILE* file, long sentence_start);
+    std::string get_line(std::istream* is, std::streampos sentence_start);
 
     /* Given a char, returns a readable string representation of it. */
     const char* readable_char(char c);

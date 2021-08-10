@@ -13,6 +13,16 @@
  *   associated with .obj files.
 **/
 
+
+/***** MACROS *****/
+/* If defined, enables extra debug prints tracing the tokenizer's steps. */
+#define EXTRA_DEBUG
+
+
+
+
+
+/***** INCLUDES *****/
 #include "tools/CppDebugger.hpp"
 #include "tools/LinkedArray.hpp"
 
@@ -27,6 +37,9 @@ using namespace Rasterizer;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Mtl;
 using namespace CppDebugger::SeverityValues;
+
+
+
 
 
 /***** HELPER FUNCTIONS *****/
@@ -185,8 +198,11 @@ void Models::load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materi
             } else if (term->type != TerminalType::eof) {
                 symbol_stack.push_back(term);
                 changed = true;
-                #ifdef EXTRA_DEBUG
+               #ifdef EXTRA_DEBUG
                 printf("[mtlloader] Shifted new token: %s\n", terminal_type_names[(int) term->type].c_str());
+                printf("            Total progress: %.2f%%\n", (float) tokenizer.bytes() / (float) tokenizer.size() * 100.0f);
+                #else
+                printf("Progress: %.2f%%\r", (float) tokenizer.bytes() / (float) tokenizer.size() * 100.0f);
                 #endif
             } else {
                 // Delete the token again
