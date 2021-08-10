@@ -15,7 +15,7 @@
 
 /***** MACROS *****/
 /* If defined, enables extra debug prints tracing the tokenizer's steps. */
-#define EXTRA_DEBUG
+// #define EXTRA_DEBUG
 
 
 

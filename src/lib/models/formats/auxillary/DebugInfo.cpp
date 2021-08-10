@@ -264,6 +264,11 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
         os << endl;
     }
 
+    // If we're still in accent mode, always print closing character
+    if (supports_ansi && accent_mode) {
+        os << "\033[0m";
+    }
+
     // We're done
     os << endl;
     DRETURN;

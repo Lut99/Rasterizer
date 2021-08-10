@@ -15,7 +15,7 @@
 #include "tools/CppDebugger.hpp"
 
 #include "components/Transform.hpp"
-#include "components/Mesh.hpp"
+#include "components/Meshes.hpp"
 #include "components/Camera.hpp"
 #include "components/Controllable.hpp"
 
@@ -35,7 +35,7 @@ EntityManager::EntityManager() {
     // Register the components
     this->components = new IComponentList*[EntityManager::max_components];
     this->components[0] = (IComponentList*) new ComponentList<Transform>(ComponentFlags::transform);
-    this->components[1] = (IComponentList*) new ComponentList<Mesh>(ComponentFlags::mesh);
+    this->components[1] = (IComponentList*) new ComponentList<Meshes>(ComponentFlags::meshes);
     this->components[2] = (IComponentList*) new ComponentList<Camera>(ComponentFlags::camera);
     this->components[3] = (IComponentList*) new ComponentList<Controllable>(ComponentFlags::controllable);
 

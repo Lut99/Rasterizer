@@ -16,7 +16,7 @@
 
 /***** MACROS *****/
 /* Uncomment to enable very detailed debug prints. */
-#define EXTRA_DEBUG
+// #define EXTRA_DEBUG
 
 
 
@@ -180,7 +180,7 @@ start: {
     } else if (c == EOF) {
         // End-of-file; return that we reached it
         DEBUG_PATH("EOF", "done");
-        DRETURN new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
+        DRETURN new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { "" }));
 
     } else {
         // Unexpected token
@@ -599,6 +599,7 @@ name_start: {
     // Switch on the character's value
     if (c == '\n') {
         // It's over before we begun; return only the to_return
+        DEBUG_PATH("newline", "done");
         UNGET_CHAR(this->file, this->col);
         DRETURN to_return;
 

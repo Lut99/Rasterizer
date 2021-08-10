@@ -47,13 +47,15 @@
 /* Helper macro for fetching characters of the input stream. Uses Windows-style error handling */
 #define GET_CHAR(C, FILE, COL, I) \
     (FILE)->get((C)); \
-    if ((FILE)->eof()) { \
-        (C) = EOF; \
-    } else if ((FILE)->fail()) { \
-        char buffer[BUFSIZ]; \
-        strerror_s(buffer, errno); \
-        std::string err = buffer; \
-        DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
+    if (!(*(FILE))) { \
+        if ((FILE)->eof()) { \
+            (C) = EOF; \
+        } else { \
+            char buffer[BUFSIZ]; \
+            strerror_s(buffer, errno); \
+            std::string err = buffer; \
+            DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
+        } \
     } \
     ++(COL); \
     ++(I);
@@ -62,11 +64,13 @@
 /* Helper macro for fetching characters of the input stream. Uses Unix-style error handling */
 #define GET_CHAR(C, FILE, COL, I) \
     (FILE)->get((C)); \
-    if ((FILE)->eof()) { \
-        (C) = EOF; \
-    } else if ((FILE)->fail()) { \
-        std::string err = strerror(errno); \
-        DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
+    if (!(*(FILE))) { \
+        if ((FILE)->eof()) { \
+            (C) = EOF; \
+        } else { \
+            std::string err = strerror(errno); \
+            DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
+        } \
     } \
     ++(COL); \
     ++(I);

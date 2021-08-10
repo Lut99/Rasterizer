@@ -260,11 +260,11 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             transform.rotation.y -= rot_speed * xspeed;
             transform.rotation.x += rot_speed * yspeed;
 
-            // Bind the y rotation
+            // Bind the rotations
             if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
             else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
-            // if (xspeed > 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
-            // if (yspeed > 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
+            // if (xspeed != 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
+            // if (yspeed != 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
 
 
 

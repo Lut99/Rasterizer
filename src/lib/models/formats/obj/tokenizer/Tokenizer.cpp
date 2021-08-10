@@ -16,7 +16,7 @@
 
 /***** MACROS *****/
 /* Uncomment to enable very detailed debug prints. */
-#define EXTRA_DEBUG
+// #define EXTRA_DEBUG
 
 
 
@@ -1200,6 +1200,7 @@ name_start: {
     // Switch on the character's value
     if (c == '\n') {
         // It's over before we begun; return only the to_return
+        DEBUG_PATH("newline", "done");
         UNGET_CHAR(this->file, this->col);
         DRETURN to_return;
 

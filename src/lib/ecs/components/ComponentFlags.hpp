@@ -31,8 +31,8 @@ namespace Rasterizer::ECS {
 
             /* The Transform component, which means the entity has a location in world space. */
             transform = 0x1,
-            /* The Mesh component, which means the entity has a model which can be rendered. */
-            mesh = 0x2,
+            /* The Meshes component, which means the entity has one or more meshes to render. */
+            meshes = 0x2,
             /* The Camera component, which means the entity defines some camera through which we can render the scene. */
             camera = 0x4,
             /* The Controllable component, which means the entity can listen to mouse/keyboard input. */
@@ -49,7 +49,7 @@ namespace Rasterizer::ECS {
         { ComponentFlags::all,  "all" },
 
         { ComponentFlags::transform,    "transform" },
-        { ComponentFlags::mesh,         "mesh" },
+        { ComponentFlags::meshes,         "meshes" },
         { ComponentFlags::camera,       "camera" },
         { ComponentFlags::controllable, "controllable" }
     };

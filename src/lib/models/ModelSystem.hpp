@@ -21,7 +21,7 @@
 #include <vulkan/vulkan.h>
 
 #include "ecs/EntityManager.hpp"
-#include "ecs/components/Mesh.hpp"
+#include "ecs/components/Meshes.hpp"
 #include "rendering/memory/MemoryManager.hpp"
 #include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "ModelFormat.hpp"
@@ -53,7 +53,7 @@ namespace Rasterizer::Models {
         void unload_model(ECS::EntityManager& entity_manager, entity_t entity);
 
         /* Binds the model-related buffers for the given mesh component to the given command buffer. */
-        void schedule(const ECS::Mesh& entity_mesh, const Rendering::CommandBuffer& draw_cmd) const;
+        void schedule(const ECS::Mesh& entity_meshes, const Rendering::CommandBuffer& draw_cmd) const;
 
         /* Copy assignment operator for the ModelSystem class. */
         inline ModelSystem& operator=(const ModelSystem& other) { return *this = ModelSystem(other); }

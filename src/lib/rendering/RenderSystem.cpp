@@ -21,7 +21,7 @@
 #include "tools/CppDebugger.hpp"
 
 #include "ecs/components/Transform.hpp"
-#include "ecs/components/Mesh.hpp"
+#include "ecs/components/Meshes.hpp"
 #include "ecs/components/Camera.hpp"
 #include "models/ModelSystem.hpp"
 
@@ -221,21 +221,23 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     this->render_pass.start_scheduling(this->draw_cmds[swapchain_index], this->framebuffers[swapchain_index]);
     this->pipeline.schedule(this->draw_cmds[swapchain_index]);
 
-    /* Do draw calls for each entity. */
-    const ECS::ComponentList<ECS::Mesh>& list = entity_manager.get_list<ECS::Mesh>();
+    /* Do draw calls for each entity's group. */
+    const ECS::ComponentList<ECS::Meshes>& list = entity_manager.get_list<ECS::Meshes>();
     Tools::Array<glm::mat4> cam_matrices(cam_mat, list.size());
     for (ECS::component_list_size_t i = 0; i < list.size(); i++) {
         // Get the relevant components for this entity
-        const ECS::Mesh& mesh = list[i];
+        const ECS::Meshes& meshes = list[i];
         const ECS::Transform& transform = entity_manager.get_component<Transform>(list.get_entity(i));
 
         // Compute the camera matrix for this entity
         cam_matrices[i] *= transform.translation;
 
-        // Record the command buffer for this entity
+        // Record the command buffer for this entity's groups
         this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), (void*) &cam_matrices[i]);
-        this->model_system.schedule(mesh, this->draw_cmds[swapchain_index]);
-        this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], mesh.n_instances, 1);
+        for (uint32_t j = 0; j < meshes.size(); j++) {
+            this->model_system.schedule(meshes[j], this->draw_cmds[swapchain_index]);
+            this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], meshes[j].n_indices, 1);
+        }
     }
 
     // Finish recording

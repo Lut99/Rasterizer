@@ -263,15 +263,15 @@ int main(int argc, const char** argv) {
         // Prepare the camera
         entity_t cam = entity_manager.add(ECS::ComponentFlags::camera | ECS::ComponentFlags::controllable | ECS::ComponentFlags::transform);
         world_system.set_cam(entity_manager, cam, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, 45, (float) width / (float) height);
-        world_system.set_controllable(entity_manager, cam, 1.0f, 3.0f);
+        world_system.set_controllable(entity_manager, cam, 1.0f, 10.0f);
 
         // Prepare the teddy bear
-        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::mesh);
+        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes);
         world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
         // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
         // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
-        model_system.load_model(entity_manager, obj, "bin/models/watermill.obj", Models::ModelFormat::obj);
+        model_system.load_model(entity_manager, obj, "bin/models/watermill.obj", Models::ModelFormat::triangle);
 
         // Initialize the engine
         DLOG(auxillary, "");
