@@ -57,6 +57,11 @@ namespace Rasterizer::Models::Obj {
         /* Returns whether or not the Tokenizer is done parsing. */
         inline bool eof() const { return feof(this->file); }
 
+        /* Returns the current amount of bytes read. */
+        inline size_t bytes() const { return static_cast<size_t>(ftell(this->file)); }
+        /* Returns the total amount of bytes read. */
+        size_t size();
+
         /* Copy assignment operator for the Tokenizer class, which is deleted as it makes no sense to copy a stream. */
         Tokenizer& operator=(const Tokenizer& other) = delete;
         /* Move assignment operator for the Tokenizer class. */

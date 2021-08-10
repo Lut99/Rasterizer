@@ -36,7 +36,7 @@ using namespace CppDebugger::SeverityValues;
 
 /***** MACROS *****/
 /* If defined, enables extra debug prints tracing the tokenizer's steps. */
-// #define EXTRA_DEBUG
+#define EXTRA_DEBUG
 
 
 
@@ -49,7 +49,7 @@ static std::string reduce(Tools::Array<Rendering::Vertex>& new_vertices, Tools::
 
     // Prepare the iterator over the linked array
     Tools::LinkedArray<Terminal*>::iterator iter = symbol_stack.begin();
-    size_t i = 0;
+    Tools::linked_array_size_t i = 0;
 
 
 
@@ -702,6 +702,7 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
 
     // Prepare the Tokenizer
     Obj::Tokenizer tokenizer(path);
+    size_t tokenizer_size = tokenizer.size();
     // Prepare the 'symbol stack'
     Tools::LinkedArray<Terminal*> symbol_stack;
 
@@ -730,6 +731,9 @@ void Models::load_obj_model(Tools::Array<Rendering::Vertex>& new_vertices, Tools
                 changed = true;
                 #ifdef EXTRA_DEBUG
                 printf("[objloader] Shifted new token: %s\n", terminal_type_names[(int) term->type].c_str());
+                printf("            Total progress: %.2f%%\n", (float) tokenizer.bytes() / (float) tokenizer_size * 100.0f);
+                #else
+                printf("Progress: %.2f%%\r", (float) tokenizer.bytes() / (float) tokenizer_size * 100.0f);
                 #endif
             } else {
                 // Delete the token again

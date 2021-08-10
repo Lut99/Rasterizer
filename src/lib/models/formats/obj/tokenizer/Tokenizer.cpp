@@ -13,6 +13,16 @@
  *   one.
 **/
 
+
+/***** MACROS *****/
+/* Uncomment to enable very detailed debug prints. */
+#define EXTRA_DEBUG
+
+
+
+
+
+/***** INCLUDES *****/
 #include <iostream>
 #include <sstream>
 #include <cstring>
@@ -28,6 +38,10 @@ using namespace std;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Obj;
 using namespace CppDebugger::SeverityValues;
+
+
+
+
 
 
 /***** TOKENIZER CLASS *****/
@@ -1450,6 +1464,22 @@ void Tokenizer::unget(Terminal* term) {
 
     // Done
     DRETURN;
+}
+
+
+
+/* Returns the total amount of bytes read. */
+size_t Tokenizer::size() {
+    DENTER("Models::Obj::Tokenizer::size");
+
+    // Get the current pos
+    long current_pos = ftell(this->file);
+    fseek(this->file, 0, SEEK_END);
+    long size = ftell(this->file);
+    fseek(this->file, current_pos, SEEK_SET);
+
+    // Return the found value
+    DRETURN static_cast<size_t>(size);
 }
 
 

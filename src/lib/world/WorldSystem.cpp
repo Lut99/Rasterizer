@@ -233,7 +233,7 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
 
     // Compute the number of seconds passed since last update
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-    float passed = std::chrono::duration_cast<std::chrono::milliseconds>(this->last_update - now).count();
+    float passed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(this->last_update - now).count());
 
     // Compute the relative mouse speed
     glm::vec2 mouse = window.mouse_pos();
@@ -251,8 +251,8 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             Transform& transform = entity_manager.get_component<Transform>(entity);
 
             // Define the actual speeds based on the time passed
-            float mov_speed = passed / 1000.0 * controllable.mov_speed;
-            float rot_speed = passed / 1000.0 * controllable.rot_speed;
+            float mov_speed = passed / 1000.0f * controllable.mov_speed;
+            float rot_speed = passed / 1000.0f * controllable.rot_speed;
 
 
 
