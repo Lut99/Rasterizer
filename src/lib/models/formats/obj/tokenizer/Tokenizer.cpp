@@ -56,7 +56,7 @@ Tokenizer::Tokenizer(const std::string& path) :
     DENTER("Models::Obj::Tokenizer::Tokenizer");
 
     // First, open a handle
-    std::ifstream* is = new std::ifstream(this->path, ios_base::in | ios_base::end);
+    std::ifstream* is = new std::ifstream(this->path, std::fstream::in | std::fstream::end);
     if (!is->is_open()) {
         #ifdef _WIN32
         char buffer[BUFSIZ];
