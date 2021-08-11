@@ -12,6 +12,7 @@
  *   <Todo>
 **/
 
+#include <cstring>
 #include <stdexcept>
 #include <algorithm>
 
@@ -41,8 +42,12 @@ _intern::ArrayStorage<T>::ArrayStorage(const _intern::ArrayStorage<T>& other) :
     if (this->elements == nullptr) { throw std::bad_alloc(); }
 
     // Copy everything over
-    for (array_size_t i = 0; i < other.length; i++) {
-        new(this->elements + i) T(other.elements[i]);
+    if constexpr (std::conjunction<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_assignable<T>>::value) {
+        memcpy(this->elements, other.elements, this->length * sizeof(T));
+    } else {
+        for (array_size_t i = 0; i < other.length; i++) {
+            new(this->elements + i) T(other.elements[i]);
+        }
     }
 }
 
@@ -60,7 +65,7 @@ _intern::ArrayStorage<T>::ArrayStorage(_intern::ArrayStorage<T>&& other) :
 template <class T>
 _intern::ArrayStorage<T>::~ArrayStorage() {
     if (this->elements != nullptr) {
-        if constexpr (std::is_destructible<T>::value) {
+        if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
             for (array_size_t i = 0; i < this->length; i++) {
                 this->elements[i].~T();
             }
@@ -83,6 +88,7 @@ template <class T, bool D, bool C, bool M>
 Array<T, D, C, M>::Array(array_size_t initial_size) {
     // Allocate memory for the internal storage class
     this->storage.elements = (T*) malloc(initial_size * sizeof(T));
+    if (this->storage.elements == nullptr) { throw std::bad_alloc(); }
     this->storage.max_length = initial_size;
     
 }
@@ -106,8 +112,13 @@ Array<T, D, C, M>::Array(const std::initializer_list<T>& list) :
     Array(static_cast<array_size_t>(list.size()))
 {
     // Copy all the elements over
-    for (const T& elem : list) {
-        new(this->storage.elements + this->storage.length++) T(elem);
+    if constexpr (std::conjunction<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_assignable<T>>::value) {
+        memcpy(this->storage.elements, list.begin(), list.size() * sizeof(T));
+        this->storage.length = static_cast<array_size_t>(list.size());
+    } else {
+        for (const T& elem : list) {
+            new(this->storage.elements + this->storage.length++) T(elem);
+        }
     }
 }
 
@@ -118,8 +129,13 @@ Array<T, D, C, M>::Array(const T* list, array_size_t list_size) :
     Array(list_size)
 {
     // Copy all the elements over
-    for (array_size_t i = 0; i < list_size; i++) {
-        new(this->storage.elements + this->storage.length++) T(list[i]);
+    if constexpr (std::conjunction<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_assignable<T>>::value) {
+        memcpy(this->storage.elements, list, list_size * sizeof(T));
+        this->storage.length = list_size;
+    } else {
+        for (array_size_t i = 0; i < list_size; i++) {
+            new(this->storage.elements + this->storage.length++) T(list[i]);
+        }
     }
 }
 
@@ -142,8 +158,13 @@ auto Array<T, D, C, M>::operator+=(const Array<T>& elems) -> std::enable_if_t<C,
     }
 
     // Add the new elements to the end of the array
-    for (array_size_t i = 0; i < elems.storage.length; i++) {
-        new(this->storage.elements + this->storage.length++) T(elems.storage.elements[i]);
+    if constexpr (std::conjunction<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_assignable<T>>::value) {
+        memcpy(this->storage.elements + this->storage.length, elems.storage.elements, elems.storage.length * sizeof(T));
+        this->storage.length += elems.storage.length;
+    } else {
+        for (array_size_t i = 0; i < elems.storage.length; i++) {
+            new(this->storage.elements + this->storage.length++) T(elems.storage.elements[i]);
+        }
     }
 
     // D0ne
@@ -160,8 +181,13 @@ auto Array<T, D, C, M>::operator+=(Array<T>&& elems) -> std::enable_if_t<M, U> {
     }
 
     // Add the new elements to the end of the array
-    for (array_size_t i = 0; i < elems.storage.length; i++) {
-        new(this->storage.elements + this->storage.length++) T(std::move(elems.storage.elements[i]));
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + this->storage.length, elems.storage.elements, elems.storage.length * sizeof(T));
+        this->storage.length += elems.storage.length;
+    } else {
+        for (array_size_t i = 0; i < elems.storage.length; i++) {
+            new(this->storage.elements + this->storage.length++) T(std::move(elems.storage.elements[i]));
+        }
     }
 
     // Already deallocate the other's list to prevent the other deallocating them
@@ -224,7 +250,7 @@ void Array<T, D, C, M>::pop_back() {
     if (this->storage.length == 0) { return; }
 
     // Delete the last element if we need to
-    if constexpr (std::is_destructible<T>::value) {
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
         this->storage.elements[this->storage.length - 1].~T();
     }
 
@@ -242,13 +268,17 @@ auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<M, U> {
     if (index >= this->storage.length) { return; }
 
     // Otherwise, delete the element if needed
-    if constexpr (std::is_destructible<T>::value) {
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
         this->storage.elements[index].~T();
     }
 
     // Move the other elements one back
-    for (array_size_t i = index; i < this->storage.length - 1; i++) {
-        new(this->storage.elements + i) T(std::move(this->storage.elements[i + 1]));
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + index, this->storage.elements + index + 1, (this->storage.length - index - 1) * sizeof(T));
+    } else {
+        for (array_size_t i = index; i < this->storage.length - 1; i++) {
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i + 1]));
+        }
     }
 
     // Decrease the length
@@ -263,15 +293,19 @@ auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index)
     if (start_index >= this->storage.length || stop_index >= this->storage.length || start_index > stop_index) { return; }
 
     // Otherwise, delete the elements if needed
-    if constexpr (std::is_destructible<T>::value) {
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
         for (array_size_t i = start_index; i <= stop_index; i++) {
             this->storage.elements[i].~T();
         }
     }
 
     // Move all elements following it back
-    for (array_size_t i = stop_index + 1; i < this->storage.length; i++) {
-        new(this->storage.elements + (i - (stop_index - start_index) - 1)) T(std::move(this->storage.elements[i]));
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + start_index, this->storage.elements + stop_index + 1, (this->storage.length - stop_index - 1) * sizeof(T));
+    } else {
+        for (array_size_t i = stop_index + 1; i < this->storage.length; i++) {
+            new(this->storage.elements + (i - (stop_index - start_index) - 1)) T(std::move(this->storage.elements[i]));
+        }
     }
 
     // Decrease the length
@@ -282,7 +316,7 @@ auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index)
 template <class T, bool D, bool C, bool M>
 void Array<T, D, C, M>::clear() {
     // Delete everything in the Array if the type wants it to
-    if constexpr (std::is_destructible<T>::value) {
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
         for (array_size_t i = 0; i < this->storage.length; i++) {
             this->storage.elements[i].~T();
         }
@@ -296,7 +330,7 @@ void Array<T, D, C, M>::clear() {
 template <class T, bool D, bool C, bool M>
 void Array<T, D, C, M>::reset() {
     // Delete everything in the Array if the type wants it to
-    if constexpr (std::is_destructible<T>::value) {
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
         for (array_size_t i = 0; i < this->storage.length; i++) {
             this->storage.elements[i].~T();
         }
@@ -331,12 +365,16 @@ auto Array<T, D, C, M>::reserve(array_size_t new_size) -> std::enable_if_t<M, U>
 
     // Copy the elements over using their move constructor
     array_size_t n_to_copy = std::min(new_size, this->storage.length);
-    for (array_size_t i = 0; i < n_to_copy; i++) {
-        new(new_elements + i) T(std::move(this->storage.elements[i]));
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(new_elements, this->storage.elements, n_to_copy * sizeof(T));
+    } else {
+        for (array_size_t i = 0; i < n_to_copy; i++) {
+            new(new_elements + i) T(std::move(this->storage.elements[i]));
+        }
     }
 
     // Delete the elements that are too many
-    if constexpr (std::is_destructible<T>::value) {
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
         for (array_size_t i = n_to_copy; i < this->storage.length; i++) {
             this->storage.elements[i].~T();
         }
