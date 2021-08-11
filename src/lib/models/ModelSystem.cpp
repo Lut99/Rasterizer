@@ -118,7 +118,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             stage_buffer.map(&stage_memory);
 
             // Populate it with vertices, then copy to the mesh
-            Rendering::CommandBuffer copy_cmd = this->memory_manager.draw_cmd_pool.deref(this->copy_cmd_h);
+            Rendering::CommandBuffer copy_cmd = this->memory_manager.mem_cmd_pool.deref(this->copy_cmd_h);
             Rendering::Vertex* vstage_memory = (Rendering::Vertex*) stage_memory;
             vstage_memory[0] = Rendering::Vertex({ 0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f});
             vstage_memory[1] = Rendering::Vertex({ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f});

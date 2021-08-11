@@ -19,7 +19,7 @@
 #include "IComponentList.hpp"
 
 namespace Rasterizer::ECS {
-    /* The ComponentList class, which aims to efficiently associate entity IDs with a single component. */
+    /* The ComponentList class, which aims to efficiently associate entity IDs with a single component. Note that the type is required to be at least default constructible, copy constructible and move constructible. */
     template <class T>
     class ComponentList: public IComponentList {
     public:

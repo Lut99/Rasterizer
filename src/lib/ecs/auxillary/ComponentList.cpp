@@ -42,8 +42,12 @@ ComponentList<T>::ComponentList(const ComponentList<T>& other) :
     entities((T*) malloc(other.max_entities * sizeof(T)))
 {
     // Also copy the structs themselves
-    for (component_list_size_t i = 0; i < this->n_entities; i++) {
-        this->entities[i] = other.entities[i];
+    if constexpr (std::conjunction<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_assignable<T>>::value) {
+        memcpy(this->entities, other.entities, this->n_entities * sizeof(T));
+    } else {
+        for (component_list_size_t i = 0; i < this->n_entities; i++) {
+            new(this->entities + i) T(other.entities[i]);
+        }
     }
 }
 
@@ -60,6 +64,11 @@ ComponentList<T>::ComponentList(ComponentList<T>&& other) :
 template <class T>
 ComponentList<T>::~ComponentList() {
     if (this->entities != nullptr) {
+        if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
+            for (component_list_size_t i = 0; i < this->n_entities; i++) {
+                this->entities[i].~T();
+            }
+        }
         free(this->entities);
     }
 }
@@ -70,7 +79,7 @@ ComponentList<T>::~ComponentList() {
 template <class T>
 void ComponentList<T>::add(entity_t entity) {
     DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add");
-    this->add(entity, {});
+    this->add(entity, T());
     DRETURN;
 }
 
@@ -78,38 +87,29 @@ void ComponentList<T>::add(entity_t entity) {
 template <class T>
 void ComponentList<T>::add(entity_t entity, const T& component) {
     DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add(component)");
-    DINDENT;
 
     // Try to find if the entity already exists
-    DLOG(info, "Finding entity...");
     std::unordered_map<entity_t, component_list_size_t>::iterator iter = this->entity_map.find(entity);
     if (iter != this->entity_map.end()) {
         DLOG(warning, "Entity with ID " + std::to_string(entity) + " already exists in the ComponentList; will be overwritten.");
         this->entity_map.erase(iter);
     }
-    DLOG(info, "Entity confirmed exist");
 
     // If needed, double the size of the array
-    DLOG(info, "Resizing...");
     while (this->n_entities >= this->max_entities) {
         this->reserve(this->max_entities * 2);
     }
-    DLOG(info, "Done.");
 
     // Assign an index
-    DLOG(info, "Copying component...");
     component_list_size_t index = this->n_entities;
     // Add the component
-    this->entities[index] = component;
-    // Add the mapping
-    DLOG(info, "Adding mapping...");
+    new(this->entities + index) T(component);
+    // Add the mappings
     this->entity_map.insert(make_pair(entity, index));
     this->index_map.insert(make_pair(index, entity));
 
     // Done, increment the size
     ++this->n_entities;
-    DLOG(info, "Done");
-    DDEDENT;
     DRETURN;
 }
 
@@ -129,13 +129,33 @@ void ComponentList<T>::remove(entity_t entity) {
     this->entity_map.erase(iter);
     this->index_map.erase(index);
 
+    // Delete the entity if needed
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
+        this->entities[index].~T();
+    }
+
     // If it's not the last entity, move the rest forward
-    // Note that i begins on this->n_entities - 1
-    for (component_list_size_t i = this->n_entities; i-- > index ;) {
-        this->entities[i - 1] = this->entities[i];
-        this->entity_map.at(entity) -= 1;
-        this->index_map.erase(i);
-        this->index_map[i - 1] = entity;
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        // Simply call memmove
+        memmove(this->entities + index, this->entities + index + 1, (this->n_entities - index - 1) * sizeof(T));
+        for (component_list_size_t i = index + 1; i < this->n_entities; i++) {
+            entity_t moved_entity = this->index_map.at(i);
+            this->entity_map.at(moved_entity) -= 1;
+            this->index_map.erase(i);
+            this->index_map[i - 1] = moved_entity;
+        }
+    } else {
+        // Note that i begins on this->n_entities - 1
+        for (component_list_size_t i = this->n_entities; i-- > index ;) {
+            // Copy the entity with its move constructor
+            new(this->entities + (i - 1)) T(std::move(this->entities[i]));
+
+            // Update the entity's maps
+            entity_t moved_entity = this->index_map.at(i);
+            this->entity_map.at(moved_entity) -= 1;
+            this->index_map.erase(i);
+            this->index_map[i - 1] = moved_entity;
+        }
     }
 
     // Done, decrement the size
@@ -157,14 +177,21 @@ void ComponentList<T>::reserve(component_list_size_t new_capacity) {
     }
 
     // Copy the elements from the old to the new array
-    memcpy(new_entities, this->entities, std::min(this->n_entities, new_capacity) * sizeof(T));
+    component_list_size_t n_to_copy = std::min(this->n_entities, new_capacity);
+    if constexpr (std::conjunction<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_assignable<T>>::value) {
+        memcpy(new_entities, this->entities, n_to_copy * sizeof(T));
+    } else {
+        for (component_list_size_t i = 0; i < n_to_copy; i++) {
+            new(new_entities + i) T(this->entities[i]);
+        }
+    }
 
     // When done, deallocate the old one
     free(this->entities);
 
     // Overwrite the internal pointers
     this->entities = new_entities;
-    this->n_entities = std::min(this->n_entities, new_capacity);
+    this->n_entities = n_to_copy;
     this->max_entities = new_capacity;
 
     // Done
