@@ -113,7 +113,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             mesh.material = "rainbow";
 
             // Prepare a staging buffer
-            Rendering::Buffer& stage_buffer = this->memory_manager.stage_pool.allocate_buffer(std::max(3 * sizeof(Rendering::Vertex), 3 * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            Rendering::Buffer stage_buffer = this->memory_manager.stage_pool.allocate_buffer(std::max(3 * sizeof(Rendering::Vertex), 3 * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
             void* stage_memory;
             stage_buffer.map(&stage_memory);
 
