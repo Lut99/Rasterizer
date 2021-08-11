@@ -79,6 +79,10 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
         case TerminalType::newmtl:
             // Start of a new material
             goto newmtl_start;
+        
+        case TerminalType::eof:
+            // Nothing to be done anymore
+            DRETURN "";
 
         default:
             // Unexpected token
@@ -205,11 +209,16 @@ void Models::load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materi
                 printf("Progress: %.2f%%\r", (float) tokenizer.bytes() / (float) tokenizer.size() * 100.0f);
                 #endif
             } else {
-                // Delete the token again
+                // Add the EOF token at the end if there isn't one already
+                if (symbol_stack.size() == 0 || symbol_stack.last()->type != TerminalType::eof) {
+                    symbol_stack.push_back(term);
+                    changed = true;
+                } else {
+                    delete term;
+                }
                 #ifdef EXTRA_DEBUG
                 printf("[mtlloader] No tokens to shift anymore.\n");
                 #endif
-                delete term;
             }
         } else if (rule == "error") {
             // Stop

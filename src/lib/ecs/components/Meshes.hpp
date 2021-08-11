@@ -16,8 +16,11 @@
 #ifndef ECS_MESHES_HPP
 #define ECS_MESHES_HPP
 
+#include "glm/glm.hpp"
+
 #include "../auxillary/ComponentHash.hpp"
 #include "rendering/memory/Buffer.hpp"
+#include "rendering/data/MeshData.hpp"
 #include "tools/Array.hpp"
 #include "tools/Typenames.hpp"
 
@@ -30,10 +33,16 @@ namespace Rasterizer::ECS {
         Rendering::buffer_h indices_h;
         /* The number of indices used in this mesh. */
         uint32_t n_indices;
+
+        /* Auxillary data about the Mesh that will be send to the GPU (CPU-side). */
+        Rendering::MeshData data;
+        /* Auxillary data about the Mesh that will be send to the GPU (GPU-side). */
+        Rendering::buffer_h data_h;
+        
         /* Optional name for this mesh, not unique. Only for debugging. */
         std::string name;
         /* Name (ID) of the material used in this mesh. Not used except for debugging. */
-        std::string material;
+        std::string mtl;
     };
     /* Shortcut for the list of Meshes. */
     using Meshes = Tools::Array<Mesh>;

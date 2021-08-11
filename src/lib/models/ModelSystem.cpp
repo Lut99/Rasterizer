@@ -90,14 +90,11 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
     ECS::Meshes& meshes = entity_manager.get_component<ECS::Meshes>(entity);
 
     // Load the model according to the given format
-    uint32_t n_vertices = 0;
-    uint32_t n_indices = 0;
     switch (format) {
         case ModelFormat::obj:
             // Use the load function from the modelloader
             DLOG(info, "Loading '" + path + "' as .obj file...");
-            // load_obj_model(new_vertices, new_indices, path);
-            DLOG(fatal, "Not implemented.");
+            load_obj_model(this->memory_manager, meshes, path);
             break;
 
         case ModelFormat::triangle: {
@@ -106,11 +103,12 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
 
             // Prepare the mesh struct
             Mesh mesh = {};
+            mesh.name = "triangle";
+            mesh.mtl = "rainbow";
+            mesh.data.mtl_col = { 0.0f, 0.0f, 0.0f, 0.0f };
             mesh.vertices_h = this->memory_manager.draw_pool.allocate_buffer_h(3 * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             mesh.indices_h  = this->memory_manager.draw_pool.allocate_buffer_h(3 * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             mesh.n_indices = 3;
-            mesh.name = "triangle";
-            mesh.material = "rainbow";
 
             // Prepare a staging buffer
             Rendering::Buffer stage_buffer = this->memory_manager.stage_pool.allocate_buffer(std::max(3 * sizeof(Rendering::Vertex), 3 * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
@@ -137,8 +135,6 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             // Deallocate the stage buffer and update the index count
             stage_buffer.unmap();
             this->memory_manager.stage_pool.deallocate(stage_buffer);
-            n_vertices += 3;
-            n_indices  += 3;
 
             // Add the mesh to the list
             meshes.push_back(mesh);
@@ -187,7 +183,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
 
     // Do some debug print
     DINDENT;
-    DLOG(info, "Loaded " + std::to_string(meshes.size()) + " new meshes, totalling " + std::to_string(n_vertices) + " vertices and " + std::to_string(n_indices) + " indices.");
+    DLOG(info, "Loaded " + std::to_string(meshes.size()) + " new meshes.");
     DDEDENT;
 
     // Done

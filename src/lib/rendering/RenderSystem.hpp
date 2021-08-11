@@ -25,6 +25,9 @@
 #include "depthtesting/DepthStencil.hpp"
 #include "swapchain/Framebuffer.hpp"
 
+#include "descriptors/DescriptorSetLayout.hpp"
+#include "descriptors/DescriptorSet.hpp"
+
 #include "pipeline/Shader.hpp"
 #include "renderpass/RenderPass.hpp"
 #include "pipeline/Pipeline.hpp"
@@ -56,6 +59,11 @@ namespace Rasterizer::Rendering {
         Rendering::Shader vertex_shader;
         /* The fragment shader we use. */
         Rendering::Shader fragment_shader;
+
+        /* The descriptor set layout for the standard render pass. */
+        Rendering::DescriptorSetLayout descriptor_set_layout;
+        /* The descriptor set for the standard render pass. */
+        Rendering::descriptor_set_h descriptor_set_h;
         
         /* The render pass which we use to draw. */
         Rendering::RenderPass render_pass;
@@ -84,11 +92,28 @@ namespace Rasterizer::Rendering {
     public:
         /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively) and a model system to schedule the model buffers with. */
         RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system);
+        /* Copy constructor for the RenderSystem class. */
+        RenderSystem(const RenderSystem& other);
+        /* Move constructor for the RenderSystem class. */
+        RenderSystem(RenderSystem&& other);
+        /* Destructor for the RenderSystem class. */
+        ~RenderSystem();
 
         /* Runs a single iteration of the game loop. Returns whether or not the RenderSystem is asked to close the window (false) or not (true). */
         bool render_frame(const ECS::EntityManager& entity_manager);
 
+        /* Copy assignment operator for the RenderSystem class. */
+        inline RenderSystem& operator=(const RenderSystem& other) { return *this = RenderSystem(other); }
+        /* Move assignment operator for the RenderSystem class. */
+        inline RenderSystem& operator=(RenderSystem&& other) { if (this != &other) { swap(*this, other); } return *this; }
+        /* Swap operator for the RenderSystem class. */
+        friend void swap(RenderSystem& rs1, RenderSystem& rs2);
+
     };
+
+    /* Swap operator for the RenderSystem class. */
+    void swap(RenderSystem& rs1, RenderSystem& rs2);
+
 }
 
 #endif

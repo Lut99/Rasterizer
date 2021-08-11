@@ -184,7 +184,7 @@ void DescriptorSet::bind(const GPU& gpu, VkDescriptorType descriptor_type, uint3
 }
 
 /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
-void DescriptorSet::record(const CommandBuffer& buffer, VkPipelineLayout pipeline_layout) const {
+void DescriptorSet::schedule(const CommandBuffer& buffer, VkPipelineLayout pipeline_layout) const {
     DENTER("Rendering::DescriptorSet::record");
 
     // Add the binding

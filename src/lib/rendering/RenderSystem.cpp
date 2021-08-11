@@ -105,6 +105,9 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     vertex_shader(this->window.gpu(), "bin/shaders/vertex_v3.spv"),
     fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
 
+    descriptor_set_layout(this->window.gpu()),
+    descriptor_set_h(CommandPool::NullHandle),
+
     render_pass(this->window.gpu()),
     pipeline(this->window.gpu()),
 
@@ -119,19 +122,26 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 {
     DENTER("Rendering::RenderSystem::RenderSystem");
 
-    // Initialize the render pass first
+    // Initialize the descriptor set layout and its first set
+    uint32_t set = this->descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
+    this->descriptor_set_layout.finalize();
+
+    // Allocate a descriptor set with this data
+    this->descriptor_set_h = this->memory_manager.descr_pool.allocate_h(this->descriptor_set_layout);
+
+    // Initialize the render pass
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     uint32_t dep_index = this->render_pass.add_attachment(this->depth_stencil.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     this->render_pass.add_subpass({ std::make_pair(col_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) }, std::make_pair(dep_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
     this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, col_index, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
     this->render_pass.finalize();
 
-    // Next, initialize the frame buffers
+    // Initialize the frame buffers
     for (uint32_t i = 0; i < this->window.swapchain().size(); i++) {
         this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass, this->depth_stencil));
     }
 
-    // Then, prepare the pipeline by choosing all its settings
+    // Prepare the pipeline by choosing all its settings
     pipeline.init_shader_stage(this->vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
     pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
     pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
@@ -141,11 +151,88 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     pipeline.init_multisampling();
     pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
     pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
-    pipeline.init_pipeline_layout({}, { { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t) (sizeof(glm::mat4)) } });
+    pipeline.init_pipeline_layout({ {} }, { { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t) (sizeof(glm::mat4)) } });
     pipeline.finalize(this->render_pass, 0);
 
     // Done initializing
     DLOG(info, "Intialized the RenderSystem.");
+    DLEAVE;
+}
+
+/* Copy constructor for the RenderSystem class. */
+RenderSystem::RenderSystem(const RenderSystem& other) :
+    window(other.window),
+    memory_manager(other.memory_manager),
+    model_system(other.model_system),
+
+    depth_stencil(other.depth_stencil),
+    framebuffers(other.framebuffers),
+
+    vertex_shader(other.vertex_shader),
+    fragment_shader(other.fragment_shader),
+
+    descriptor_set_layout(other.descriptor_set_layout),
+    descriptor_set_h(CommandPool::NullHandle),
+
+    render_pass(other.render_pass),
+    pipeline(other.pipeline),
+
+    draw_cmds(other.draw_cmds),
+
+    image_ready_semaphores(other.image_ready_semaphores),
+    render_ready_semaphores(other.render_ready_semaphores),
+    frame_in_flight_fences(other.frame_in_flight_fences),
+    image_in_flight_fences(other.image_in_flight_fences),
+
+    current_frame(other.current_frame)
+{
+    DENTER("Rendering::RenderSystem::RenderSystem(copy)");
+
+    // Create a new descriptor set handle
+    this->descriptor_set_h = this->memory_manager.descr_pool.allocate_h(this->descriptor_set_layout);
+
+    DLEAVE;
+}
+
+/* Move constructor for the RenderSystem class. */
+RenderSystem::RenderSystem(RenderSystem&& other)  :
+    window(other.window),
+    memory_manager(other.memory_manager),
+    model_system(other.model_system),
+
+    depth_stencil(other.depth_stencil),
+    framebuffers(other.framebuffers),
+
+    vertex_shader(other.vertex_shader),
+    fragment_shader(other.fragment_shader),
+
+    descriptor_set_layout(other.descriptor_set_layout),
+    descriptor_set_h(other.descriptor_set_h),
+
+    render_pass(other.render_pass),
+    pipeline(other.pipeline),
+
+    draw_cmds(other.draw_cmds),
+
+    image_ready_semaphores(other.image_ready_semaphores),
+    render_ready_semaphores(other.render_ready_semaphores),
+    frame_in_flight_fences(other.frame_in_flight_fences),
+    image_in_flight_fences(other.image_in_flight_fences),
+
+    current_frame(other.current_frame)
+{
+    other.descriptor_set_h = CommandPool::NullHandle;
+}
+
+/* Destructor for the RenderSystem class. */
+RenderSystem::~RenderSystem() {
+    DENTER("Rendering::RenderSystem::~RenderSystem");
+
+    // Deallocate the descriptor set if necessary
+    if (this->descriptor_set_h != CommandPool::NullHandle) {
+        this->memory_manager.descr_pool.deallocate(this->descriptor_set_h);
+    }
+
     DLEAVE;
 }
 
@@ -281,4 +368,50 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     // Done with this iteration
     this->current_frame = (this->current_frame + 1) % RenderSystem::max_frames_in_flight;
     DRETURN true;
+}
+
+
+
+/* Swap operator for the RenderSystem class. */
+void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
+    DENTER("Rendering::swap(RenderSystem)");
+
+    #ifndef NDEBUG
+    if (&rs1.window != &rs2.window) {
+        DLOG(fatal, "Cannot swap render systems with different windows");
+    }
+    if (&rs1.memory_manager != &rs2.memory_manager) {
+        DLOG(fatal, "Cannot swap render systems with different memory managers");
+    }
+    if (&rs1.model_system != &rs2.model_system) {
+        DLOG(fatal, "Cannot swap render systems with different model systems");
+    }
+    #endif
+
+    // Simply swap everything
+    using std::swap;
+
+    swap(rs1.depth_stencil, rs2.depth_stencil);
+    swap(rs1.framebuffers, rs2.framebuffers);
+
+    swap(rs1.vertex_shader, rs2.vertex_shader);
+    swap(rs1.fragment_shader, rs2.fragment_shader);
+
+    swap(rs1.descriptor_set_layout, rs2.descriptor_set_layout);
+    swap(rs1.descriptor_set_h, rs2.descriptor_set_h);
+
+    swap(rs1.render_pass, rs2.render_pass);
+    swap(rs1.pipeline, rs2.pipeline);
+
+    swap(rs1.draw_cmds, rs2.draw_cmds);
+
+    swap(rs1.image_ready_semaphores, rs2.image_ready_semaphores);
+    swap(rs1.render_ready_semaphores, rs2.render_ready_semaphores);
+    swap(rs1.frame_in_flight_fences, rs2.frame_in_flight_fences);
+    swap(rs1.image_in_flight_fences, rs2.image_in_flight_fences);
+
+    swap(rs1.current_frame, rs2.current_frame);
+
+    // Done
+    DRETURN;
 }

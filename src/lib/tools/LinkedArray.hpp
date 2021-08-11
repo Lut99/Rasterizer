@@ -401,13 +401,13 @@ namespace Tools {
         /* Returns a constant reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
         inline const T& at(linked_array_size_t index) const { return this->at(index); }
         /* Returns the first element in the list. */
-        inline T& first() { return *this->storage.head; }
+        inline T& first() { return this->storage.head->value; }
         /* Returns the first element in the list. */
-        inline const T& first() const { return *this->storage.head; }
+        inline const T& first() const { return this->storage.head->value; }
         /* Returns the last element in the list. */
-        inline T& last() { return *this->storage.tail; }
+        inline T& last() { return this->storage.tail->value; }
         /* Returns the last element in the list. */
-        inline const T& last() const { return *this->storage.tail; }
+        inline const T& last() const { return this->storage.tail->value; }
 
         /* Returns true if there are no elements in this array, or false otherwise. */
         inline bool empty() const { return this->storage.length == 0; }
