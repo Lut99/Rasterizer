@@ -42,7 +42,9 @@ ComponentList<T>::ComponentList(const ComponentList<T>& other) :
     entities((T*) malloc(other.max_entities * sizeof(T)))
 {
     // Also copy the structs themselves
-    memcpy(this->entities, other.entities, this->n_entities * sizeof(T));
+    for (component_list_size_t i = 0; i < this->n_entities; i++) {
+        this->entities[i] = other.entities[i];
+    }
 }
 
 /* Move constructor for the ComponentList class. */
@@ -67,36 +69,47 @@ ComponentList<T>::~ComponentList() {
 /* Stores a new 'entity', filling it with default values. */
 template <class T>
 void ComponentList<T>::add(entity_t entity) {
-    return this->add(entity, {});
+    DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add");
+    this->add(entity, {});
+    DRETURN;
 }
 
 /* Stores a new 'entity', by associating the given entity ID with the given Component data. */
 template <class T>
 void ComponentList<T>::add(entity_t entity, const T& component) {
     DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add(component)");
+    DINDENT;
 
     // Try to find if the entity already exists
+    DLOG(info, "Finding entity...");
     std::unordered_map<entity_t, component_list_size_t>::iterator iter = this->entity_map.find(entity);
     if (iter != this->entity_map.end()) {
         DLOG(warning, "Entity with ID " + std::to_string(entity) + " already exists in the ComponentList; will be overwritten.");
         this->entity_map.erase(iter);
     }
+    DLOG(info, "Entity confirmed exist");
 
     // If needed, double the size of the array
+    DLOG(info, "Resizing...");
     while (this->n_entities >= this->max_entities) {
         this->reserve(this->max_entities * 2);
     }
+    DLOG(info, "Done.");
 
     // Assign an index
+    DLOG(info, "Copying component...");
     component_list_size_t index = this->n_entities;
     // Add the component
     this->entities[index] = component;
     // Add the mapping
+    DLOG(info, "Adding mapping...");
     this->entity_map.insert(make_pair(entity, index));
     this->index_map.insert(make_pair(index, entity));
 
     // Done, increment the size
     ++this->n_entities;
+    DLOG(info, "Done");
+    DDEDENT;
     DRETURN;
 }
 
