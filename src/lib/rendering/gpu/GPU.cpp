@@ -206,7 +206,11 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
     this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, this->surface);
     DINDENT;
     DLOG(auxillary, std::string("Selected GPU: '") + this->vk_physical_device_properties.deviceName + "'");
+    DINDENT;
     // DLOG(auxillary, "Maximum device local memory available: " + Tools::bytes_to_string(this->vk_physical_device_properties.limits))
+    DLOG(auxillary, "Max push constant size : " + std::to_string(this->vk_physical_device_properties.limits.maxPushConstantsSize));
+    DLOG(auxillary, "Max descriptor sets    : " + std::to_string(this->vk_physical_device_properties.limits.maxBoundDescriptorSets));
+    DDEDENT;
     DDEDENT;
 
     

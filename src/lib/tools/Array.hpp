@@ -188,6 +188,10 @@ namespace Tools {
         T& at(array_size_t index);
         /* Returns a constant reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
         inline const T& at(array_size_t index) const { return this->at(index); }
+        /* Returns the first element in the list. */
+        inline T& first() { return this->storage.elements[0]; }
+        /* Returns the first element in the list. */
+        inline const T& first() const { return this->storage.elements[0]; }
         /* Returns the last element in the list. */
         inline T& last() { return this->storage.elements[this->storage.length - 1]; }
         /* Returns the last element in the list. */

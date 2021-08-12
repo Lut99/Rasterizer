@@ -339,18 +339,6 @@ namespace Tools {
         /* Adds a whole linked array worth of new elements to this linked array, leaving the original array in an unused state (moving it). Does not require a move constructor to be defined. */
         Tools::LinkedArray<T, D, C, M>& operator+=(LinkedArray<T>&& elems);
 
-        /* Adds a new element of type T to the back of the linked array, initializing it with its default constructor. Only needs a default constructor to be present. */
-        template <typename U = void>
-        auto push_back() -> std::enable_if_t<D, U>;
-        /* Adds a new element of type T to the back of the linked array, copying it. Note that this requires the element to be copy constructible. */
-        template <typename U = void>
-        auto push_back(const T& elem) -> std::enable_if_t<C, U>;
-        /* Adds a new element of type T to the back of the linked array, leaving it in an usused state (moving it). Note that this requires the element to be move constructible. */
-        template <typename U = void>
-        auto push_back(T&& elem) -> std::enable_if_t<M, U>;
-        /* Removes the last element from the array. */
-        void pop_back();
-
         /* Adds a new element of type T to the start of the linked array, initializing it with its default constructor. Only needs a default constructor to be present. */
         template <typename U = void>
         auto push_front() -> std::enable_if_t<D, U>;
@@ -362,6 +350,18 @@ namespace Tools {
         auto push_front(T&& elem) -> std::enable_if_t<M, U>;
         /* Removes the first element from the array. */
         void pop_front();
+
+        /* Adds a new element of type T to the back of the linked array, initializing it with its default constructor. Only needs a default constructor to be present. */
+        template <typename U = void>
+        auto push_back() -> std::enable_if_t<D, U>;
+        /* Adds a new element of type T to the back of the linked array, copying it. Note that this requires the element to be copy constructible. */
+        template <typename U = void>
+        auto push_back(const T& elem) -> std::enable_if_t<C, U>;
+        /* Adds a new element of type T to the back of the linked array, leaving it in an usused state (moving it). Note that this requires the element to be move constructible. */
+        template <typename U = void>
+        auto push_back(T&& elem) -> std::enable_if_t<M, U>;
+        /* Removes the last element from the array. */
+        void pop_back();
 
         /* Erases an element with the given index from the linked array. Does nothing if the index is out-of-bounds. */
         void erase(linked_array_size_t index);

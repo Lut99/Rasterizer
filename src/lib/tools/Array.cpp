@@ -409,6 +409,8 @@ T& Array<T, D, C, M>::at(array_size_t index) {
     return this->storage.elements[index];
 }
 
+
+
 /* Returns a muteable pointer to the internal data struct. Use this to fill the array using C-libraries, but beware that the array needs to have enough space reserved. Also note that object put here will still be deallocated by the Array using ~T(). The optional new_size parameter is used to update the size() value of the array, so it knows what is initialized and what is not. Leave it at numeric_limits<array_size_t>::max() to leave the array size unchanged. */
 template <class T, bool D, bool C, bool M>
 T* Array<T, D, C, M>::wdata(array_size_t new_size) {

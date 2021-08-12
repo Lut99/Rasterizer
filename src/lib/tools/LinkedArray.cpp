@@ -443,97 +443,6 @@ Tools::LinkedArray<T, D, C, M>& Tools::LinkedArray<T, D, C, M>::operator+=(Tools
 
 
 
-/* Adds a new element of type T to the back of the linked array, initializing it with its default constructor. Only needs a default constructor to be present. */
-template <class T, bool D, bool C, bool M>
-template <typename U>
-auto Tools::LinkedArray<T, D, C, M>::push_back() -> std::enable_if_t<D, U> {
-    using namespace Tools::_linked_array_intern;
-
-    // Create the new node
-    LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
-    if (new_link == nullptr) { throw std::bad_alloc(); }
-    new(&new_link->value) T();
-    new_link->next = nullptr;
-    new_link->prev = nullptr;
-
-    // Append the element
-    this->_push_back(new_link);
-
-    // D0ne
-    return;
-}
-
-/* Adds a new element of type T to the back of the linked array, copying it. Note that this requires the element to be copy constructible. */
-template <class T, bool D, bool C, bool M>
-template <typename U>
-auto Tools::LinkedArray<T, D, C, M>::push_back(const T& elem) -> std::enable_if_t<C, U> {
-    using namespace Tools::_linked_array_intern;
-
-    // Create the new node
-    LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
-    if (new_link == nullptr) { throw std::bad_alloc(); }
-    new(&new_link->value) T(elem);
-    new_link->next = nullptr;
-    new_link->prev = nullptr;
-
-    // Append the element
-    this->_push_back(new_link);
-
-    // D0ne
-    return;
-}
-
-/* Adds a new element of type T to the back of the linked array, leaving it in an usused state (moving it). Note that this requires the element to be move constructible. */
-template <class T, bool D, bool C, bool M>
-template <typename U>
-auto Tools::LinkedArray<T, D, C, M>::push_back(T&& elem) -> std::enable_if_t<M, U> {
-    using namespace Tools::_linked_array_intern;
-
-    // Create the new node
-    LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
-    if (new_link == nullptr) { throw std::bad_alloc(); }
-    new(&new_link->value) T(std::move(elem));
-    new_link->next = nullptr;
-    new_link->prev = nullptr;
-
-    // Append the element
-    this->_push_back(new_link);
-
-    // D0ne
-    return;
-}
-
-/* Removes the last element from the array. */
-template <class T, bool D, bool C, bool M>
-void Tools::LinkedArray<T, D, C, M>::pop_back() {
-    using namespace Tools::_linked_array_intern;
-
-    // If we have no tail, ez
-    if (this->storage.length == 0) { return; }
-
-    // Otherwise, delete the tail
-    LinkedArrayLink<T>* second_to_tail = this->storage.tail->prev;
-    if constexpr (std::is_destructible<T>::value) {
-        this->storage.tail->value.~T();
-    }
-    free(this->storage.tail);
-
-    // Set the previous one as tail (if there is one)
-    if (second_to_tail != nullptr) {
-        second_to_tail->next = nullptr;
-        this->storage.tail = second_to_tail;
-    } else {
-        this->storage.head = nullptr;
-        this->storage.tail = nullptr;
-    }
-
-    // Done
-    --this->storage.length;
-    return;
-}
-
-
-
 /* Adds a new element of type T to the start of the linked array, initializing it with its default constructor. Only needs a default constructor to be present. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
@@ -613,6 +522,97 @@ void Tools::LinkedArray<T, D, C, M>::pop_front() {
     if (second_head != nullptr) {
         second_head->prev = nullptr;
         this->storage.head = second_head;
+    } else {
+        this->storage.head = nullptr;
+        this->storage.tail = nullptr;
+    }
+
+    // Done
+    --this->storage.length;
+    return;
+}
+
+
+
+/* Adds a new element of type T to the back of the linked array, initializing it with its default constructor. Only needs a default constructor to be present. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Tools::LinkedArray<T, D, C, M>::push_back() -> std::enable_if_t<D, U> {
+    using namespace Tools::_linked_array_intern;
+
+    // Create the new node
+    LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
+    if (new_link == nullptr) { throw std::bad_alloc(); }
+    new(&new_link->value) T();
+    new_link->next = nullptr;
+    new_link->prev = nullptr;
+
+    // Append the element
+    this->_push_back(new_link);
+
+    // D0ne
+    return;
+}
+
+/* Adds a new element of type T to the back of the linked array, copying it. Note that this requires the element to be copy constructible. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Tools::LinkedArray<T, D, C, M>::push_back(const T& elem) -> std::enable_if_t<C, U> {
+    using namespace Tools::_linked_array_intern;
+
+    // Create the new node
+    LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
+    if (new_link == nullptr) { throw std::bad_alloc(); }
+    new(&new_link->value) T(elem);
+    new_link->next = nullptr;
+    new_link->prev = nullptr;
+
+    // Append the element
+    this->_push_back(new_link);
+
+    // D0ne
+    return;
+}
+
+/* Adds a new element of type T to the back of the linked array, leaving it in an usused state (moving it). Note that this requires the element to be move constructible. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Tools::LinkedArray<T, D, C, M>::push_back(T&& elem) -> std::enable_if_t<M, U> {
+    using namespace Tools::_linked_array_intern;
+
+    // Create the new node
+    LinkedArrayLink<T>* new_link = (LinkedArrayLink<T>*) malloc(sizeof(LinkedArrayLink<T>));
+    if (new_link == nullptr) { throw std::bad_alloc(); }
+    new(&new_link->value) T(std::move(elem));
+    new_link->next = nullptr;
+    new_link->prev = nullptr;
+
+    // Append the element
+    this->_push_back(new_link);
+
+    // D0ne
+    return;
+}
+
+/* Removes the last element from the array. */
+template <class T, bool D, bool C, bool M>
+void Tools::LinkedArray<T, D, C, M>::pop_back() {
+    using namespace Tools::_linked_array_intern;
+
+    // If we have no tail, ez
+    if (this->storage.length == 0) { return; }
+
+    // Otherwise, delete the tail
+    LinkedArrayLink<T>* second_to_tail = this->storage.tail->prev;
+    if constexpr (std::is_destructible<T>::value) {
+        this->storage.tail->value.~T();
+    }
+    free(this->storage.tail);
+
+    // Set the previous one as tail (if there is one)
+    if (second_to_tail != nullptr) {
+        second_to_tail->next = nullptr;
+        this->storage.tail = second_to_tail;
     } else {
         this->storage.head = nullptr;
         this->storage.tail = nullptr;
