@@ -49,7 +49,7 @@ namespace Rasterizer::ECS {
         { ComponentFlags::all,  "all" },
 
         { ComponentFlags::transform,    "transform" },
-        { ComponentFlags::meshes,         "meshes" },
+        { ComponentFlags::meshes,       "meshes" },
         { ComponentFlags::camera,       "camera" },
         { ComponentFlags::controllable, "controllable" }
     };

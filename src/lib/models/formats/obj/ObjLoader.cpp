@@ -23,6 +23,9 @@
 
 /***** INCLUDES *****/
 #include <sstream>
+#include <unordered_map>
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/hash.hpp"
 
 #include "tools/CppDebugger.hpp"
 #include "tools/Common.hpp"
@@ -57,8 +60,13 @@ struct ParserState {
     /* The current Mesh we're working on. */
     ECS::Mesh mesh;
 
-    /* Temporary list of vertices that we collect in main memory before we move it to GPU memory. */
-    Tools::Array<Rendering::Vertex> temp_vertices;
+    /* 'Global' (i.e., file-wide) list of vertex points. */
+    Tools::Array<glm::vec4> vertices;
+    /* 'Global" (i.e., file-wide) list of vertex normals. */
+    Tools::Array<glm::vec3> normals;
+
+    /* Collection of Rendering::Vertex objects that are collected uniquely. */
+    std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>> temp_vertices;
     /* Temporary list of indices that we collect in main memory before we move it to GPU memory. */
     Tools::Array<Rendering::index_t> temp_indices;
 
@@ -73,9 +81,19 @@ struct ParserState {
 
 /***** HELPER FUNCTIONS *****/
 /* Transfers the given vertex and index lists to the given Mesh component. */
-static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh& mesh, const Tools::Array<Rendering::Vertex>& cpu_vertices, const Tools::Array<Rendering::index_t>& cpu_indices) {
+static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh& mesh, const std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>& unordered_vertices, const Tools::Array<Rendering::index_t>& cpu_indices) {
     DENTER("transfer_to_mesh");
     DINDENT;
+    DLOG(info, "Arranging vertices for copy...");
+    // Flatten the unordered vertices to a list
+    Tools::Array<Rendering::Vertex> cpu_vertices;
+    cpu_vertices.resize(static_cast<uint32_t>(unordered_vertices.size()));
+    for (const std::pair<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>& p : unordered_vertices) {
+        cpu_vertices[p.second.first] = p.second.second;
+    }
+
+
+
     DLOG(info, "Transferring mesh '" + mesh.name + "' (" + std::to_string(cpu_vertices.size()) + " vertices & " + std::to_string(cpu_indices.size()) + " indices) to GPU (" + Tools::bytes_to_string(cpu_vertices.size() * sizeof(Rendering::Vertex) + cpu_indices.size() * sizeof(Rendering::index_t) + sizeof(Rendering::MeshData)) + ")...");
 
     // Allocate memory in the mesh
@@ -90,7 +108,7 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
     Rendering::Buffer data     = memory_manager.draw_pool.deref_buffer(mesh.data_h);
 
     // Allocate a stage memory
-    Rendering::Buffer stage = memory_manager.stage_pool.allocate_buffer(std::max(vertices_size, indices_size, data_size), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    Rendering::Buffer stage = memory_manager.stage_pool.allocate_buffer(std::max({vertices_size, indices_size, data_size}), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     void* stage_map;
     stage.map(&stage_map);
 
@@ -119,6 +137,26 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
     // Done
     DDEDENT;
     DRETURN;
+}
+
+/* Stores a given vertex/texture/normal index in the given state struct. The final (returned) index will be different to the given one, as the result indexes into our large array of unique vertices, where uniqueness is also determined by texture and normal coordinates. */
+static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t normal_index = std::numeric_limits<uint32_t>::max(), uint32_t texture_index = std::numeric_limits<uint32_t>::max()) {
+    DENTER("store_vertex");
+
+    // First, check if the pair already exists
+    glm::uvec3 index = {vertex_index, normal_index, texture_index};
+    std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>::iterator iter = state.temp_vertices.find(index);
+    if (iter != state.temp_vertices.end()) {
+        // Simply return the existing index
+        DRETURN (*iter).second.first;
+    } else {
+        // Generate the new index
+        uint32_t to_return = static_cast<uint32_t>(state.temp_vertices.size());
+        // Insert the new vertex
+        state.temp_vertices.insert(make_pair(index, make_pair(to_return, Rendering::Vertex(glm::vec3(state.vertices[vertex_index - 1]), state.mtl_lib.at(state.mesh.mtl)))));
+        // Return the index
+        DRETURN to_return;
+    }
 }
 
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
@@ -235,13 +273,13 @@ vertex_start: {
 
             // Otherwise, we can parse the vector; get the coordinates
             Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
-            if (i - 2 == 4) { --value_iter; }
+            float w = 0; if (i - 2 == 4) { w = ((ValueTerminal<float>*) (*(--value_iter)))->value; }
             float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
             float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
             float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
 
             // Store the vertex
-            state.temp_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + ((0.5 * rand()) / RAND_MAX), 0.0f, 0.0f }));
+            state.vertices.push_back({ x, y, z, w });
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
@@ -296,14 +334,14 @@ normal_start: {
                 DRETURN "error";
             }
 
-            // // Otherwise, we can parse the vector normal; get the coordinates
-            // Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
-            // float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
-            // float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
-            // float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            // Otherwise, we can parse the vector normal; get the coordinates
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
 
-            // // Store the vertex
-            // new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+            // Store the normal
+            state.normals.push_back({ x, y, z });
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
@@ -455,17 +493,14 @@ face_v: {
             uint32_t v2 = ((ValueTerminal<uint32_t>*) (*(--value_iter)))->value;
             uint32_t v1 = ((ValueTerminal<uint32_t>*) (*(--value_iter)))->value;
 
-            // Store the indices
-            state.temp_indices   += { v1 - 1, v2 - 1, v3 - 1 };
-            state.mesh.n_indices += 3;
+            // Set the vertices
+            uint32_t i1 = store_vertex(state, v1);
+            uint32_t i2 = store_vertex(state, v2);
+            uint32_t i3 = store_vertex(state, v3);
 
-            // // If there's a material, update the relevant vertex coordinates
-            // if (!current_mtl.empty()) {
-            //     const glm::vec3& colour = mtl_map.at(current_mtl);
-            //     new_vertices[v1 - 1].colour = colour;
-            //     new_vertices[v2 - 1].colour = colour;
-            //     new_vertices[v3 - 1].colour = colour;
-            // }
+            // Store the indices
+            state.temp_indices   += { i1, i2, i3 };
+            state.mesh.n_indices += 3;
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
@@ -515,19 +550,14 @@ face_v_vt: {
             const std::tuple<uint32_t, uint32_t>& v2 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
             const std::tuple<uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
 
+            // Set the vertices
+            uint32_t i1 = store_vertex(state, std::get<0>(v1), std::get<1>(v1));
+            uint32_t i2 = store_vertex(state, std::get<0>(v2), std::get<1>(v2));
+            uint32_t i3 = store_vertex(state, std::get<0>(v3), std::get<1>(v3));
+
             // Store the indices
-            state.temp_indices   += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
+            state.temp_indices   += { i1, i2, i3 };
             state.mesh.n_indices += 3;
-
-            // Ignore the texture coordinates for now
-
-            // // If there's a material, update the relevant vertex coordinates
-            // if (!current_mtl.empty()) {
-            //     const glm::vec3& colour = mtl_map.at(current_mtl);
-            //     new_vertices[std::get<0>(v1) - 1].colour = colour;
-            //     new_vertices[std::get<0>(v2) - 1].colour = colour;
-            //     new_vertices[std::get<0>(v3) - 1].colour = colour;
-            // }
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
@@ -577,20 +607,14 @@ face_v_vn: {
             const std::tuple<uint32_t, uint32_t>& v2 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
             const std::tuple<uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t>>*) (*(--value_iter)))->value;
 
+            // Set the vertices
+            uint32_t i1 = store_vertex(state, std::get<0>(v1), std::numeric_limits<uint32_t>::max(), std::get<1>(v1));
+            uint32_t i2 = store_vertex(state, std::get<0>(v2), std::numeric_limits<uint32_t>::max(), std::get<1>(v2));
+            uint32_t i3 = store_vertex(state, std::get<0>(v3), std::numeric_limits<uint32_t>::max(), std::get<1>(v3));
+
             // Store the indices
-            state.temp_indices   += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
+            state.temp_indices   += { i1, i2, i3 };
             state.mesh.n_indices += 3;
-
-            // Ignore the normal coordinates for now
-
-            // // If there's a material, update the relevant vertex coordinates
-            // if (!current_mtl.empty()) {
-            //     const glm::vec3& colour = mtl_map.at(current_mtl);
-            //     new_vertices[std::get<0>(v1) - 1].colour = colour;
-            //     new_vertices[std::get<0>(v2) - 1].colour = colour;
-            //     new_vertices[std::get<0>(v3) - 1].colour = colour;
-            // }
-
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
@@ -640,19 +664,14 @@ face_v_vt_vn: {
             const std::tuple<uint32_t, uint32_t, uint32_t>& v2 = ((ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>*) (*(--value_iter)))->value;
             const std::tuple<uint32_t, uint32_t, uint32_t>& v1 = ((ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>*) (*(--value_iter)))->value;
 
+            // Set the vertices
+            uint32_t i1 = store_vertex(state, std::get<0>(v1), std::get<1>(v1), std::get<2>(v1));
+            uint32_t i2 = store_vertex(state, std::get<0>(v2), std::get<1>(v2), std::get<2>(v2));
+            uint32_t i3 = store_vertex(state, std::get<0>(v3), std::get<1>(v3), std::get<2>(v3));
+
             // Store the indices
-            state.temp_indices   += { std::get<0>(v1) - 1, std::get<0>(v2) - 1, std::get<0>(v3) - 1 };
+            state.temp_indices   += { i1, i2, i3 };
             state.mesh.n_indices += 3;
-
-            // Ignore the texture & normal coordinates for now
-
-            // // If there's a material, update the relevant vertex coordinates
-            // if (!current_mtl.empty()) {
-            //     const glm::vec3& colour = mtl_map.at(current_mtl);
-            //     new_vertices[std::get<0>(v1) - 1].colour = colour;
-            //     new_vertices[std::get<0>(v2) - 1].colour = colour;
-            //     new_vertices[std::get<0>(v3) - 1].colour = colour;
-            // }
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
@@ -681,6 +700,7 @@ group_start: {
             // Reset the mesh, then set its name
             state.mesh = {};
             state.mesh.name = ((ValueTerminal<std::string>*) term)->value;
+            state.mesh.mtl = "*";
 
             // Remove the token, then we're done
             remove_stack_bottom(state.symbol_stack, iter);
@@ -802,6 +822,9 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshe
 
     // Prepare the parser state
     ParserState state{};
+    state.mesh.name = "-";
+    state.mesh.mtl = "*";
+    state.mtl_lib.insert(make_pair("*", glm::vec3(1.0f, 0.0f, 0.0f)));
 
     // Start looping to parse stuff off the stack
     bool changed = true;
@@ -865,14 +888,6 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshe
 
     // If there are indices left, transfer them to the meshes list too
     if (state.mesh.n_indices > 0) {
-        // Set a name & material if it doesn't have one
-        if (state.mesh.name.empty()) {
-            state.mesh.name = "-";
-        }
-        if (state.mesh.mtl.empty()) {
-            state.mesh.mtl = "-";
-        }
-
         // Do the transfer
         transfer_to_mesh(memory_manager, state.mesh, state.temp_vertices, state.temp_indices);
         meshes.push_back(state.mesh);

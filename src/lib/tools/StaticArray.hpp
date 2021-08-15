@@ -110,7 +110,7 @@ namespace Tools {
 
     /* The StaticArray class, which is like a static C-array except that it lives on the heap. */
     template <class T, static_array_size_t MAX_SIZE, bool D = std::is_default_constructible<T>::value, bool C = std::is_copy_constructible<T>::value, bool M = std::is_move_constructible<T>::value>
-    class StaticArray: public _static_array_intern::CopyControl<T> {
+    class StaticArray: public _static_array_intern::CopyControl<C> {
     private:
         /* The storage class of the static array. */
         _static_array_intern::StaticArrayStorage<T, MAX_SIZE> storage;
