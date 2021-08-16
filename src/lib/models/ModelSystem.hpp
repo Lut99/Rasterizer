@@ -33,10 +33,6 @@ namespace Rasterizer::Models {
         /* Reference to the memory manager that contains the pools we need. */
         Rendering::MemoryManager& memory_manager;
 
-    private:
-        /* The command buffer used to draw to. */
-        Rendering::command_buffer_h copy_cmd_h;
-
     public:
         /* Constructor for the ModelSystem class, which takes a MemoryManager struct for the required memory pools. */
         ModelSystem(Rendering::MemoryManager& memory_manager);
@@ -53,7 +49,7 @@ namespace Rasterizer::Models {
         void unload_model(ECS::EntityManager& entity_manager, entity_t entity);
 
         /* Binds the model-related buffers for the given mesh component to the given command buffer. */
-        void schedule(const ECS::Mesh& entity_meshes, const Rendering::CommandBuffer& draw_cmd) const;
+        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& entity_meshes) const;
 
         /* Copy assignment operator for the ModelSystem class. */
         inline ModelSystem& operator=(const ModelSystem& other) { return *this = ModelSystem(other); }

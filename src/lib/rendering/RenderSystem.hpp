@@ -59,11 +59,6 @@ namespace Rasterizer::Rendering {
         Rendering::Shader vertex_shader;
         /* The fragment shader we use. */
         Rendering::Shader fragment_shader;
-
-        /* The descriptor set layout for the standard render pass. */
-        Rendering::DescriptorSetLayout descriptor_set_layout;
-        /* The descriptor set for the standard render pass. */
-        Rendering::descriptor_set_h descriptor_set_h;
         
         /* The render pass which we use to draw. */
         Rendering::RenderPass render_pass;
@@ -71,7 +66,7 @@ namespace Rasterizer::Rendering {
         Rendering::Pipeline pipeline;
 
         /* Handles for the command buffer to use. */
-        Tools::Array<CommandBuffer> draw_cmds;
+        Tools::Array<CommandBuffer*> draw_cmds;
 
         /* Contains the semaphores that signal when a new image is available in the swapchain. */
         Tools::Array<Rendering::Semaphore> image_ready_semaphores;

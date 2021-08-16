@@ -39,8 +39,7 @@ ModelSystem::ModelSystem(Rendering::MemoryManager& memory_manager) :
 {
     DENTER("Models::ModelManger::ModelManager");
 
-    // Also allocate the command buffer
-    this->copy_cmd_h = this->memory_manager.mem_cmd_pool.allocate_h();
+    // Nothing as of yet
 
     // Done
     DLOG(info, "Initialized ModelManager.");
@@ -53,27 +52,21 @@ ModelSystem::ModelSystem(const ModelSystem& other) :
 {
     DENTER("Models::ModelManger::ModelManager(copy)");
 
-    // "Copy" the buffer
-    this->copy_cmd_h = this->memory_manager.mem_cmd_pool.allocate_h();
+    // Nothing as of yet
 
     DLEAVE;
 }
 
 /* Move constructor for the ModelSystem class. */
 ModelSystem::ModelSystem(ModelSystem&& other) :
-    memory_manager(other.memory_manager),
-    copy_cmd_h(other.copy_cmd_h)
-{
-    other.copy_cmd_h = Rendering::CommandPool::NullHandle;
-}
+    memory_manager(other.memory_manager)
+{}
 
 /* Destructor for the ModelSystem class. */
 ModelSystem::~ModelSystem() {
     DENTER("Models::ModelManager::~ModelManager");
 
-    if (this->copy_cmd_h != Rendering::CommandPool::NullHandle) {
-        this->memory_manager.mem_cmd_pool.deallocate(this->copy_cmd_h);
-    }
+    // Nothing as of yet
 
     DLEAVE;
 }
@@ -105,36 +98,35 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             Mesh mesh = {};
             mesh.name = "triangle";
             mesh.mtl = "rainbow";
-            mesh.data.mtl_col = { 0.0f, 0.0f, 0.0f, 0.0f };
-            mesh.vertices_h = this->memory_manager.draw_pool.allocate_buffer_h(3 * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-            mesh.indices_h  = this->memory_manager.draw_pool.allocate_buffer_h(3 * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.mtl_col = { 0.0f, 0.0f, 0.0f, 0.0f };
+            mesh.vertices = this->memory_manager.draw_pool.allocate(3 * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.indices  = this->memory_manager.draw_pool.allocate(3 * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             mesh.n_indices = 3;
 
             // Prepare a staging buffer
-            Rendering::Buffer stage_buffer = this->memory_manager.stage_pool.allocate_buffer(std::max(3 * sizeof(Rendering::Vertex), 3 * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            Rendering::Buffer* stage_buffer = this->memory_manager.stage_pool.allocate(std::max(3 * sizeof(Rendering::Vertex), 3 * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
             void* stage_memory;
-            stage_buffer.map(&stage_memory);
+            stage_buffer->map(&stage_memory);
 
             // Populate it with vertices, then copy to the mesh
-            Rendering::CommandBuffer copy_cmd = this->memory_manager.mem_cmd_pool.deref(this->copy_cmd_h);
             Rendering::Vertex* vstage_memory = (Rendering::Vertex*) stage_memory;
             vstage_memory[0] = Rendering::Vertex({ 0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f});
             vstage_memory[1] = Rendering::Vertex({ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f});
             vstage_memory[2] = Rendering::Vertex({-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f});
-            stage_buffer.flush();
-            stage_buffer.copyto(this->memory_manager.draw_pool.deref_buffer(mesh.vertices_h), 3 * sizeof(Rendering::Vertex), 0, 0, copy_cmd);
+            stage_buffer->flush();
+            stage_buffer->copyto(mesh.vertices, 3 * sizeof(Rendering::Vertex), 0, 0, this->memory_manager.copy_cmd);
 
             // Next, populate the indices
             Rendering::index_t* istage_memory = (Rendering::index_t*) stage_memory;
             istage_memory[0] = 0;
             istage_memory[1] = 1;
             istage_memory[2] = 2;
-            stage_buffer.flush();
-            stage_buffer.copyto(this->memory_manager.draw_pool.deref_buffer(mesh.indices_h), 3 * sizeof(Rendering::index_t), 0, 0, copy_cmd);
+            stage_buffer->flush();
+            stage_buffer->copyto(mesh.indices, 3 * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
 
             // Deallocate the stage buffer and update the index count
-            stage_buffer.unmap();
-            this->memory_manager.stage_pool.deallocate(stage_buffer);
+            stage_buffer->unmap();
+            this->memory_manager.stage_pool.free(stage_buffer);
 
             // Add the mesh to the list
             meshes.push_back(mesh);
@@ -201,8 +193,8 @@ void ModelSystem::unload_model(ECS::EntityManager& entity_manager, entity_t enti
     ECS::Meshes& meshes = entity_manager.get_component<ECS::Meshes>(entity);
     for (uint32_t i = 0; i < meshes.size(); i++) {
         // Simply deallocate the two arrays
-        this->memory_manager.draw_pool.deallocate(meshes[i].vertices_h);
-        this->memory_manager.draw_pool.deallocate(meshes[i].indices_h);
+        this->memory_manager.draw_pool.free(meshes[i].vertices);
+        this->memory_manager.draw_pool.free(meshes[i].indices);
     }
 
     // Clear the list
@@ -214,17 +206,13 @@ void ModelSystem::unload_model(ECS::EntityManager& entity_manager, entity_t enti
 }
 
 /* Binds the model-related buffers for the given mesh component to the given command buffer. */
-void ModelSystem::schedule(const ECS::Mesh& entity_mesh, const Rendering::CommandBuffer& draw_cmd) const {
+void ModelSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& entity_mesh) const {
     DENTER("Models::ModelManager::unload_model");
-
-    // Dereference the buffers
-    Rendering::Buffer vertices = this->memory_manager.draw_pool.deref_buffer(entity_mesh.vertices_h);
-    Rendering::Buffer indices = this->memory_manager.draw_pool.deref_buffer(entity_mesh.indices_h);
 
     // Bind the buffers
     VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(draw_cmd, 0, 1, &vertices.buffer(), offsets);
-    vkCmdBindIndexBuffer(draw_cmd, indices.buffer(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(draw_cmd->command_buffer(), 0, 1, &entity_mesh.vertices->buffer(), offsets);
+    vkCmdBindIndexBuffer(draw_cmd->command_buffer(), entity_mesh.indices->buffer(), 0, VK_INDEX_TYPE_UINT32);
 
     // Done
     DRETURN;
@@ -245,7 +233,6 @@ void Models::swap(ModelSystem& mm1, ModelSystem& mm2) {
 
     // Otherwise, swap all elements
     using std::swap;
-    swap(mm1.copy_cmd_h, mm2.copy_cmd_h);
 
     // Done
     DRETURN;

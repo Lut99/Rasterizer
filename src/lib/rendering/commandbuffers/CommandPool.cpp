@@ -24,39 +24,6 @@ using namespace Rasterizer::Rendering;
 using namespace CppDebugger::SeverityValues;
 
 
-/***** HELPER FUNCTIONS *****/
-/* Given a map with handles as keys, finds the first free handle that is not the null handle. */
-static command_buffer_h find_handle(const std::unordered_map<command_buffer_h, VkCommandBuffer>& vk_command_buffers, command_buffer_h null_handle) {
-    DENTER("find_handle");
-
-    // Loop through the map and find the first free handle
-    command_buffer_h result = 0;
-    bool unique = false;
-    while (!unique) {
-        unique = true;
-        for (const std::pair<command_buffer_h, VkCommandBuffer>& p : vk_command_buffers) {
-            if (result == null_handle || result == p.first) {
-                // If result is the maximum value, then throw an error
-                if (result == std::numeric_limits<command_buffer_h>::max()) {
-                    DLOG(fatal, "command_buffer_h overflow; cannot allocate more buffers.");
-                }
-
-                // Otherwise, increment and re-try
-                ++result;
-                unique = false;
-                break;
-            }
-        }
-    }
-
-    // Return the result we found
-    DRETURN result;
-}
-
-
-
-
-
 /***** POPULATE FUNCTIONS *****/
 /* Functions that populates a given VkCommandPoolCreateInfo struct with the given values. */
 static void populate_command_pool_info(VkCommandPoolCreateInfo& command_pool_info, uint32_t queue_index, VkCommandPoolCreateFlags create_flags) {
@@ -151,10 +118,10 @@ CommandPool::CommandPool(CommandPool&& other) :
     gpu(other.gpu),
     vk_command_pool(other.vk_command_pool),
     vk_queue_index(other.vk_queue_index),
-    vk_command_buffers(std::move(other.vk_command_buffers))
+    command_buffers(std::move(other.command_buffers))
 {
     other.vk_command_pool = nullptr;
-    other.vk_command_buffers.clear();
+    other.command_buffers.clear();
 }
 
 /* Destructor for the CommandPool class. */
@@ -163,10 +130,10 @@ CommandPool::~CommandPool() {
     DLOG(info, "Cleaning CommandPool for queue " + std::to_string(this->vk_queue_index) + "...");
     DINDENT;
 
-    if (this->vk_command_buffers.size() > 0) {
+    if (this->command_buffers.size() > 0) {
         DLOG(info, "Cleaning command buffers...");
-        for (const std::pair<command_buffer_h, VkCommandBuffer>& p : this->vk_command_buffers) {
-            vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &p.second);
+        for (uint32_t i = 0; i < this->command_buffers.size(); i++) {
+            vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &this->command_buffers[i]->command_buffer());
         }
     }
 
@@ -182,13 +149,10 @@ CommandPool::~CommandPool() {
 
 
 /* Allocates a single, new command buffer of the given level. Returns by handle. */
-command_buffer_h CommandPool::allocate_h(VkCommandBufferLevel buffer_level) {
-    DENTER("Rendering::CommandPool::allocate_h");
+CommandBuffer* CommandPool::allocate(VkCommandBufferLevel buffer_level) {
+    DENTER("Rendering::CommandPool::allocate");
 
-    // Pick a suitable memory location for this buffer; either as a new buffer or a previously deallocated one
-    command_buffer_h handle = find_handle(this->vk_command_buffers, CommandPool::NullHandle);
-
-    // Then, prepare the create info
+    // Prepare the create info
     VkCommandBufferAllocateInfo allocate_info;
     populate_allocate_info(allocate_info, this->vk_command_pool, 1, buffer_level);
 
@@ -199,43 +163,17 @@ command_buffer_h CommandPool::allocate_h(VkCommandBufferLevel buffer_level) {
         DLOG(fatal, "Could not allocate command buffer: " + vk_error_map[vk_result]);
     }
 
-    // Inject the result in the map
-    this->vk_command_buffers.insert(std::make_pair(handle, buffer));
+    // Create the resulting buffer
+    CommandBuffer* cmd_buffer = new CommandBuffer(buffer);
+    this->command_buffers.push_back(cmd_buffer);
 
     // Done, return the handle
-    DRETURN handle;
-}
-
-/* Allocates a single, new command buffer of the given level. Returns new buffer objects. */
-Tools::Array<CommandBuffer> CommandPool::nallocate(uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
-    DENTER("Rendering::CommandPool::nallocate");
-    
-    // Allocate a list of handles
-    Tools::Array<command_buffer_h> handles = this->nallocate_h(n_buffers, buffer_level);
-    // Create a list to return
-    Tools::Array<CommandBuffer> to_return(n_buffers);
-    // Convert all of the handles to buffers
-    for (uint32_t i = 0; i < n_buffers; i++) {
-        to_return.push_back(this->deref(handles[i]));
-    }
-
-    // Done, return
-    DRETURN to_return;
+    DRETURN cmd_buffer;
 }
 
 /* Allocates N new command buffers of the given level. Returns by handles. */
-Tools::Array<command_buffer_h> CommandPool::nallocate_h(uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
-    DENTER("Rendering::CommandPool::nallocate_h");
-
-    // Pick n_buffers suitable memory locations for this buffer; either as a new buffer or a previously deallocated one
-    Tools::Array<command_buffer_h> handles(n_buffers);
-    for (uint32_t i = 0; i < n_buffers; i++) {
-        // Find a new handle
-        handles.push_back(find_handle(this->vk_command_buffers, CommandPool::NullHandle));
-
-        // Add it to the internal map of elements so that the handle gets registered
-        this->vk_command_buffers.insert(std::make_pair(handles[i], nullptr));
-    }
+Tools::Array<CommandBuffer*> CommandPool::nallocate(uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
+    DENTER("Rendering::CommandPool::nallocate");
 
     // Prepare some temporary local space for the buffers
     Tools::Array<VkCommandBuffer> buffers(n_buffers);
@@ -250,71 +188,71 @@ Tools::Array<command_buffer_h> CommandPool::nallocate_h(uint32_t n_buffers, VkCo
         DLOG(fatal, "Could not allocate command buffers: " + vk_error_map[vk_result]);
     }
 
-    // Update the map with the new buffer elements
-    for (uint32_t i = 0; i < n_buffers; i++) {
-        this->vk_command_buffers.at(handles[i]) = buffers[i];
+    // Generate the CommandBuffers around the vulkan ones
+    Tools::Array<CommandBuffer*> result(buffers.size());
+    this->command_buffers.reserve(this->command_buffers.size() + buffers.size());
+    for (uint32_t i = 0; i < buffers.size(); i++) {
+        result.push_back(new CommandBuffer(buffers[i]));
+        this->command_buffers.push_back(result.last());
     }
 
     // Done, return the list of handles
-    DRETURN handles;
+    DRETURN result;
 }
 
 
 
 /* Deallocates the CommandBuffer behind the given handle. Note that all buffers are deallocated automatically when the CommandPool is destructed, but this could save you memory. */
-void CommandPool::deallocate(command_buffer_h buffer) {
-    DENTER("Rendering::CommandPool::deallocate");
+void CommandPool::free(const CommandBuffer* buffer) {
+    DENTER("Rendering::CommandPool::free");
 
-    // Check if the handle exists
-    std::unordered_map<command_buffer_h, VkCommandBuffer>::iterator iter = this->vk_command_buffers.find(buffer);
-    if (iter == this->vk_command_buffers.end()) {
-        DLOG(fatal, "Given handle does not exist.");
+    // Try to remove the pointer from the list
+    bool found = false;
+    for (uint32_t i = 0; i < this->command_buffers.size(); i++) {
+        if (this->command_buffers[i] == buffer) {
+            this->command_buffers.erase(i);
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        DLOG(fatal, "Tried to free CommandBuffer that was not allocated with this pool.");
     }
 
-    // If it does, then first free the buffer
-    vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &((*iter).second));
-
-    // Remove it from the list
-    this->vk_command_buffers.erase(iter);
+    // Destroy the VkCommandBuffer
+    vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &buffer->command_buffer());
+    
+    // Destroy the pointer itself
+    delete buffer;
 
     // Done
     DRETURN;
 }
 
-/* Deallocates an array of given command buffers. */
-void CommandPool::ndeallocate(const Tools::Array<CommandBuffer>& buffers) {
-    DENTER("CommandPool::ndeallocate(objects)");
-
-    // Convert the list of descriptor sets to handles
-    Tools::Array<command_buffer_h> handles(buffers.size());
-    for (uint32_t i = 0; i < buffers.size(); i++) {
-        handles.push_back(buffers[i].handle());
-    }
-
-    // Call the ndeallocate for handles
-    this->ndeallocate(handles);
-
-    DRETURN;
-}
-
 /* Deallocates an array of given command buffer handles. */
-void CommandPool::ndeallocate(const Tools::Array<command_buffer_h>& handles) {
-    DENTER("CommandPool::ndeallocate(handles)");
+void CommandPool::nfree(const Tools::Array<CommandBuffer*>& buffers) {
+    DENTER("Rendering::CommandPool::nfree");
 
     // First, we check if all handles exist
-    Tools::Array<VkCommandBuffer> to_remove(handles.size());
-    for (uint32_t i = 0; i < handles.size(); i++) {
-        // Do the check
-        std::unordered_map<command_buffer_h, VkCommandBuffer>::iterator iter = this->vk_command_buffers.find(handles[i]);
-        if (iter == this->vk_command_buffers.end()) {
-            DLOG(fatal, "Handle at index " + std::to_string(i) + " does not exist.");
+    Tools::Array<VkCommandBuffer> to_remove(buffers.size());
+    for (uint32_t i = 0; i < buffers.size(); i++) {
+        bool found = false;
+        for (uint32_t i = 0; i < this->command_buffers.size(); i++) {
+            if (this->command_buffers[i] == buffers[i]) {
+                this->command_buffers.erase(i);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            DLOG(fatal, "Tried to free CommandBuffer that was not allocated with this pool.");
         }
 
         // Mark the Vk object for removal
-        to_remove.push_back((*iter).second);
+        to_remove.push_back(buffers[i]->command_buffer());
 
-        // Remove the item from the internal map
-        this->vk_command_buffers.erase(iter);
+        // Delete the pointer
+        delete buffers[i];
     }
 
     // All that's left is to actually remove the handles; do that
@@ -341,7 +279,7 @@ void Rendering::swap(CommandPool& cp1, CommandPool& cp2) {
     swap(cp1.vk_command_pool, cp2.vk_command_pool);
     swap(cp1.vk_queue_index, cp2.vk_queue_index);
     swap(cp1.vk_create_flags, cp2.vk_create_flags);
-    swap(cp1.vk_command_buffers, cp2.vk_command_buffers);
+    swap(cp1.command_buffers, cp2.command_buffers);
 
     DRETURN;
 }

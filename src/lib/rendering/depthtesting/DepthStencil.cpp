@@ -102,7 +102,7 @@ DepthStencil::DepthStencil(const Rendering::GPU& gpu, Rendering::MemoryPool& dra
 
     // Allocate the image - both the memory and the Vulkan memory
     DLOG(info, "Allocating internal image...");
-    this->rendering_image = new Image(this->draw_pool.allocate_image(image_extent, find_depth_format(this->gpu), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT));
+    this->rendering_image = this->draw_pool.allocate(image_extent, find_depth_format(this->gpu), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
 
@@ -134,7 +134,7 @@ DepthStencil::DepthStencil(const DepthStencil& other) :
 
 
     // Copy the image object
-    this->rendering_image = new Image(this->draw_pool.allocate_image(*other.rendering_image));
+    this->rendering_image = this->draw_pool.allocate(other.rendering_image);
 
 
 
@@ -176,8 +176,7 @@ DepthStencil::~DepthStencil() {
     }
     // Deallocate the image too if we need to
     if (this->rendering_image != nullptr) {
-        this->draw_pool.deallocate(*this->rendering_image);
-        delete this->rendering_image;
+        this->draw_pool.free(this->rendering_image);
     }
 
     DLEAVE;
@@ -193,10 +192,10 @@ void DepthStencil::resize(const VkExtent2D& new_extent) {
     vkDestroyImageView(this->gpu, this->vk_image_view, nullptr);
     // Deallocate the old image
     VkFormat old_format = this->rendering_image->format();
-    this->draw_pool.deallocate(*this->rendering_image);
+    this->draw_pool.free(this->rendering_image);
 
     // Allocate a new image
-    *this->rendering_image = this->draw_pool.allocate_image(new_extent, old_format, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    this->rendering_image = this->draw_pool.allocate(new_extent, old_format, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
     // Also re-create the image view
     VkImageViewCreateInfo view_info;
     populate_view_info(view_info, this->rendering_image->image(), this->rendering_image->format());

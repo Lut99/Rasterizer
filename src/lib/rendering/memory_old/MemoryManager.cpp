@@ -30,12 +30,12 @@ MemoryManager::MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_s
     draw_cmd_pool(this->gpu, this->gpu.queue_info().graphics(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT),
     mem_cmd_pool(this->gpu, this->gpu.queue_info().memory(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT),
 
-    draw_pool(this->gpu, draw_pool_size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-    stage_pool(this->gpu, stage_pool_size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
+    draw_pool(this->gpu, Rendering::MemoryPool::select_memory_type(this->gpu, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), draw_pool_size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+    stage_pool(this->gpu, Rendering::MemoryPool::select_memory_type(this->gpu, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), stage_pool_size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
 
     descr_pool(this->gpu, { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1),
 
-    copy_cmd(this->mem_cmd_pool.allocate())
+    copy_cmd_h(this->mem_cmd_pool.allocate_h())
 {}
 
 /* Copy constructor for the MemoryManager class. */
@@ -50,7 +50,7 @@ MemoryManager::MemoryManager(const MemoryManager& other) :
 
     descr_pool(other.descr_pool),
 
-    copy_cmd(this->mem_cmd_pool.allocate())
+    copy_cmd_h(this->mem_cmd_pool.allocate_h())
 
 {}
 
@@ -66,17 +66,17 @@ MemoryManager::MemoryManager(MemoryManager&& other) :
 
     descr_pool(other.descr_pool),
 
-    copy_cmd(other.copy_cmd)
+    copy_cmd_h(other.copy_cmd_h)
 {
-    other.copy_cmd = nullptr;
+    other.copy_cmd_h = CommandPool::NullHandle;
 }
 
 /* Destructor for the MemoryManager class. */
 MemoryManager::~MemoryManager() {
     DENTER("Rendering::MemoryManager::~MemoryManager");
 
-    if (this->copy_cmd != nullptr) {
-        this->mem_cmd_pool.free(this->copy_cmd);
+    if (this->copy_cmd_h != CommandPool::NullHandle) {
+        this->mem_cmd_pool.deallocate(this->copy_cmd_h);
     }
 
     DLEAVE;
@@ -105,7 +105,7 @@ void Rendering::swap(MemoryManager& mm1, MemoryManager& mm2) {
 
     swap(mm1.descr_pool, mm2.descr_pool);
 
-    swap(mm1.copy_cmd, mm2.copy_cmd);
+    swap(mm1.copy_cmd_h, mm2.copy_cmd_h);
 
     // Done
     DRETURN;

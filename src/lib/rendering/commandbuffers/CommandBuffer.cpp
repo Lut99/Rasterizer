@@ -66,19 +66,14 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const VkCommandBuffe
 
 
 
-
 /***** COMMANDBUFFER CLASS *****/
-/* Initializes the CommandBuffer to a default, unusable state. */
-CommandBuffer::CommandBuffer() :
-    vk_handle(CommandPool::NullHandle),
-    vk_command_buffer(nullptr)
-{}
-
 /* Private constructor for the CommandBuffer, which only takes the handle to this buffer and the VkCommandBuffer object to wrap. */
-CommandBuffer::CommandBuffer(command_buffer_h handle, VkCommandBuffer vk_command_buffer) :
-    vk_handle(handle),
+CommandBuffer::CommandBuffer(VkCommandBuffer vk_command_buffer) :
     vk_command_buffer(vk_command_buffer)
 {}
+
+/* Private destructor for the CommandBuffer class. */
+CommandBuffer::~CommandBuffer() {}
 
 
 
@@ -144,4 +139,3 @@ VkSubmitInfo CommandBuffer::get_submit_info() const {
     // Done!
     DRETURN submit_info;
 }
-

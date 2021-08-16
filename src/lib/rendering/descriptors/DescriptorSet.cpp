@@ -27,16 +27,16 @@ using namespace CppDebugger::SeverityValues;
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkDescriptorBufferInfo struct. */
-static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buffer& buffer) {
+static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buffer* buffer) {
     DENTER("populate_buffer_info");
 
     // Set to default
     buffer_info = {};
     
     // Set the memory properties
-    buffer_info.buffer = buffer.buffer();
+    buffer_info.buffer = buffer->buffer();
     buffer_info.offset = 0; // Note that this offset is (probably) relative to the buffer itself, not the vk_memory object it was allocated with
-    buffer_info.range = buffer.size();
+    buffer_info.range = buffer->size();
 
     // Done
     DRETURN;
@@ -123,14 +123,19 @@ static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSe
 
 
 /***** DESCRIPTORSET CLASS *****/
-/* Constructor for the DescriptorSet class, which takes the vk_descriptor_set it wraps. */
-DescriptorSet::DescriptorSet(descriptor_set_h handle, VkDescriptorSet vk_descriptor_set) :
-    vk_handle(handle),
+/* Constructor for the DescriptorSet class, which only takes the GPU where it lives and the vk_descriptor_set it wraps. */
+DescriptorSet::DescriptorSet(const Rendering::GPU& gpu, VkDescriptorSet vk_descriptor_set) :
+    gpu(gpu),
     vk_descriptor_set(vk_descriptor_set)
 {}
 
+/* Private destructor for the DescriptorSet classs. */
+DescriptorSet::~DescriptorSet() {}
+
+
+
 /* Binds this descriptor set with the contents of a given buffer to the given bind index. Must be enough buffers to actually populate all bindings of the given type. */
-void DescriptorSet::bind(const GPU& gpu, VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<Buffer>& buffers) const {
+void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<Buffer*>& buffers) const {
     DENTER("Rendering::DescriptorSet::bind(Buffer)");
 
     // We first create a list of buffer infos
@@ -157,7 +162,7 @@ void DescriptorSet::bind(const GPU& gpu, VkDescriptorType descriptor_type, uint3
 }
 
 /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-void DescriptorSet::bind(const GPU& gpu, VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const {
+void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const {
     DENTER("Rendering::DescriptorSet::bind(VkImageView)");
 
     // We first create a list of buffer infos
@@ -184,22 +189,12 @@ void DescriptorSet::bind(const GPU& gpu, VkDescriptorType descriptor_type, uint3
 }
 
 /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
-void DescriptorSet::schedule(const CommandBuffer& buffer, VkPipelineLayout pipeline_layout) const {
-    DENTER("Rendering::DescriptorSet::record");
+void DescriptorSet::schedule(const CommandBuffer* buffer, VkPipelineLayout pipeline_layout) const {
+    DENTER("Rendering::DescriptorSet::schedule");
 
     // Add the binding
-    vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout, 0, 1, &this->vk_descriptor_set, 0, nullptr);
+    vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout, 0, 1, &this->vk_descriptor_set, 0, nullptr);
 
+    // Done
     DRETURN;
 }
-
-
-
-/* Swap operator for the DescriptorSet. */
-void Rendering::swap(DescriptorSet& ds1, DescriptorSet& ds2) {
-    using std::swap;
-
-    swap(ds1.vk_handle, ds2.vk_handle);
-    swap(ds1.vk_descriptor_set, ds2.vk_descriptor_set);
-}
-

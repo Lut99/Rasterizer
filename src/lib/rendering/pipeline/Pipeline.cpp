@@ -567,43 +567,43 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
 
 
 /* Schedules the pipeline to be run and thus drawn in the given command buffer. Optionally takes another bind point. */
-void Pipeline::schedule(const Rendering::CommandBuffer& cmd, VkPipelineBindPoint vk_bind_point) {
+void Pipeline::schedule(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point) {
     DENTER("Rendering::Pipeline::schedule");
 
     // Simply bind the pipeline at this point in the command buffer
-    vkCmdBindPipeline(cmd, vk_bind_point, this->vk_pipeline);
+    vkCmdBindPipeline(cmd->command_buffer(), vk_bind_point, this->vk_pipeline);
 
     // We're done
     DRETURN;
 }
 
 /* Schedules a new push constant to be pushed to the shader(s) in the pipeline. */
-void Pipeline::schedule_push_constants(const Rendering::CommandBuffer& cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data) {
+void Pipeline::schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data) {
     DENTER("Rendering::Pipeline::schedule_push_constants");
 
     // Simply schedule it
-    vkCmdPushConstants(cmd, this->vk_pipeline_layout, shader_stage, offset, size, data);
+    vkCmdPushConstants(cmd->command_buffer(), this->vk_pipeline_layout, shader_stage, offset, size, data);
 
     DRETURN;
 }
 
 /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
-void Pipeline::schedule_draw(const Rendering::CommandBuffer& cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) {
+void Pipeline::schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) {
     DENTER("Rendering::Pipeline::schedule_draw");
 
     // Simply do the draw call
-    vkCmdDraw(cmd, vertex_count, instance_count, first_vertex, first_instance);
+    vkCmdDraw(cmd->command_buffer(), vertex_count, instance_count, first_vertex, first_instance);
 
     // We're done
     DRETURN;
 }
 
 /* Schedules the draw call for the pipeline, except that is uses an index buffer instead of just a list of vertices. Takes the number of indices, the number of instances, the first vertex, the first index and the first instance. */
-void Pipeline::schedule_draw_indexed(const Rendering::CommandBuffer& cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_index, uint32_t first_instance) {
+void Pipeline::schedule_draw_indexed(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_index, uint32_t first_instance) {
     DENTER("Rendering::Pipeline::schedule_draw_indexed");
 
     // Simply do the draw call
-    vkCmdDrawIndexed(cmd, index_count, instance_count, first_index, first_vertex, first_instance);
+    vkCmdDrawIndexed(cmd->command_buffer(), index_count, instance_count, first_index, first_vertex, first_instance);
 
     // We're done
     DRETURN;
@@ -648,4 +648,3 @@ void Rendering::swap(Pipeline& p1, Pipeline& p2) {
     // Done
     DRETURN;
 }
-

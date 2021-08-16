@@ -28,21 +28,18 @@ namespace Rasterizer::ECS {
     /* The Mesh component, which is used to add several model meshes to an entity. */
     struct Mesh {
         /* The buffers containing the vertices. */
-        Rendering::buffer_h vertices_h;
+        Rendering::Buffer* vertices;
         /* The buffers containing the indices. */
-        Rendering::buffer_h indices_h;
+        Rendering::Buffer* indices;
         /* The number of indices used in this mesh. */
         uint32_t n_indices;
-
-        /* Auxillary data about the Mesh that will be send to the GPU (CPU-side). */
-        Rendering::MeshData data;
-        /* Auxillary data about the Mesh that will be send to the GPU (GPU-side). */
-        Rendering::buffer_h data_h;
         
         /* Optional name for this mesh, not unique. Only for debugging. */
         std::string name;
         /* Name (ID) of the material used in this mesh. Not used except for debugging. */
         std::string mtl;
+        /* The colour associated with the selected material. */
+        glm::vec4 mtl_col;
     };
     /* Shortcut for the list of Meshes. */
     using Meshes = Tools::Array<Mesh>;
@@ -55,7 +52,9 @@ namespace Rasterizer::ECS {
 
 
 namespace Tools {
-    /* The string name of the Model component. */
+    /* The string name of the Mesh component. */
+    template <> inline constexpr const char* type_name<Rasterizer::ECS::Mesh>() { return "ECS::Mesh"; }
+    /* The string name of the Meshes list. */
     template <> inline constexpr const char* type_name<Rasterizer::ECS::Meshes>() { return "ECS::Meshes"; }
 }
 

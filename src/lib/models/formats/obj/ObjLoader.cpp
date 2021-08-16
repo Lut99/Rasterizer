@@ -100,39 +100,27 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
     VkDeviceSize vertices_size = cpu_vertices.size() * sizeof(Rendering::Vertex);
     VkDeviceSize indices_size  = cpu_indices.size() * sizeof(Rendering::index_t);
     VkDeviceSize data_size     = sizeof(Rendering::MeshData);
-    mesh.vertices_h = memory_manager.draw_pool.allocate_buffer_h(vertices_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    mesh.indices_h  = memory_manager.draw_pool.allocate_buffer_h(indices_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    mesh.data_h     = memory_manager.draw_pool.allocate_buffer_h(data_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-    Rendering::Buffer vertices = memory_manager.draw_pool.deref_buffer(mesh.vertices_h);
-    Rendering::Buffer indices  = memory_manager.draw_pool.deref_buffer(mesh.indices_h);
-    Rendering::Buffer data     = memory_manager.draw_pool.deref_buffer(mesh.data_h);
+    mesh.vertices = memory_manager.draw_pool.allocate(vertices_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    mesh.indices  = memory_manager.draw_pool.allocate(indices_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
     // Allocate a stage memory
-    Rendering::Buffer stage = memory_manager.stage_pool.allocate_buffer(std::max({vertices_size, indices_size, data_size}), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    Rendering::Buffer* stage = memory_manager.stage_pool.allocate(std::max({vertices_size, indices_size, data_size}), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     void* stage_map;
-    stage.map(&stage_map);
-
-    // Fetch the command buffer
-    Rendering::CommandBuffer copy_cmd = memory_manager.copy_cmd();
+    stage->map(&stage_map);
 
     // First copy the vertices to the mesh via the stage buffer
     memcpy(stage_map, cpu_vertices.rdata(), vertices_size);
-    stage.flush();
-    stage.copyto(vertices, vertices_size, 0, 0, copy_cmd);
+    stage->flush();
+    stage->copyto(mesh.vertices, vertices_size, 0, 0, memory_manager.copy_cmd);
     
     // Then copy the indices the same way
     memcpy(stage_map, cpu_indices.rdata(), indices_size);
-    stage.flush();
-    stage.copyto(indices, indices_size, 0, 0, copy_cmd);
-
-    // Finally, copy the auxillary mesh data
-    memcpy(stage_map, &mesh.data, sizeof(Rendering::MeshData));
-    stage.flush();
-    stage.copyto(data, data_size, 0, 0, copy_cmd);
+    stage->flush();
+    stage->copyto(mesh.indices, indices_size, 0, 0, memory_manager.copy_cmd);
 
     // We're done, deallocate the stage buffer
-    stage.unmap();
-    memory_manager.stage_pool.deallocate(stage);
+    stage->unmap();
+    memory_manager.stage_pool.free(stage);
 
     // Done
     DDEDENT;
@@ -787,7 +775,7 @@ usemtl_start: {
 
             // Else, set as current and return
             state.mesh.mtl     = material;
-            state.mesh.data.mtl_col = glm::vec4((*mtl_iter).second, 1.0f);
+            state.mesh.mtl_col = glm::vec4((*mtl_iter).second, 1.0f);
             remove_stack_bottom(state.symbol_stack, iter);
             DRETURN "usemtl";
         }

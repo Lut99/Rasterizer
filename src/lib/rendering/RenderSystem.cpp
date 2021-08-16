@@ -40,7 +40,7 @@ using namespace CppDebugger::SeverityValues;
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSubmitInfo struct. */
-static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer& cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
+static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer* cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
     DENTER("populate_submit_info");
 
     // Set to default
@@ -49,7 +49,7 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer&
 
     // Attach the command buffer
     submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &cmd.command_buffer();
+    submit_info.pCommandBuffers = &cmd->command_buffer();
 
     // Attach the data for which we wait
     submit_info.waitSemaphoreCount = 1;
@@ -105,9 +105,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     vertex_shader(this->window.gpu(), "bin/shaders/vertex_v3.spv"),
     fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
 
-    descriptor_set_layout(this->window.gpu()),
-    descriptor_set_h(CommandPool::NullHandle),
-
     render_pass(this->window.gpu()),
     pipeline(this->window.gpu()),
 
@@ -121,13 +118,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     current_frame(0)
 {
     DENTER("Rendering::RenderSystem::RenderSystem");
-
-    // Initialize the descriptor set layout and its first set
-    uint32_t set = this->descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
-    this->descriptor_set_layout.finalize();
-
-    // Allocate a descriptor set with this data
-    this->descriptor_set_h = this->memory_manager.descr_pool.allocate_h(this->descriptor_set_layout);
 
     // Initialize the render pass
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -171,9 +161,6 @@ RenderSystem::RenderSystem(const RenderSystem& other) :
     vertex_shader(other.vertex_shader),
     fragment_shader(other.fragment_shader),
 
-    descriptor_set_layout(other.descriptor_set_layout),
-    descriptor_set_h(CommandPool::NullHandle),
-
     render_pass(other.render_pass),
     pipeline(other.pipeline),
 
@@ -188,8 +175,7 @@ RenderSystem::RenderSystem(const RenderSystem& other) :
 {
     DENTER("Rendering::RenderSystem::RenderSystem(copy)");
 
-    // Create a new descriptor set handle
-    this->descriptor_set_h = this->memory_manager.descr_pool.allocate_h(this->descriptor_set_layout);
+    // Nothing as of yet
 
     DLEAVE;
 }
@@ -206,9 +192,6 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
     vertex_shader(other.vertex_shader),
     fragment_shader(other.fragment_shader),
 
-    descriptor_set_layout(other.descriptor_set_layout),
-    descriptor_set_h(other.descriptor_set_h),
-
     render_pass(other.render_pass),
     pipeline(other.pipeline),
 
@@ -220,18 +203,13 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
     image_in_flight_fences(other.image_in_flight_fences),
 
     current_frame(other.current_frame)
-{
-    other.descriptor_set_h = CommandPool::NullHandle;
-}
+{}
 
 /* Destructor for the RenderSystem class. */
 RenderSystem::~RenderSystem() {
     DENTER("Rendering::RenderSystem::~RenderSystem");
 
-    // Deallocate the descriptor set if necessary
-    if (this->descriptor_set_h != CommandPool::NullHandle) {
-        this->memory_manager.descr_pool.deallocate(this->descriptor_set_h);
-    }
+    // Nothing as of yet
 
     DLEAVE;
 }
@@ -304,7 +282,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     const glm::mat4& cam_mat = entity_manager.get_list<Camera>()[0].proj_view;
 
     // Prepare the command buffer's recording
-    this->draw_cmds[swapchain_index].begin();
+    this->draw_cmds[swapchain_index]->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     this->render_pass.start_scheduling(this->draw_cmds[swapchain_index], this->framebuffers[swapchain_index]);
     this->pipeline.schedule(this->draw_cmds[swapchain_index]);
 
@@ -322,14 +300,14 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         // Record the command buffer for this entity's groups
         this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), (void*) &cam_matrices[i]);
         for (uint32_t j = 0; j < meshes.size(); j++) {
-            this->model_system.schedule(meshes[j], this->draw_cmds[swapchain_index]);
+            this->model_system.schedule(this->draw_cmds[swapchain_index], meshes[j]);
             this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], meshes[j].n_indices, 1);
         }
     }
 
     // Finish recording
     this->render_pass.stop_scheduling(this->draw_cmds[swapchain_index]);
-    this->draw_cmds[swapchain_index].end();
+    this->draw_cmds[swapchain_index]->end();
 
 
 
@@ -396,9 +374,6 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
 
     swap(rs1.vertex_shader, rs2.vertex_shader);
     swap(rs1.fragment_shader, rs2.fragment_shader);
-
-    swap(rs1.descriptor_set_layout, rs2.descriptor_set_layout);
-    swap(rs1.descriptor_set_h, rs2.descriptor_set_h);
 
     swap(rs1.render_pass, rs2.render_pass);
     swap(rs1.pipeline, rs2.pipeline);

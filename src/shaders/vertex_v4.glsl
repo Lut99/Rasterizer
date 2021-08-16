@@ -1,16 +1,16 @@
-/* VERTEX V 3.glsl
+/* VERTEX V 4.glsl
  *   by Lut99
  *
  * Created:
- *   28/06/2021, 17:18:50
+ *   16/08/2021, 11:44:50
  * Last edited:
- *   8/1/2021, 5:42:15 PM
+ *   16/08/2021, 11:44:50
  * Auto updated?
  *   Yes
  *
  * Description:
  *   Code for our very simple vertex shader. This version takes vertices
- *   dynamically from the input list of vertices.
+ *   dynamically from the input list of vertices. Also has texture support.
 **/
 
 #version 450
@@ -36,6 +36,6 @@ void main() {
     // Return the vertex as a 4D vertex
     // gl_Position = camera.proj * camera.view * camera.model * vec4(vertex, 0.0, 1.0);
     gl_Position = camera.mat * vec4(vertex, 1.0);
-    // Also return the color for the fragment shader
+    // Also return the color & normal for the fragment shader
     frag_color = color;
 }

@@ -281,7 +281,7 @@ void RenderPass::finalize() {
 
 
 /* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and a background colour for the image. */
-void RenderPass::start_scheduling(const Rendering::CommandBuffer& cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour, const VkClearValue& vk_clear_depth) {
+void RenderPass::start_scheduling(const Rendering::CommandBuffer* cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour, const VkClearValue& vk_clear_depth) {
     DENTER("Rendering::RenderPass::start_scheduling");
 
     // First, create the rect that we shall render to
@@ -298,18 +298,18 @@ void RenderPass::start_scheduling(const Rendering::CommandBuffer& cmd, const Ren
     populate_begin_info(begin_info, this->vk_render_pass, framebuffer.framebuffer(), render_area, clear_values);
 
     // Schedule it in the command buffer (and tell it to schedule everything in the primary command buffers instead of secondary ones)
-    vkCmdBeginRenderPass(cmd, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd->command_buffer(), &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
     // Done
     DRETURN;
 }
 
 /* Finishes scheduling the RenderPass. */
-void RenderPass::stop_scheduling(const Rendering::CommandBuffer& cmd) {
+void RenderPass::stop_scheduling(const Rendering::CommandBuffer* cmd) {
     DENTER("Rendering::RenderPass::stop_scheduling");
 
     // Simply call the stop
-    vkCmdEndRenderPass(cmd);
+    vkCmdEndRenderPass(cmd->command_buffer());
 
     DRETURN;
 }

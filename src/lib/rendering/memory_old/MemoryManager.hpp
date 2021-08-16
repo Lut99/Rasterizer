@@ -43,7 +43,7 @@ namespace Rasterizer::Rendering {
         Rendering::DescriptorPool descr_pool;
 
         /* A command buffer for memory transfer operations. */
-        Rendering::CommandBuffer* copy_cmd;
+        Rendering::command_buffer_h copy_cmd_h;
 
 
         /* Constructor for the MemoryManager class, which takes the GPU where it is defined for and the sizes of the two memory pools. */
@@ -54,6 +54,9 @@ namespace Rasterizer::Rendering {
         MemoryManager(MemoryManager&& other);
         /* Destructor for the MemoryManager class. */
         ~MemoryManager();
+
+        /* Get a reference to the internal copy command buffer. */
+        inline Rendering::CommandBuffer copy_cmd() { return this->mem_cmd_pool.deref(this->copy_cmd_h); }
 
         /* Copy assignment operator for the MemoryManager class. */
         inline MemoryManager& operator=(const MemoryManager& other) { return *this = MemoryManager(other); }

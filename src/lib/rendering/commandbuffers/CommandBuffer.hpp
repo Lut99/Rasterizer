@@ -21,26 +21,25 @@
 #include <cstdint>
 
 namespace Rasterizer::Rendering {
-    /* Handle for CommandBuffers, which can be used to retrieve them from the Pool. Note that each pool has its own set of handles. */
-    using command_buffer_h = uint32_t;
-
     /* The CommandBuffer class, which acts as a reference to an allocated CommandBuffer in the CommandPool. Can thus be comfortably deallocated and then later re-acquired by its matching handle. */
     class CommandBuffer {
     private:
-        /* The handle for this buffer. */
-        command_buffer_h vk_handle;
         /* The VkCommandBuffer object that we wrap. */
         VkCommandBuffer vk_command_buffer;
-
-        /* Private constructor for the CommandBuffer, which only takes the handle to this buffer and the VkCommandBuffer object to wrap. */
-        CommandBuffer(command_buffer_h handle, VkCommandBuffer vk_command_buffer);
 
         /* Mark the CommandPool class as friend. */
         friend class CommandPool;
 
+        /* Private constructor for the CommandBuffer, which only takes the VkCommandBuffer object to wrap. */
+        CommandBuffer(VkCommandBuffer vk_command_buffer);
+        /* Private destructor for the CommandBuffer class. */
+        ~CommandBuffer();
+
     public:
-        /* Initializes the CommandBuffer to a default, unusable state. */
-        CommandBuffer();
+        /* Copy constructor for the CommandBuffer class, which is deleted. */
+        CommandBuffer(const CommandBuffer& other) = delete;
+        /* Move constructor for the CommandBuffer class, which is deleted. */
+        CommandBuffer(CommandBuffer&& other) = delete;
 
         /* Begins recording the command buffer. Overwrites whatever is already recorded here, for some reason. Takes optional usage flags for this recording. */
         void begin(VkCommandBufferUsageFlags usage_flags = 0) const;
@@ -52,11 +51,12 @@ namespace Rasterizer::Rendering {
         /* Explititly returns the internal VkCommandBuffer object. */
         inline const VkCommandBuffer& command_buffer() const { return this->vk_command_buffer; }
         /* Implicitly returns the internal VkCommandBuffer object. */
-        inline operator VkCommandBuffer() const { return this->vk_command_buffer; }
-        /* Explicitly returns the internal handle. */
-        inline const command_buffer_h& handle() const { return this->vk_handle; }
-        /* Implicitly returns the internal handle. */
-        inline operator command_buffer_h() const { return this->vk_handle; }
+        inline operator const VkCommandBuffer&() const { return this->vk_command_buffer; }
+
+        /* Copy assignment operator for the CommandBuffer class, which is deleted. */
+        CommandBuffer& operator=(const CommandBuffer& other) = delete;
+        /* Move assignment operator for the CommandBuffer class, which is deleted. */
+        CommandBuffer& operator=(CommandBuffer&& other) = delete;
 
     };
 }

@@ -72,6 +72,7 @@ add_custom_target(shaders
     COMMAND glslc -fshader-stage=vertex -o ${PROJECT_SOURCE_DIR}/bin/shaders/vertex_v1.spv ${PROJECT_SOURCE_DIR}/src/shaders/vertex_v1.glsl
     COMMAND glslc -fshader-stage=vertex -o ${PROJECT_SOURCE_DIR}/bin/shaders/vertex_v2.spv ${PROJECT_SOURCE_DIR}/src/shaders/vertex_v2.glsl
     COMMAND glslc -fshader-stage=vertex -o ${PROJECT_SOURCE_DIR}/bin/shaders/vertex_v3.spv ${PROJECT_SOURCE_DIR}/src/shaders/vertex_v3.glsl
+    COMMAND glslc -fshader-stage=vertex -o ${PROJECT_SOURCE_DIR}/bin/shaders/vertex_v3.spv ${PROJECT_SOURCE_DIR}/src/shaders/vertex_v4.glsl
     COMMAND glslc -fshader-stage=frag -o ${PROJECT_SOURCE_DIR}/bin/shaders/frag_v1.spv ${PROJECT_SOURCE_DIR}/src/shaders/fragment_v1.glsl
     COMMENT "Building shaders..."
 )
