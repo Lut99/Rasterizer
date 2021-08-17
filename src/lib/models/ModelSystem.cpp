@@ -99,12 +99,12 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             mesh.name = "triangle";
             mesh.mtl = "rainbow";
             mesh.mtl_col = { 0.0f, 0.0f, 0.0f, 0.0f };
-            mesh.vertices = this->memory_manager.draw_pool.allocate(3 * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-            mesh.indices  = this->memory_manager.draw_pool.allocate(3 * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.vertices = this->memory_manager.draw_pool.allocate(3 * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            mesh.indices  = this->memory_manager.draw_pool.allocate(3 * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
             mesh.n_indices = 3;
 
             // Prepare a staging buffer
-            Rendering::Buffer* stage_buffer = this->memory_manager.stage_pool.allocate(std::max(3 * sizeof(Rendering::Vertex), 3 * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            Rendering::Buffer* stage_buffer = this->memory_manager.stage_pool.allocate(std::max(3 * sizeof(Rendering::Vertex), 3 * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             void* stage_memory;
             stage_buffer->map(&stage_memory);
 
@@ -121,7 +121,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             istage_memory[0] = 0;
             istage_memory[1] = 1;
             istage_memory[2] = 2;
-            stage_buffer->flush();
+            stage_buffer->flush(3 * sizeof(Rendering::index_t));
             stage_buffer->copyto(mesh.indices, 3 * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
 
             // Deallocate the stage buffer and update the index count

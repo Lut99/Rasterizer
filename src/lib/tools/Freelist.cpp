@@ -78,7 +78,8 @@ freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
         }
     }
 
-    // Return the found (or not found) index
+    // Update the size, then return the found (or not found) index
+    this->current_size += size;
     DRETURN result;
 }
 
@@ -90,7 +91,8 @@ void Freelist::release(freelist_size_t offset) {
     for (array_size_t i = 0; i < this->blocks.size(); i++) {
         if (offset >= this->blocks[i].offset && offset <= this->blocks[i].offset + this->blocks[i].size) {
             // If it's a free block, fail
-            if (!this->blocks[i].used) { DLOG(fatal, "Cannot free block with offset " + std::to_string(offset) + " as it's already a free block (" + bytes_to_string(this->blocks[i].size) + ", starting at " + std::to_string(this->blocks[i].offset) + ")"); }
+            freelist_size_t block_size = this->blocks[i].size;
+            if (!this->blocks[i].used) { DLOG(fatal, "Cannot free block with offset " + std::to_string(offset) + " as it's already a free block (" + bytes_to_string(block_size) + ", starting at " + std::to_string(this->blocks[i].offset) + ")"); }
 
             // Otherwise, match on the applicable condition of the block's neighbour
             if (this->blocks.size() == 1) {
@@ -99,18 +101,18 @@ void Freelist::release(freelist_size_t offset) {
 
             } else if ((i == 0 || this->blocks[i - 1].used) && !this->blocks[i + 1].used) {
                 // Left is nothing mergeable but right is, so merge to right
-                this->blocks[i + 1].offset -= this->blocks[i].size;
-                this->blocks[i + 1].size   += this->blocks[i].size;
+                this->blocks[i + 1].offset -= block_size;
+                this->blocks[i + 1].size   += block_size;
                 this->blocks.erase(i);
 
             } else if (i > 0 && !this->blocks[i - 1].used && (i == this->blocks.size() - 1 || this->blocks[i + 1].used)) {
                 // Left is mergeable but right right isn't, so merge to the left
-                this->blocks[i - 1].size += this->blocks[i].size;
+                this->blocks[i - 1].size += block_size;
                 this->blocks.erase(i);
 
             } else if (i > 0 && i < this->blocks.size() - 1 && !this->blocks[i - 1].used && !this->blocks[i + 1].used) {
                 // Both sides are mergable
-                this->blocks[i - 1].size += this->blocks[i].size + this->blocks[i + 1].size;
+                this->blocks[i - 1].size += block_size + this->blocks[i + 1].size;
                 this->blocks.erase(i + 1);
                 this->blocks.erase(i);
 
@@ -119,6 +121,9 @@ void Freelist::release(freelist_size_t offset) {
                 this->blocks[i].used = false;
 
             }
+
+            // Update the size with the block size
+            this->current_size -= block_size;
 
             // Done
             DRETURN;

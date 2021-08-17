@@ -336,7 +336,6 @@ Buffer* MemoryPool::allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done
-    DLOG(info, "Allocated new Buffer of " + Tools::bytes_to_string(to_return->size()) + " (" + Tools::bytes_to_string(this->capacity() - this->size()) + " left)");
     DRETURN to_return;
 }
 
@@ -367,7 +366,6 @@ Buffer* MemoryPool::allocate(const Buffer* other) {
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done!
-    DLOG(info, "Allocated new Buffer of " + Tools::bytes_to_string(to_return->size()) + " (" + Tools::bytes_to_string(this->capacity() - this->size()) + " left)");
     DRETURN to_return;
 }
 
@@ -401,7 +399,6 @@ Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_forma
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done
-    DLOG(info, "Allocated new Image of " + Tools::bytes_to_string(to_return->size()) + " (" + Tools::bytes_to_string(this->capacity() - this->size()) + " left)");
     DRETURN to_return;
 }
 
@@ -433,7 +430,6 @@ Image* MemoryPool::allocate(const Image* other) {
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done!
-    DLOG(info, "Allocated new Image of " + Tools::bytes_to_string(to_return->size()) + " (" + Tools::bytes_to_string(this->capacity() - this->size()) + " left)");
     DRETURN to_return;
 }
 

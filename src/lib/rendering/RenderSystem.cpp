@@ -28,6 +28,7 @@
 #include "auxillary/ErrorCodes.hpp"
 #include "auxillary/Rectangle.hpp"
 #include "auxillary/Vertex.hpp"
+#include "auxillary/Index.hpp"
 
 #include "RenderSystem.hpp"
 

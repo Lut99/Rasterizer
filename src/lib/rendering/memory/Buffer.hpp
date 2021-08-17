@@ -71,7 +71,7 @@ namespace Rasterizer::Rendering {
         /* Maps the buffer to host-memory so it can be written to. Only possible if the VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT is set for the memory of this buffer's pool. Note that the memory is NOT automatically unmapped if the Buffer object is destroyed. */
         void map(void** mapped_memory, VkMemoryMapFlags map_flags = 0) const;
         /* Flushes all unflushed memory operations done on mapped memory. If the memory of this buffer has VK_MEMORY_PROPERTY_HOST_COHERENT_BIT set, then nothing is done as the memory is already automatically flushed. */
-        void flush() const;
+        void flush(VkDeviceSize n_bytes = VK_WHOLE_SIZE) const;
         /* Unmaps buffer's memory. */
         void unmap() const;
 
@@ -97,6 +97,8 @@ namespace Rasterizer::Rendering {
         inline VkDeviceSize offset() const { return this->object_offset; }
         /* Returns the size of the buffer. */
         inline VkDeviceSize size() const { return this->buffer_size; }
+        /* Returns the actual size of the buffer as allocated. */
+        inline VkDeviceSize rsize() const { return this->vk_requirements.size; }
         /* Explicitly returns the internal VkBuffer object. */
         inline const VkBuffer& buffer() const { return this->vk_buffer; }
         /* Implicitly returns the internal VkBuffer object. */

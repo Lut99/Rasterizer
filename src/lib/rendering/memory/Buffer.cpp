@@ -147,7 +147,7 @@ void Buffer::map(void** mapped_memory, VkMemoryMapFlags map_flags) const {
 
     // Now, we map the memory to a bit of host-side memory
     VkResult vk_result;
-    if ((vk_result = vkMapMemory(this->gpu, this->pool.memory(), this->object_offset, this->vk_requirements.size, map_flags, mapped_memory)) != VK_SUCCESS) {
+    if ((vk_result = vkMapMemory(this->gpu, this->pool.memory(), this->object_offset, this->buffer_size, map_flags, mapped_memory)) != VK_SUCCESS) {
         DLOG(fatal, "Could not map buffer memory to CPU-memory: " + vk_error_map[vk_result]);
     }
 
@@ -156,7 +156,7 @@ void Buffer::map(void** mapped_memory, VkMemoryMapFlags map_flags) const {
 }
 
 /* Flushes all unflushed memory operations done on mapped memory. If the memory of this buffer has VK_MEMORY_PROPERTY_HOST_COHERENT_BIT set, then nothing is done as the memory is already automatically flushed. */
-void Buffer::flush() const {
+void Buffer::flush(VkDeviceSize n_bytes) const {
     DENTER("Rendering::Buffer::flush");
 
     // If this buffer is coherent, quite immediately
@@ -164,9 +164,12 @@ void Buffer::flush() const {
         DRETURN;
     }
 
+    // Resolve the size to copy
+    n_bytes = n_bytes == VK_WHOLE_SIZE ? this->buffer_size : n_bytes;
+
     // Prepare the call to the flush function
     VkMappedMemoryRange memory_range;
-    populate_memory_range(memory_range, this->pool.memory(), this->object_offset, this->vk_requirements.size);
+    populate_memory_range(memory_range, this->pool.memory(), this->object_offset, n_bytes);
 
     // Do the flush call
     VkResult vk_result;
@@ -197,22 +200,22 @@ void Buffer::schedule_copyto(const Buffer* destination, VkDeviceSize n_bytes, Vk
 
     #ifndef NDEBUG
     // Check if the offsets are valid
-    if (source_offset >= this->vk_requirements.size) {
-        DLOG(fatal, "Source offset of " + std::to_string(source_offset) + " is out of range for buffer of size " + std::to_string(this->vk_requirements.size) + ".");
+    if (source_offset >= this->buffer_size) {
+        DLOG(fatal, "Source offset of " + std::to_string(source_offset) + " is out of range for buffer of size " + std::to_string(this->buffer_size) + ".");
     }
-    if (target_offset >= destination->vk_requirements.size) {
-        DLOG(fatal, "Target offset of " + std::to_string(target_offset) + " is out of range for buffer of size " + std::to_string(destination->vk_requirements.size) + ".");
+    if (target_offset >= destination->buffer_size) {
+        DLOG(fatal, "Target offset of " + std::to_string(target_offset) + " is out of range for buffer of size " + std::to_string(destination->buffer_size) + ".");
     }
     #endif
 
     // Check if the sizes is not too large
-    n_bytes = n_bytes == VK_WHOLE_SIZE ? this->vk_requirements.size : n_bytes;
+    n_bytes = n_bytes == VK_WHOLE_SIZE ? this->buffer_size : n_bytes;
     #ifndef NDEBUG
-    if (n_bytes > this->vk_requirements.size - source_offset) {
-        DLOG(fatal, "Cannot copy " + Tools::bytes_to_string(n_bytes) + " from buffer of only " + Tools::bytes_to_string(this->vk_requirements.size) + " (with offset=" + std::to_string(source_offset) + ").");
+    if (n_bytes > this->buffer_size - source_offset) {
+        DLOG(fatal, "Cannot copy " + Tools::bytes_to_string(n_bytes) + " from buffer of only " + Tools::bytes_to_string(this->buffer_size) + " (with offset=" + std::to_string(source_offset) + ").");
     }
-    if (n_bytes > destination->vk_requirements.size - target_offset) {
-        DLOG(fatal, "Cannot copy " + Tools::bytes_to_string(n_bytes) + " to buffer of only " + Tools::bytes_to_string(destination->vk_requirements.size) + " (with offset=" + std::to_string(target_offset) + ").");
+    if (n_bytes > destination->buffer_size - target_offset) {
+        DLOG(fatal, "Cannot copy " + Tools::bytes_to_string(n_bytes) + " to buffer of only " + Tools::bytes_to_string(destination->buffer_size) + " (with offset=" + std::to_string(target_offset) + ").");
     }
     #endif
 
@@ -243,8 +246,8 @@ void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceS
 
     #ifndef NDEBUG
     // Check if the offsets are valid
-    if (source_offset >= this->vk_requirements.size) {
-        DLOG(fatal, "Source offset of " + std::to_string(source_offset) + " is out of range for buffer of size " + std::to_string(this->vk_requirements.size) + ".");
+    if (source_offset >= this->buffer_size) {
+        DLOG(fatal, "Source offset of " + std::to_string(source_offset) + " is out of range for buffer of size " + std::to_string(this->buffer_size) + ".");
     }
     if (static_cast<uint32_t>(target_offset.x) >= destination->vk_extent.width) {
         DLOG(fatal, "Target offset.x of " + std::to_string(target_offset.x) + " is out of range for image of width " + std::to_string(destination->vk_extent.width) + ".");
@@ -256,8 +259,8 @@ void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceS
 
     #ifndef NDEBUG
     // Check if the buffer is not too small
-    if (4 * destination->vk_extent.width * destination->vk_extent.height > this->vk_requirements.size) {
-        DLOG(fatal, "Cannot copy " + std::to_string(n_bytes) + " pixels from buffer of only " + Tools::bytes_to_string(this->vk_requirements.size) + " (with offset=" + std::to_string(source_offset) + ").");
+    if (4 * destination->vk_extent.width * destination->vk_extent.height > this->buffer_size) {
+        DLOG(fatal, "Cannot copy " + std::to_string(n_bytes) + " pixels from buffer of only " + Tools::bytes_to_string(this->buffer_size) + " (with offset=" + std::to_string(source_offset) + ").");
     }
     #endif
 
@@ -295,6 +298,9 @@ void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceS
 void Buffer::copyto(const Buffer* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, VkDeviceSize target_offset, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
     DENTER("Rendering::Buffer::copyto(Buffer)");
 
+    // Resolve the queue
+    vk_queue = vk_queue == nullptr ? this->gpu.queues(Rendering::QueueType::memory)[0] : vk_queue;
+
     // Start recording the given command buffer, and we'll tell Vulkan we use this recording only once
     command_buffer->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     // We schedule the copy
@@ -309,6 +315,9 @@ void Buffer::copyto(const Buffer* destination, VkDeviceSize n_bytes, VkDeviceSiz
 /* Copies this buffer's contents to the given Image, scheduling the command on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source buffer and target image can be given. (the latter in three dimensions). Optionally, a queue can be given to run the commands on, which will otherwise default to the first memory queue of the internal GPU. */
 void Buffer::copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, const VkOffset3D& target_offset, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
      DENTER("Rendering::Buffer::copyto(Image)");
+
+    // Resolve the queue
+    vk_queue = vk_queue == nullptr ? this->gpu.queues(Rendering::QueueType::memory)[0] : vk_queue;
 
     // Start recording the given command buffer, and we'll tell Vulkan we use this recording only once
     command_buffer->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);

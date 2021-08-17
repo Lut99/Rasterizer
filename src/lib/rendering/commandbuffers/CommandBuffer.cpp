@@ -98,7 +98,7 @@ void CommandBuffer::begin(VkCommandBufferUsageFlags usage_flags) const {
 /* Ends recording the command buffer, but does not yet submit to any queue unless one is given. If so, then you can optionally specify to wait or not to wait for the queue to become idle. */
 void CommandBuffer::end(VkQueue vk_queue, bool wait_queue_idle) const {
     DENTER("Rendering::CommandBuffer::end");
-
+    
     // Whatever the parameters, always call the stop recording
     VkResult vk_result;
     if ((vk_result = vkEndCommandBuffer(this->vk_command_buffer)) != VK_SUCCESS) {

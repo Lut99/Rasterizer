@@ -77,8 +77,10 @@ namespace Rasterizer::Rendering {
         inline VkImageLayout layout() const { return this->vk_layout; }
         /* Returns the memory offset of the buffer, in bytes. */
         inline VkDeviceSize offset() const { return this->object_offset; }
+        /* Returns the conceptual size of the image, in bytes. */
+        inline VkDeviceSize size() const { return 4 * this->vk_extent.width * this->vk_extent.height; }
         /* Returns the size of the image, in bytes. */
-        inline VkDeviceSize size() const { return this->vk_requirements.size; }
+        inline VkDeviceSize rsize() const { return this->vk_requirements.size; }
         /* Explicit retrieval of the internal VkImage object. */
         inline const VkImage& image() const { return this->vk_image; }
         /* Implicit retrieval of the internal VkImage object. */
