@@ -18,8 +18,9 @@
 #include <cmath>
 #include <GLFW/glfw3.h>
 
+#include "tools/Tracer.hpp"
+#include "tools/Logger.hpp"
 #include "tools/Common.hpp"
-#include "tools/CppDebugger.hpp"
 
 #include "window/Window.hpp"
 
@@ -210,23 +211,24 @@ static void parse_args(Options& opts, int argc, const char** argv) {
 
 /***** ENTRY POINT *****/
 int main(int argc, const char** argv) {
-    DSTART("main"); DENTER("main");
+    TSTART("main"); TENTER("main");
+
+    // Declare the logger
+    Tools::Logger logger(cout, cerr, Verbosity::debug);
 
     try {
         // Parse the arguments
         Options opts;
-        parse_args(opts, argc, argv);
+        TCALL(parse_args, (opts, argc, argv));
 
-        // Print some nice entry message
-        DLOG(auxillary, "");
-        DLOG(auxillary, "<<< RASTERIZER >>>");
-        DLOG(auxillary, "");
+        // Indicate that we're starting
+        logger.logc(Verbosity::important, "main", "Initializing Rasterizer...");
 
         // Initialize the GLFW library
-        DLOG(info, "Initializing GLFW...");
-        glfwInit();
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        logger.logc(Verbosity::important, "main", "Initializing GLFW...");
+        TCALL(glfwInit, ());
+        TCALL(glfwWindowHint, (GLFW_CLIENT_API, GLFW_NO_API));
+        TCALL(glfwWindowHint, (GLFW_RESIZABLE, GLFW_TRUE));
 
         // Prepare the Vulkan instance first
         Rendering::Instance instance(Rendering::instance_extensions + get_glfw_extensions());
@@ -275,12 +277,9 @@ int main(int argc, const char** argv) {
         // model_system.load_model(entity_manager, obj, "bin/models/teddy.obj", Models::ModelFormat::obj);
         model_system.load_model(entity_manager, obj, "triangle", Models::ModelFormat::triangle);
 
-        // Initialize the engine
-        DLOG(auxillary, "");
-
         // Do the render
         uint32_t fps = 0;
-        DLOG(info, "Entering game loop...");
+        logger.logc(Verbosity::important, "main", "Done initializing, entering game loop...");
         chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
         bool busy = true;
         uint32_t count = 0;
@@ -330,23 +329,16 @@ int main(int argc, const char** argv) {
         }
 
         // Wait for the GPU to be idle before we stop
-        DLOG(auxillary, "");
-        DLOG(info, "Cleaning up...");
-        window.gpu().wait_for_idle();
+        logger.logc(Verbosity::important, "main", "Cleaning up...");
+        TCALL(window.gpu().wait_for_idle, ());
 
         // We're done
-        glfwTerminate();
-        DRETURN EXIT_SUCCESS;
+        TCALL(glfwTerminate, ());
+        TRETURN EXIT_SUCCESS;
 
-    } catch (CppDebugger::Fatal&) {
-        // Simply quit, as the error is already printed
-        return EXIT_FAILURE;
     } catch (std::exception& e) {
-        // Otherwise, re-throw with the debugger
-        try {
-            DLOG(fatal, e.what());
-        } catch (CppDebugger::Fatal&) {
-            return EXIT_FAILURE;
-        }
+        // Otherwise, re-throw with the tracer
+        Tools::tracer.throw_error(e.what());
+        TRETURN EXIT_FAILURE;
     }
 }

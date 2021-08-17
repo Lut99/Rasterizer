@@ -28,13 +28,13 @@ set(WARNING_FLAGS "")
 endif()
 
 # Add extra flags needed
-set(FLAGS "-g")
+set(DEBUG_FLAGS "-g -DNTRACE")
 if(WIN32)
-set(FLAGS "")
+set(DEBUG_FLAGS "")
 endif()
-message("Extra flags: '${FLAGS}'")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${WARNING_FLAGS} ${FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} ${FLAGS}")
+message("Debug flags: '${DEBUG_FLAGS}'")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${WARNING_FLAGS} ${DEBUG_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
 
 # Define all include directories
 get_target_property(GLFW_DIR glfw INTERFACE_INCLUDE_DIRECTORIES)
@@ -45,7 +45,7 @@ add_subdirectory(src)
 
 
 
-##### RAYTRACER TARGET #####
+##### RASTERIZER TARGET #####
 # Specify which file we want to compile
 add_executable(rasterizer ${PROJECT_SOURCE_DIR}/src/Main.cpp)
 # Set the output to the bin directory

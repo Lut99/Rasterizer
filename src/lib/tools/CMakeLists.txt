@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(Tools STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Common.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Logger.cpp ${CMAKE_CURRENT_SOURCE_DIR}/CppDebugger.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Freelist.cpp)
+add_library(Tools STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Common.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Tracer.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Logger.cpp ${CMAKE_CURRENT_SOURCE_DIR}/CppDebugger.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Freelist.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(Tools PUBLIC
