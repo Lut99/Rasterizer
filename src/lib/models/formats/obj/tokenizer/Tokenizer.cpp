@@ -29,8 +29,6 @@
 #include <cstring>
 #include <cerrno>
 #include <tuple>
-#include "tools/CppDebugger.hpp"
-
 #include "../../auxillary/TokenizerTools.hpp"
 #include "ValueTerminal.hpp"
 #include "Tokenizer.hpp"
@@ -38,7 +36,6 @@
 using namespace std;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Obj;
-using namespace CppDebugger::SeverityValues;
 
 
 
@@ -53,7 +50,7 @@ Tokenizer::Tokenizer(const std::string& path) :
     col(0),
     last_sentence_start(0)
 {
-    DENTER("Models::Obj::Tokenizer::Tokenizer");
+    
 
     // First, open a handle
     std::ifstream* is = new std::ifstream(this->path, std::ios::ate);
@@ -75,9 +72,6 @@ Tokenizer::Tokenizer(const std::string& path) :
     // Reset the file to the start
     is->clear();
     is->seekg(0);
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the Tokenizer class. */
@@ -98,7 +92,7 @@ Tokenizer::Tokenizer(Tokenizer&& other) :
 
 /* Destructor for the Tokenizer class. */
 Tokenizer::~Tokenizer() {
-    DENTER("Obj::Tokenizer::~Tokenizer");
+    
 
     for (uint32_t i = 0; i < this->terminal_buffer.size(); i++) {
         delete this->terminal_buffer[i];
@@ -106,21 +100,19 @@ Tokenizer::~Tokenizer() {
     if (this->file != nullptr) {
         delete this->file;
     }
-
-    DLEAVE;
 }
 
 
 
 /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
 Terminal* Tokenizer::get() {
-    DENTER("Models::Obj::Tokenizer::get");
+    
 
     // If there's something in the buffer, pop that off first
     if (this->terminal_buffer.size() > 0) {
         Terminal* result = this->terminal_buffer.last();
         this->terminal_buffer.pop_back();
-        DRETURN result;
+        return result;
     }
 
     // Prepare some variables
@@ -214,13 +206,13 @@ start: {
     } else if (c == EOF) {
         // End-of-file; return that we reached it
         DEBUG_PATH("EOF", "done");
-        DRETURN new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
+        return new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
 
     } else {
         // Unexpected token
         DebugInfo debug(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) });
         debug.print_error(cerr, std::string("Unexpected character '") + readable_char(c) + "'");
-        DRETURN nullptr;
+        return nullptr;
 
     }
 }
@@ -239,7 +231,7 @@ vertex: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        DRETURN new Terminal(TerminalType::vertex, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Terminal(TerminalType::vertex, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
 
     } else if (c == 'n') {
         DEBUG_PATH("n", "going vertex_normal");
@@ -270,7 +262,7 @@ vertex_normal: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        DRETURN new Terminal(TerminalType::normal, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Terminal(TerminalType::normal, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
 
     } else {
         // Parse as unknown keyword
@@ -293,7 +285,7 @@ vertex_texture: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        DRETURN new Terminal(TerminalType::texture, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Terminal(TerminalType::texture, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
 
     } else {
         // Parse as unknown keyword
@@ -318,7 +310,7 @@ face: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        DRETURN new Terminal(TerminalType::face, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Terminal(TerminalType::face, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
     } else {
         // Parse as unknown keyword
         DEBUG_PATH("other", "parsing as unknown token");
@@ -670,7 +662,7 @@ digit_start: {
         PARSE_UINT(value, sstr.str(), debug_info);
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<uint32_t>(TerminalType::uint, value, debug_info);
+        return (Terminal*) new ValueTerminal<uint32_t>(TerminalType::uint, value, debug_info);
 
     } else {
         // Parse as unknown
@@ -707,7 +699,7 @@ v_vt_start: {
         UNGET_CHAR(this->file, this->col);
         DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Missing texture coordinate in vertex/texture pair.");
-        DRETURN nullptr;
+        return nullptr;
 
     } else {
         // Parse as unknown
@@ -757,7 +749,7 @@ v_vt: {
         PARSE_UINT(itexture, texture, DebugInfo(this->path, line_start, col_start + vertex.size() + 1, this->line, this->col, lines));
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vt, { ivertex, itexture }, debug_info);
+        return (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vt, { ivertex, itexture }, debug_info);
 
     } else {
         // Parse as unknown
@@ -807,7 +799,7 @@ v_vn: {
         PARSE_UINT(inormal, normal, DebugInfo(this->path, line_start, col_start + vertex.size() + 1, this->line, this->col, lines));
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vn, { ivertex, inormal }, debug_info);
+        return (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vn, { ivertex, inormal }, debug_info);
 
     } else {
         // Parse as unknown
@@ -844,7 +836,7 @@ v_vt_vn_start: {
         UNGET_CHAR(this->file, this->col);
         DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Missing normal coordinate in vertex/texture/normal pair.");
-        DRETURN nullptr;
+        return nullptr;
 
     } else {
         // Parse as unknown
@@ -895,7 +887,7 @@ v_vt_vn: {
         PARSE_UINT(inormal, normal, DebugInfo(this->path, line_start, col_start + vertex.size() + texture.size() + 2, this->line, this->col, lines));
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>(TerminalType::v_vt_vn, { ivertex, itexture, inormal }, debug_info);
+        return (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>(TerminalType::v_vt_vn, { ivertex, itexture, inormal }, debug_info);
 
     } else {
         // Parse as unknown
@@ -920,7 +912,7 @@ too_many_slashes: {
         UNGET_CHAR(this->file, this->col);
         DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Too many coordinates for face coordinate; only supports [v], [v/vt], [v//vn] or [v/vt/vn].");
-        DRETURN nullptr;
+        return nullptr;
 
     } else {
         // Continue parsing
@@ -974,15 +966,15 @@ float_start: {
         } catch (std::invalid_argument& e) {
             // printf("'\n");
             debug_info.print_error(cerr, "Illegal character parsing an unsigned integer: " + std::string(e.what()));
-            DRETURN nullptr;
+            return nullptr;
         } catch (std::out_of_range&) {
             // printf("'\n");
             debug_info.print_error(cerr, "Value is out-of-range for a 32-bit integer (maximum: " + std::to_string(std::numeric_limits<uint32_t>::max()) + ").");
-            DRETURN nullptr;
+            return nullptr;
         }
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<int32_t>(TerminalType::sint, value, debug_info);
+        return (Terminal*) new ValueTerminal<int32_t>(TerminalType::sint, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -1029,15 +1021,15 @@ float_dot: {
         } catch (std::invalid_argument& e) {
             debug_info.print_error(cerr, "Illegal character parsing a decimal number: " + std::string(e.what()));
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         } catch (std::out_of_range&) {
             debug_info.print_error(cerr, "Value is out-of-range for a 32-bit floating-point (maximum: " + std::to_string(std::numeric_limits<float>::max()) + ").");
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         }
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        return (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -1068,7 +1060,7 @@ float_e_start: {
         UNGET_CHAR(this->file, this->col);
         DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Encountered scientific 'E' but without power.");
-        DRETURN nullptr;
+        return nullptr;
 
     } else {
         // Parse as unknown token
@@ -1109,15 +1101,15 @@ float_e: {
         } catch (std::invalid_argument& e) {
             debug_info.print_error(cerr, "Illegal character parsing a decimal number: " + std::string(e.what()));
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         } catch (std::out_of_range&) {
             debug_info.print_error(cerr, "Value is out-of-range for a 32-bit floating-point (maximum: " + std::to_string(std::numeric_limits<float>::max()) + ").");
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         }
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        return (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -1142,7 +1134,7 @@ filename_start: {
     if (c == '\n') {
         // It's over before we begun; return only the to_return
         UNGET_CHAR(this->file, this->col);
-        DRETURN to_return;
+        return to_return;
 
     } else if (IS_WHITESPACE(c)) {
         // Keep retrying until we find something non-whitespacey
@@ -1176,7 +1168,7 @@ filename_contd: {
         UNGET_CHAR(this->file, this->col);
         ++this->line;
         this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::filename, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
-        DRETURN to_return;
+        return to_return;
 
     } else {
         // Keep parsing as filename
@@ -1202,7 +1194,7 @@ name_start: {
         // It's over before we begun; return only the to_return
         DEBUG_PATH("newline", "done");
         UNGET_CHAR(this->file, this->col);
-        DRETURN to_return;
+        return to_return;
 
     } else if (IS_WHITESPACE(c)) {
         // Wait until we find a non-whitespace
@@ -1223,7 +1215,7 @@ name_start: {
         DebugInfo debug_info(this->path, this->line, this->col - 1, { get_line(this->file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Illegal name character '" + std::string(readable_char(c)) + "'.");
         delete to_return;
-        DRETURN nullptr;
+        return nullptr;
 
     }
 
@@ -1244,7 +1236,7 @@ name_contd: {
         UNGET_CHAR(this->file, this->col);
         if (c == '\n') { ++this->line; }
         this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
-        DRETURN to_return;
+        return to_return;
 
     } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
         // Keep parsing as name
@@ -1299,7 +1291,7 @@ unknown_token: {
         UNGET_CHAR(this->file, this->col);
         DebugInfo debug(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
         debug.print_error(cerr, "Unknown token '" + sstr.str() + "'.");
-        DRETURN nullptr;
+        return nullptr;
     } else {
         // Keep consuming
         DEBUG_PATH("other", "retrying");
@@ -1312,18 +1304,18 @@ unknown_token: {
 
     // We should never get here
     DLOG(fatal, "Hole in jump logic encountered; reached point we should never reach");
-    DRETURN nullptr;
+    return nullptr;
 }
 
 /* Puts a token back on the internal list of tokens, so it can be returned next get call. Note that the Tokenizer will deallocate these if it gets deallocated. */
 void Tokenizer::unget(Terminal* term) {
-    DENTER("Models::Obj::Tokenizer::unget");
+    
 
     // Put the token back on the list of tokens
     this->terminal_buffer.push_back(term);
 
     // Done
-    DRETURN;
+    return;
 }
 
 

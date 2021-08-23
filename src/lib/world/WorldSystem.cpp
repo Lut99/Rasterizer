@@ -14,7 +14,6 @@
  *   animations.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "ecs/auxillary/ComponentList.hpp"
@@ -28,7 +27,6 @@ using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::ECS;
 using namespace Rasterizer::World;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** HELPER FUNCTIONS *****/
@@ -43,7 +41,7 @@ static inline glm::vec3 compute_direction_vector(float yaw, float pitch) {
 
 /* Computes the translation matrix for one entity based on the given position, rotation and scale. */
 static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale) {
-    DENTER("compute_translation_matrix");
+    
 
     glm::mat4 result(1.0f);
     result = glm::translate(result, position);
@@ -53,12 +51,12 @@ static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm
     result = glm::scale(result, scale);
 
     // DOne
-    DRETURN result;
+    return result;
 }
 
 /* Computes the camera matrix given a position, a yaw and pitch (in degrees), a field of view and an aspect ratio. */
 static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, float pitch, float fov, float aspect_ratio) {
-    DENTER("compute_camera_matrix");
+    
 
     // Compute the direction vector from the yaw and the pitch
     glm::vec3 direction = compute_direction_vector(yaw, pitch);
@@ -69,7 +67,7 @@ static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, flo
     proj[1][1] *= -1;
 
     // Done, so multiple and return
-    DRETURN proj * view;
+    return proj * view;
 }
 
 
@@ -92,11 +90,9 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
     last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
 {
-    DENTER("World::WorldSystem::WorldSystem(floor)");
+    
 
     DLOG(fatal, "Not yet implemented.");
-
-    DLEAVE;
 }
 
 /* Constructor for the WorldSystem, which takes an entity manager to spawn entities with an the path to a scene JSON. */
@@ -106,18 +102,16 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manager, const std::string& 
     last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
 {
-    DENTER("World::WorldSystem::WorldSystem(file)");
+    
 
     DLOG(fatal, "Not yet implemented.");
-
-    DLEAVE;
 }
 
 
 
 /* Sets the movement speeds of a given Controllable. */
 void WorldSystem::set_controllable(ECS::EntityManager& entity_manager, entity_t entity, float movement_speed, float rotation_speed) const {
-    DENTER("World::WorldSystem::set_controllable");
+    
 
     // Get the controllable component
     Controllable& controllable = entity_manager.get_component<Controllable>(entity);
@@ -127,12 +121,12 @@ void WorldSystem::set_controllable(ECS::EntityManager& entity_manager, entity_t 
     controllable.rot_speed = rotation_speed;
 
     // We're done here
-    DRETURN;    
+    return;    
 }
 
 /* Sets the position of a camera in the WorldSystem, recomputing the necessary camera matrices in addition to its transform matrices. */
 void WorldSystem::set_cam(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& position, const glm::vec3& rotation, float fov, float aspect_ratio) const {
-    DENTER("World::WorldSystem::set_cam");
+    
 
     // Get the entity's transform & camera components
     Transform& transform = entity_manager.get_component<Transform>(entity);
@@ -150,14 +144,14 @@ void WorldSystem::set_cam(ECS::EntityManager& entity_manager, entity_t entity, c
     camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
 
     // Done!
-    DRETURN;
+    return;
 }
 
 
 
 /* Sets an entity's position within the world, at the given location, with the given rotation and given scale. */
 void WorldSystem::set(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale) const {
-    DENTER("World::WorldSystem::set");
+    
 
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
@@ -171,12 +165,12 @@ void WorldSystem::set(ECS::EntityManager& entity_manager, entity_t entity, const
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Moves given entity to a new position. */
 void WorldSystem::move(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& new_position) const {
-    DENTER("World::WorldSystem::move");
+    
 
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
@@ -188,12 +182,12 @@ void WorldSystem::move(ECS::EntityManager& entity_manager, entity_t entity, cons
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Rotates given entity to a new angle. */
 void WorldSystem::rotate(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& new_rotation) const {
-    DENTER("World::WorldSystem::rotate");
+    
 
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
@@ -205,12 +199,12 @@ void WorldSystem::rotate(ECS::EntityManager& entity_manager, entity_t entity, co
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Re-scales given entity to a new scale. */
 void WorldSystem::scale(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& new_scale) const {
-    DENTER("World::WorldSystem::scale");
+    
 
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
@@ -222,14 +216,14 @@ void WorldSystem::scale(ECS::EntityManager& entity_manager, entity_t entity, con
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Updates all relevant objects, either by physics or by window input. */
 void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& window) {
-    DENTER("World::WorldSystem::update");
+    
 
     // Compute the number of seconds passed since last update
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
@@ -321,5 +315,5 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
     // When done, update the last-update-time and quit
     this->last_update = now;
     this->last_mouse = mouse;
-    DRETURN;
+    return;
 }

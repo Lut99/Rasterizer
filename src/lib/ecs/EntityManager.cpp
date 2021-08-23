@@ -12,8 +12,6 @@
  *   <Todo>
 **/
 
-#include "tools/CppDebugger.hpp"
-
 #include "components/Transform.hpp"
 #include "components/Meshes.hpp"
 #include "components/Camera.hpp"
@@ -24,39 +22,28 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::ECS;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** ENTITYMANAGER CLASS *****/
 /* Constructor for the EntityManager class. */
 EntityManager::EntityManager() {
-    DENTER("ECS::EntityManager::EntityManager");
-
     // Register the components
     this->components = new IComponentList*[EntityManager::max_components];
     this->components[0] = (IComponentList*) new ComponentList<Transform>(ComponentFlags::transform);
     this->components[1] = (IComponentList*) new ComponentList<Meshes>(ComponentFlags::meshes);
     this->components[2] = (IComponentList*) new ComponentList<Camera>(ComponentFlags::camera);
     this->components[3] = (IComponentList*) new ComponentList<Controllable>(ComponentFlags::controllable);
-
-    // Done
-    DLEAVE;
 }
 
 /* Copy constructor for the EntityManager class. */
 EntityManager::EntityManager(const EntityManager& other) :
     entities(other.entities)
 {
-    DENTER("ECS::EntityManager::EntityManager(copy)");
-
     // Allocate new lists
     this->components = new IComponentList*[EntityManager::max_components];
     for (uint32_t i = 0; i < EntityManager::max_components; i++) {
         this->components[i] = other.components[i]->copy();
     }
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the EntityManager class. */
@@ -69,8 +56,6 @@ EntityManager::EntityManager(EntityManager&& other) :
 
 /* Destructor for the EntityManager class. */
 EntityManager::~EntityManager() {
-    DENTER("ECS::EntityManager::~EntityManager");
-
     // Delete the componentlists if needed
     if (this->components != nullptr) {
         for (uint32_t i = 0; i < EntityManager::max_components; i++) {
@@ -78,17 +63,12 @@ EntityManager::~EntityManager() {
         }
         delete[] this->components;
     }
-
-    // Done
-    DLEAVE;
 }
 
 
 
 /* Spawns a new entity in the EntityManager that has the given components. Returns the assigned ID to that entity. */
 entity_t EntityManager::add(ComponentFlags components) {
-    DENTER("ECS::EntityManager::add");
-
     // First, search for the first free entity ID
     entity_t entity = 0;
     while (true) {
@@ -109,13 +89,11 @@ entity_t EntityManager::add(ComponentFlags components) {
     }
 
     // We're done; return the ID
-    DRETURN entity;
+    return entity;
 }
 
 /* Despawns the given entity. Note that its ID may be re-used later, and should thus not be used to reference it anymore after this point. */
 void EntityManager::remove(entity_t entity) {
-    DENTER("ECS::EntityManager::remove");
-
     // Check if the entity exists
     if (this->entities.find(entity) == this->entities.end()) {
         DLOG(fatal, "Cannot remove entity with ID " + std::to_string(entity) + " because it doesn't exist.");
@@ -133,7 +111,7 @@ void EntityManager::remove(entity_t entity) {
     this->entities.erase(entity);
 
     // Done, it's fully erased
-    DRETURN;
+    return;
 }
 
 

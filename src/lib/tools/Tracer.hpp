@@ -50,14 +50,14 @@
 #define TENTER(FUNC_NAME) \
     tracer.push_frame((FUNC_NAME), (__FILE__), std::numeric_limits<size_t>::max());
 /* Removes the current function from the callstack again. Also needed when functions are called with the TCALL macro. */
-#define TLEAVE \
+#define TLEAVE\
     tracer.pop_frame();
 /* Removes the current function from the callstack again, then calls return. The last statement is not terminated, so any return value may follow. */
 #define TRETURN \
     tracer.pop_frame(); return
 
 /* Calls the given function without a return value, putting it on the stack with its call location. Also pops it off when done. */
-#define TCALL(CALL) \
+#define CALL \
     (tracer.push_frame((#CALL), (__FILE__), (__LINE__)), (CALL), tracer.pop_frame())
 /* Calls the given function WITH a return value, putting it on the stack with its call location. Also pops it off when done. */
 #define TCALLR(CALL) \
@@ -154,7 +154,7 @@ namespace Tools {
     return
 
 /* Calls the given function without a return value, putting it on the stack with its call location. Also pops it off when done. */
-#define TCALL(CALL) \
+#define CALL \
     (CALL)
 /* Calls the given function WITH a return value, putting it on the stack with its call location. Also pops it off when done. */
 #define TCALLR(CALL) \

@@ -13,21 +13,18 @@
  *   MemoryPool.
 **/
 
-#include "tools/CppDebugger.hpp"
-
 #include "MemoryPool.hpp"
 #include "Image.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkImageMemoryBarrier struct. */
 static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage vk_image, VkImageLayout old_layout, VkImageLayout new_layout) {
-    DENTER("populate_image_barrier");
+    
 
     // Initialize to default first
     image_barrier = {};
@@ -54,7 +51,7 @@ static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage 
     image_barrier.dstAccessMask = 0; /* TODO */
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -80,7 +77,7 @@ Image::~Image() {}
 
 /* Schedules a layout transition on the given command buffer using a pipeline barrier. The layout is updated immediately internally. */
 void Image::schedule_transition(const Rendering::CommandBuffer* command_buffer, VkImageLayout new_layout) {
-    DENTER("Rendering::Image::schedule_transition");
+    
 
     // Prepare the image barrier
     VkImageMemoryBarrier image_barrier;
@@ -103,5 +100,5 @@ void Image::schedule_transition(const Rendering::CommandBuffer* command_buffer, 
 
     // Update the internal layout, then done
     this->vk_layout = new_layout;
-    DRETURN;
+    return;
 }

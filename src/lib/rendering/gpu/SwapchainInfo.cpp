@@ -13,7 +13,6 @@
  *   information about the swapchain to which we render.
 **/
 
-#include "tools/Tracer.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 #include "SwapchainInfo.hpp"
 
@@ -33,31 +32,28 @@ SwapchainInfo::SwapchainInfo(const Tools::Logger::InitData& init_data) :
 SwapchainInfo::SwapchainInfo(const Tools::Logger::InitData& init_data, VkPhysicalDevice vk_physical_device, VkSurfaceKHR vk_surface) :
     SwapchainInfo(init_data)
 {
-    TENTER("SwapchainInfo::SwapchainInfo(gpu)");
     this->logger.log(Verbosity::debug, "Fetching swapchain information...");
 
     // First, getch the capabilities of the device/surface pair
     VkResult vk_result;
-    if ((vk_result = TCALLR(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device, vk_surface, &this->vk_capabilities))) != VK_SUCCESS) {
+    if ((vk_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device, vk_surface, &this->vk_capabilities)) != VK_SUCCESS) {
         this->logger.fatal("Could not get physical device surface capabilities: " + vk_error_map[vk_result]);
     }
 
     // Next, get the list of formats
     uint32_t n_formats;
-    TCALL(vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, vk_surface, &n_formats, nullptr));
+    vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, vk_surface, &n_formats, nullptr);
     if (n_formats > 0) {
         this->vk_formats.reserve(n_formats);
-        TCALL(vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, vk_surface, &n_formats, this->vk_formats.wdata(n_formats)));
+        vkGetPhysicalDeviceSurfaceFormatsKHR(vk_physical_device, vk_surface, &n_formats, this->vk_formats.wdata(n_formats));
     }
 
     // Finally, get the list of present modes
     uint32_t n_modes;
-    TCALL(vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, vk_surface, &n_modes, nullptr));
+    vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, vk_surface, &n_modes, nullptr);
     if (n_modes > 0) {
         this->vk_present_modes.reserve(n_modes);
-        TCALL(vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, vk_surface, &n_modes, this->vk_present_modes.wdata(n_modes)));
+        vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, vk_surface, &n_modes, this->vk_present_modes.wdata(n_modes));
     }
-
-    TLEAVE;
 }
 

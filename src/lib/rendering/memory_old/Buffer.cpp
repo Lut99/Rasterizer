@@ -14,7 +14,6 @@
 **/
 
 #include <cstring>
-#include "tools/CppDebugger.hpp"
 #include "tools/Common.hpp"
 
 #include "../auxillary/ErrorCodes.hpp"
@@ -24,13 +23,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkMappedMemoryRange struct. */
 static void populate_memory_range(VkMappedMemoryRange& memory_range, VkDeviceMemory vk_memory, VkDeviceSize vk_memory_offset, VkDeviceSize vk_memory_size) {
-    DENTER("populate_memory_range");
+    
 
     // Set to default
     memory_range = {};
@@ -42,7 +40,7 @@ static void populate_memory_range(VkMappedMemoryRange& memory_range, VkDeviceMem
     memory_range.size = vk_memory_size;
 
     // Done, return
-    DRETURN;
+    return;
 }
 
 
@@ -69,7 +67,7 @@ Buffer::Buffer(const Rendering::GPU& gpu, buffer_h handle, VkBuffer buffer, VkBu
 
 /* Sets n_bytes data to this buffer using an intermediate staging buffer. The staging buffer is copied using the given command buffer on the given queue. */
 void Buffer::set(const CommandBuffer& command_buffer, const Buffer& staging_buffer, VkQueue vk_queue, void* data, uint32_t n_bytes) const {
-    DENTER("Rendering::Buffer::set");
+    
 
     // First, map the staging buffer to an CPU-reachable area
     void* mapped_area;
@@ -86,12 +84,12 @@ void Buffer::set(const CommandBuffer& command_buffer, const Buffer& staging_buff
     staging_buffer.copyto(*this, command_buffer, vk_queue, (VkDeviceSize) n_bytes);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Gets n_bytes data from this buffer using an intermediate staging buffer. The buffers are copied over using the given command buffer on the given queue. The result is put in the given pointer. */
 void Buffer::get(const CommandBuffer& command_buffer, const Buffer& staging_buffer, VkQueue vk_queue, void* data, uint32_t n_bytes) const {
-    DENTER("Rendering::Buffer::set");
+    
 
     // First, copy the data we have to the staging buffer
     this->copyto(staging_buffer, command_buffer, vk_queue, (VkDeviceSize) n_bytes);
@@ -107,14 +105,14 @@ void Buffer::get(const CommandBuffer& command_buffer, const Buffer& staging_buff
     staging_buffer.unmap();
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Maps the buffer to host-memory so it can be written to. Only possible if the VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT is set for the memory of this buffer's pool. Note that the memory is NOT automatically unmapped if the Buffer object is destroyed. */
 void Buffer::map(void** mapped_memory) const {
-    DENTER("Rendering::Buffer::map");
+    
 
     // If this buffer does not have the host bit set, then we stop immediatement
     if (!(this->vk_memory_properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
@@ -128,16 +126,16 @@ void Buffer::map(void** mapped_memory) const {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Flushes all unflushed memory operations done on mapped memory. If the memory of this buffer has VK_MEMORY_PROPERTY_HOST_COHERENT_BIT set, then nothing is done as the memory is already automatically flushed. */
 void Buffer::flush() const {
-    DENTER("Rendering::Buffer::flush");
+    
 
     // If this buffer is coherent, quite immediately
     if (!(this->vk_memory_properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        DRETURN;
+        return;
     }
 
     // Prepare the call to the flush function
@@ -151,24 +149,24 @@ void Buffer::flush() const {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Unmaps buffer's memory. */
 void Buffer::unmap() const {
-    DENTER("Rendering::Buffer::unmap");
+    
 
     // Simply call unmap, done
     vkUnmapMemory(this->gpu, this->vk_memory);
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Copies this buffer's contents to the given Buffer, scheduling the command on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given. Optionally, a queue can be given to run the commands on, which will otherwise default to the first memory queue of the internal GPU. Also, it can be opted to not wait until the given queue is idle again but to return immediately. */
 void Buffer::copyto(const Buffer& destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, VkDeviceSize target_offset, const Rendering::CommandBuffer& command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
-    DENTER("Rendering::Buffer::copyto");
+    
 
     // First, resolve the queue
     if (vk_queue == nullptr) {
@@ -213,14 +211,14 @@ void Buffer::copyto(const Buffer& destination, VkDeviceSize n_bytes, VkDeviceSiz
     // Since that's all, submit the queue. Note that we only return once the copy is 
     command_buffer.end(vk_queue, wait_queue_idle);
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the Buffer class. */
 void Rendering::swap(Buffer& b1, Buffer& b2) {
-    DENTER("Rendering::swap(Buffer)");
+    
 
     #ifndef NDEBUG
     // Make sure the GPU is the same
@@ -243,6 +241,6 @@ void Rendering::swap(Buffer& b1, Buffer& b2) {
     swap(b1.vk_memory_properties, b2.vk_memory_properties);
 
     // Done
-    DRETURN;
+    return;
 }
 

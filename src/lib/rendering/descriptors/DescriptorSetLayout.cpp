@@ -13,8 +13,6 @@
  *   a single type of buffer.
 **/
 
-#include "tools/CppDebugger.hpp"
-
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "DescriptorSetLayout.hpp"
@@ -22,13 +20,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates given VkDescriptorSetLayoutBinding struct. */
 static void populate_descriptor_set_binding(VkDescriptorSetLayoutBinding& descriptor_set_binding, uint32_t bind_index, VkDescriptorType descriptor_type, uint32_t n_descriptors, VkShaderStageFlags shader_stage) {
-    DENTER("populate_descriptor_set_binding");
+    
 
     // Set to default
     descriptor_set_binding = {};
@@ -49,12 +46,12 @@ static void populate_descriptor_set_binding(VkDescriptorSetLayoutBinding& descri
     descriptor_set_binding.pImmutableSamplers = nullptr;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkDescriptorSetLayoutCreateInfo struct. */
 static void populate_descriptor_set_layout_info(VkDescriptorSetLayoutCreateInfo& descriptor_set_layout_info, const Tools::Array<VkDescriptorSetLayoutBinding>& vk_bindings) {
-    DENTER("populate_descriptor_set_layout_info");
+    
 
     // Initialize to default
     descriptor_set_layout_info = {};
@@ -65,7 +62,7 @@ static void populate_descriptor_set_layout_info(VkDescriptorSetLayoutCreateInfo&
     descriptor_set_layout_info.pBindings = vk_bindings.rdata();
 
     // Done!
-    DRETURN;
+    return;
 }
 
 
@@ -85,15 +82,13 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayout& other) :
     vk_descriptor_set_layout(other.vk_descriptor_set_layout),
     vk_bindings(other.vk_bindings)
 {
-    DENTER("Rendering::DescriptorSetLayout::DescriptorSetLayout(copy)");
+    
 
     // If the descriptor set layout is not a nullptr, re-create it manually
     if (this->vk_descriptor_set_layout != nullptr) {
         this->vk_descriptor_set_layout = nullptr;
         this->finalize();
     }
-
-    DLEAVE;
 }
 
 /* Move constructor for the DescriptorSetLayout class. */
@@ -108,20 +103,18 @@ DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) :
 
 /* Destructor for the DescriptorSetLayout class. */
 DescriptorSetLayout::~DescriptorSetLayout() {
-    DENTER("Rendering::DescriptorSetLayout::~DescriptorSetLayout");
+    
 
     if (this->vk_descriptor_set_layout != nullptr) {
         vkDestroyDescriptorSetLayout(this->gpu, this->vk_descriptor_set_layout, nullptr);
     }
-
-    DLEAVE;
 }
 
 
 
 /* Adds a binding to the DescriptorSetLayout; i.e., one type of resource that a single descriptorset will bind. Returns the binding index of this binding. */
 uint32_t DescriptorSetLayout::add_binding(VkDescriptorType vk_descriptor_type, uint32_t n_descriptors, VkShaderStageFlags vk_shader_stage) {
-    DENTER("Rendering::DescriptorSetLayout::add_binding");
+    
 
     // If the layout has already been created, then crash
     if (this->vk_descriptor_set_layout != nullptr) {
@@ -139,17 +132,17 @@ uint32_t DescriptorSetLayout::add_binding(VkDescriptorType vk_descriptor_type, u
     this->vk_bindings.push_back(binding);
 
     // Done, return the binding index
-    DRETURN bind_index;
+    return bind_index;
 }
 
 /* Finalizes the descriptor layout. Note that no more bindings can be added after this point. */
 void DescriptorSetLayout::finalize() {
-    DENTER("Rendering::DescriptorSetLayout::finalize");
+    
 
     // If the layout has already been created, then warning that nothing happens
     if (this->vk_descriptor_set_layout != nullptr) {
         DLOG(warning, "Calling finalize() more than once is useless.");
-        DRETURN;
+        return;
     }
 
     // Otherwise, prepare the bindings
@@ -165,7 +158,7 @@ void DescriptorSetLayout::finalize() {
     // Do not clear the bindings, to keep the class copyable
 
     // Done!
-    DRETURN;
+    return;
 }
 
 
@@ -178,7 +171,7 @@ DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& other)
 
 /* Swap operator for the DescriptorSetLayout class. */
 void Rendering::swap(DescriptorSetLayout& dsl1, DescriptorSetLayout& dsl2) {
-    DENTER("Rendering::swap(DescriptorSetLayout)");
+    
 
     using std::swap;
 
@@ -194,5 +187,5 @@ void Rendering::swap(DescriptorSetLayout& dsl1, DescriptorSetLayout& dsl2) {
     swap(dsl1.vk_bindings, dsl2.vk_bindings);
 
     // Done
-    DRETURN;
+    return;
 }

@@ -13,7 +13,6 @@
  *   manages the debugger.
 **/
 
-#include "tools/Tracer.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Instance.hpp"
@@ -118,7 +117,7 @@ static void populate_debug_info(VkDebugUtilsMessengerCreateInfoEXT& debug_info, 
 /* Loads a given method ('s address) from the given instance. */
 static PFN_vkVoidFunction load_instance_method(Tools::Logger& logger, VkInstance vk_instance, const char* method_name) {
     // Fetch the function pointer
-    PFN_vkVoidFunction to_return = TCALLR(vkGetInstanceProcAddr(vk_instance, method_name));
+    PFN_vkVoidFunction to_return = vkGetInstanceProcAddr(vk_instance, method_name);
     if (to_return == nullptr) {
         logger.fatal("Could not load function '", method_name, "'.");
     }
@@ -142,7 +141,7 @@ Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<
     vk_extensions(extensions),
     vk_layers(layers)
 {
-    TENTER("Rendering::Instance::Instance");
+    
 
 
 
@@ -151,15 +150,15 @@ Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<
 
     // Start by defining meta stuff
     VkApplicationInfo app_info;
-    TCALL(populate_application_info(app_info));
+    populate_application_info(app_info);
 
     // Next, setup the list of extensions
     VkInstanceCreateInfo instance_info;
-    TCALL(populate_instance_info(instance_info, app_info, this->vk_extensions, this->vk_layers));
+    populate_instance_info(instance_info, app_info, this->vk_extensions, this->vk_layers);
 
     // Now, setup the instance
     VkResult vk_result;
-    if ((vk_result = TCALLR(vkCreateInstance(&instance_info, nullptr, &this->vk_instance))) != VK_SUCCESS) {
+    if ((vk_result = vkCreateInstance(&instance_info, nullptr, &this->vk_instance)) != VK_SUCCESS) {
         this->logger.fatal("Could not create the Vulkan instance: ", vk_error_map[vk_result]);
     }
 
@@ -182,15 +181,15 @@ Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<
             this->logger.log(Verbosity::details, "Initializing debug logger...");
 
             // First, we load the two extension functions needed using the dynamic loader
-            PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) TCALLR(load_instance_method(this->logger, this->vk_instance, "vkCreateDebugUtilsMessengerEXT"));
-            this->vk_destroy_debug_utils_messenger_method = (PFN_vkDestroyDebugUtilsMessengerEXT) TCALLR(load_instance_method(this->logger, this->vk_instance, "vkDestroyDebugUtilsMessengerEXT"));
+            PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) load_instance_method(this->logger, this->vk_instance, "vkCreateDebugUtilsMessengerEXT");
+            this->vk_destroy_debug_utils_messenger_method = (PFN_vkDestroyDebugUtilsMessengerEXT) load_instance_method(this->logger, this->vk_instance, "vkDestroyDebugUtilsMessengerEXT");
 
             // Next, define the messenger
             VkDebugUtilsMessengerCreateInfoEXT debug_info;
-            TCALL(populate_debug_info(debug_info, &this->logger));
+            populate_debug_info(debug_info, &this->logger);
 
             // And with that, create it
-            if ((vk_result = TCALLR(vk_create_debug_utils_messenger_method(this->vk_instance, &debug_info, nullptr, &this->vk_debugger))) != VK_SUCCESS) {
+            if ((vk_result = vk_create_debug_utils_messenger_method(this->vk_instance, &debug_info, nullptr, &this->vk_debugger)) != VK_SUCCESS) {
                 this->logger.fatal("Could not create the logger: ", vk_error_map[vk_result]);
             }
 
@@ -199,10 +198,6 @@ Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<
         }
     }
     #endif
-
-
-
-    TLEAVE;
 }
 
 /* Copy constructor for the Instance class. */
@@ -214,7 +209,6 @@ Instance::Instance(const Instance& other) :
     vk_extensions(other.vk_extensions),
     vk_layers(other.vk_layers)
 {
-    TENTER("Rendering::Instance::Instance(copy)");
     this->logger.log(Verbosity::details, "Starting copy...");
 
 
@@ -229,7 +223,7 @@ Instance::Instance(const Instance& other) :
 
     // Now, setup the instance
     VkResult vk_result;
-    if ((vk_result = TCALLR(vkCreateInstance(&instance_info, nullptr, &this->vk_instance))) != VK_SUCCESS) {
+    if ((vk_result = vkCreateInstance(&instance_info, nullptr, &this->vk_instance)) != VK_SUCCESS) {
         this->logger.fatal("Could not create the Vulkan instance: ", vk_error_map[vk_result]);
     }
 
@@ -239,11 +233,11 @@ Instance::Instance(const Instance& other) :
     // Next, initialize the debugger, but only if the copied object had so as well
     if (this->vk_debugger != nullptr) {
         // First, we load the create extension function. The destroy is assumed to be copied from the other Instance.
-        PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) TCALLR(load_instance_method(this->logger, this->vk_instance, "vkCreateDebugUtilsMessengerEXT"));
+        PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) load_instance_method(this->logger, this->vk_instance, "vkCreateDebugUtilsMessengerEXT");
 
         // Next, define the messenger
         VkDebugUtilsMessengerCreateInfoEXT debug_info;
-        TCALL(populate_debug_info(debug_info, &this->logger));
+        populate_debug_info(debug_info, &this->logger);
 
         // And with that, create it
         if ((vk_result = vk_create_debug_utils_messenger_method(this->vk_instance, &debug_info, nullptr, &this->vk_debugger)) != VK_SUCCESS) {
@@ -251,11 +245,6 @@ Instance::Instance(const Instance& other) :
         }
     }
     #endif
-
-
-
-    // Done
-    TLEAVE;
 }
 
 /* Move constructor for the Instance class. */
@@ -274,7 +263,7 @@ Instance::Instance(Instance&& other) :
 
 /* Destructor for the Instance class. */
 Instance::~Instance() {
-    TENTER("Rendering::Instance::~Instance");
+    
 
     // Destroy the debugger
     if (this->vk_debugger != nullptr) {
@@ -287,8 +276,6 @@ Instance::~Instance() {
         this->logger.log(Verbosity::details, "Cleaning VkInstance...");
         vkDestroyInstance(this->vk_instance, nullptr);
     }
-
-    TLEAVE;
 }
 
 

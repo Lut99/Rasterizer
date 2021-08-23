@@ -14,8 +14,6 @@
 **/
 
 #include <limits>
-#include "tools/CppDebugger.hpp"
-
 #include "../auxillary/ErrorCodes.hpp"
 #include "../auxillary/MemoryProperties.hpp"
 #include "tools/Common.hpp"
@@ -25,13 +23,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VKBufferCreateInfo struct. */
 static void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    DENTER("populate_buffer_info");
+    
 
     // Only set to default
     buffer_info = {};
@@ -44,12 +41,12 @@ static void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n
     buffer_info.flags = create_flags;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkImageCreateInfo struct. */
 static void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D& image_size, VkFormat image_format, VkImageLayout image_layout, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    DENTER("populate_image_info");
+    
 
     // Only set to default
     image_info = {};
@@ -74,12 +71,12 @@ static void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D&
     image_info.queueFamilyIndexCount = 0;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkMemoryAllocateInfo struct. */
 static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t memory_type, VkDeviceSize n_bytes) {
-    DENTER("populate_allocate_info");
+    
 
     // Set to default & define the stryct type
     allocate_info = {};
@@ -91,12 +88,12 @@ static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t
     allocate_info.memoryTypeIndex = memory_type;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkImageMemoryBarrier struct. */
 static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage vk_image, VkImageLayout old_layout, VkImageLayout new_layout) {
-    DENTER("populate_image_barrier");
+    
 
     // Initialize to default first
     image_barrier = {};
@@ -123,12 +120,12 @@ static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage 
     image_barrier.dstAccessMask = 0; /* TODO */
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkBufferImageCopy struct. */
 static void populate_buffer_image_copy(VkBufferImageCopy& buffer_image_copy, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset, VkExtent3D image_extent) {
-    DENTER("populate_buffer_image_copy");
+    
 
     // Set to default
     buffer_image_copy = {};
@@ -149,7 +146,7 @@ static void populate_buffer_image_copy(VkBufferImageCopy& buffer_image_copy, VkD
     buffer_image_copy.imageSubresource.layerCount = 1;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -165,7 +162,7 @@ MemoryPool::MemoryPool(const GPU& gpu, uint32_t memory_type, VkDeviceSize n_byte
     vk_memory_properties(memory_properties),
     free_list(this->vk_memory_size)
 {
-    DENTER("Rendering::MemoryPool::MemoryPool");
+    
     DLOG(info, "Initializing MemoryPool...");
     DINDENT;
 
@@ -217,7 +214,6 @@ MemoryPool::MemoryPool(const GPU& gpu, uint32_t memory_type, VkDeviceSize n_byte
 
 
     DDEDENT;
-    DLEAVE;
 }
 
 /* Copy constructor for the MemoryPool class. */
@@ -228,7 +224,7 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
     vk_memory_properties(other.vk_memory_properties),
     free_list(this->vk_memory_size)
 {
-    DENTER("Rendering::MemoryPool::MemoryPool(copy)");
+    
 
     // Allocate a new block of memory that we shall use, with the proper size
     VkMemoryAllocateInfo allocate_info;
@@ -241,8 +237,6 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
     }
 
     // Do not copy handles with us, as that doesn't really make a whole lotta sense
-
-    DLEAVE;
 }
 
 /* Move constructor for the MemoryPool class. */
@@ -262,7 +256,7 @@ MemoryPool::MemoryPool(MemoryPool&& other):
 
 /* Destructor for the MemoryPool class. */
 MemoryPool::~MemoryPool() {
-    DENTER("Rendering::MemoryPool::~MemoryPool");
+    
     DLOG(info, "Cleaning MemoryPool...");
     DINDENT;
 
@@ -289,14 +283,13 @@ MemoryPool::~MemoryPool() {
     }
 
     DDEDENT;
-    DLEAVE;
 }
 
 
 
 /* Private helper function that actually performs memory allocation. Returns a reference to a UsedBlock that describes the block allocated. */
 memory_h MemoryPool::allocate_memory(MemoryBlockType type, VkDeviceSize n_bytes, const VkMemoryRequirements& mem_requirements) {
-    DENTER("Rendering::MemoryPool::allocate_memory");
+    
 
     // Pick a suitable memory location for this block in the array of used blocks; either as a new block or use the location of a previously allocated one
     memory_h result = 0;
@@ -339,12 +332,12 @@ memory_h MemoryPool::allocate_memory(MemoryBlockType type, VkDeviceSize n_bytes,
     block->req_length = mem_requirements.size;
 
     // We're done, so return the block for further initialization of the image or buffer
-    DRETURN result;
+    return result;
 }
 
 /* Private helper function that performs the actual copy of copying a buffer to an image. */
 void MemoryPool::copy_buffer_to_image(const Rendering::CommandBuffer& command_buffer, BufferBlock* bbuffer, ImageBlock* bimage, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset) {
-    DENTER("Rendering::MemoryPool::copy_buffer_to_image");
+    
 
     // Define the buffer image copy
     VkBufferImageCopy buffer_image_copy;
@@ -362,14 +355,14 @@ void MemoryPool::copy_buffer_to_image(const Rendering::CommandBuffer& command_bu
     bimage->vk_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Tries to get a new buffer from the pool of the given size and with the given flags, returning only its handle. Applies extra checks if NDEBUG is not defined. */
 buffer_h MemoryPool::allocate_buffer_h(VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags)  {
-    DENTER("Rendering::MemoryPool::allocate_buffer_h");
+    
 
     // First, prepare the buffer info struct
     VkBufferCreateInfo buffer_info;
@@ -402,12 +395,12 @@ buffer_h MemoryPool::allocate_buffer_h(VkDeviceSize n_bytes, VkBufferUsageFlags 
     block->vk_sharing_mode = sharing_mode;
 
     // Done, so return the handle
-    DRETURN result;
+    return result;
 }
 
 /* Tries to get a new image from the pool of the given sizes and with the given flags, returning only its handle. Applies extra checks if NDEBUG is not defined. */
 image_h MemoryPool::allocate_image_h(uint32_t width, uint32_t height, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    DENTER("Rendering::MemoryPool::allocate_image_h");
+    
 
     // First, define the width & height as a 3D extent
     VkExtent3D image_size = {};
@@ -449,12 +442,12 @@ image_h MemoryPool::allocate_image_h(uint32_t width, uint32_t height, VkFormat i
     block->vk_sharing_mode = sharing_mode;
 
     // When done, return the handle
-    DRETURN result;
+    return result;
 }
 
 /* Deallocates the buffer or image with the given handle. Does not throw an error if the handle doesn't exist, unless NDEBUG is not defined. */
 void MemoryPool::deallocate(memory_h handle) {
-    DENTER("Rendering::MemoryPool::deallocate");
+    
 
     // First, try to fetch the given buffer
     std::unordered_map<memory_h, UsedBlock*>::iterator iter = this->vk_used_blocks.find(handle);
@@ -587,14 +580,14 @@ void MemoryPool::deallocate(memory_h handle) {
     delete block;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Defragements the entire pool, aligning all buffers next to each other in memory to create a maximally sized free block. Note that existing handles will remain valid. */
 void MemoryPool::defrag() {
-    DENTER("Rendering::MemoryPool::defrag");
+    
 
     // First, reset the free list
     this->free_list.clear();
@@ -675,14 +668,14 @@ void MemoryPool::defrag() {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Transitions the given image to the given layout. Schedules the change on the given command buffer using a pipeline barrier (image memory barrier, to be precise). Note that all other image references will not contain the updated layout. */
 void MemoryPool::schedule_transition(Image& image, VkImageLayout new_layout, const Rendering::CommandBuffer& command_buffer) {
-    DENTER("Rendering::MemoryPool::schedule_transition(Image)");
+    
 
     // Transition the image using its handle first
     this->schedule_transition(image.handle(), new_layout, command_buffer);
@@ -690,12 +683,12 @@ void MemoryPool::schedule_transition(Image& image, VkImageLayout new_layout, con
     image.vk_layout = new_layout;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Transitions the image behind the given handle to the given layout. Schedules the change on the given command buffer using a pipeline barrier (image memory barrier, to be precise). Note that all existing image references will not contain the updated layout. */
 void MemoryPool::schedule_transition(image_h image, VkImageLayout new_layout, const Rendering::CommandBuffer& command_buffer) {
-    DENTER("Rendering::MemoryPool::schedule_transition(image_h)");
+    
 
     // Get the image block
     std::unordered_map<memory_h, UsedBlock*>::iterator iter = this->vk_used_blocks.find(image);
@@ -729,14 +722,14 @@ void MemoryPool::schedule_transition(image_h image, VkImageLayout new_layout, co
 
     // Update the internal block, then done
     bimage->vk_layout = new_layout;
-    DRETURN;
+    return;
 }
 
 
 
 /* Copies the given Buffer (handle) to the given Image (handle) on the given command buffer. An offset can be speficied for both the buffer and the image, where the image's is in three dimensions. The buffer also has an optional pitch that determines the length of each image row. */
 void MemoryPool::schedule_copy(buffer_h buffer, image_h image, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset, const Rendering::CommandBuffer& command_buffer) {
-    DENTER("Rendering::MemoryPool::schedule_copy(buffer_h, image_h)");
+    
 
     // Fetch the buffer block
     std::unordered_map<memory_h, UsedBlock*>::iterator iter = this->vk_used_blocks.find(buffer);
@@ -764,12 +757,12 @@ void MemoryPool::schedule_copy(buffer_h buffer, image_h image, VkDeviceSize buff
     this->copy_buffer_to_image(command_buffer, bbuffer, bimage, buffer_offset, buffer_pitch, image_offset);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Schedules a copy from the given Buffer to the given Image (handle) on the given command buffer. An offset can be speficied for both the buffer and the image, where the image's is in three dimensions. The buffer also has an optional pitch that determines the length of each image row. */
 void MemoryPool::schedule_copy(const Buffer& buffer, image_h image, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset, const Rendering::CommandBuffer& command_buffer) {
-    DENTER("Rendering::MemoryPool::schedule_copy(Buffer, image_h)");
+    
 
     // Fetch the buffer block
     std::unordered_map<memory_h, UsedBlock*>::iterator iter = this->vk_used_blocks.find(buffer.handle());
@@ -797,32 +790,32 @@ void MemoryPool::schedule_copy(const Buffer& buffer, image_h image, VkDeviceSize
     this->copy_buffer_to_image(command_buffer, bbuffer, bimage, buffer_offset, buffer_pitch, image_offset);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Schedules a copy from the given Buffer (handle) to the given Image on the given command buffer. An offset can be speficied for both the buffer and the image, where the image's is in three dimensions. The buffer also has an optional pitch that determines the length of each image row. */
 void MemoryPool::schedule_copy(buffer_h buffer, Image& image, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset, const Rendering::CommandBuffer& command_buffer) {
-    DENTER("Rendering::MemoryPool::schedule_copy(buffer_h, Image)");
+    
 
 
 
-    DRETURN;
+    return;
 }
 
 /* Schedules a copy from the given Buffer to the given Image on the given command buffer. An offset can be speficied for both the buffer and the image, where the image's is in three dimensions. The buffer also has an optional pitch that determines the length of each image row. */
 void MemoryPool::schedule_copy(const Buffer& buffer, Image& image, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset, const Rendering::CommandBuffer& command_buffer) {
-    DENTER("Rendering::MemoryPool::schedule_copy(Buffer, Image)");
+    
 
 
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Immediately copies the given Buffer (handle) to the given Image (handle) on the given command buffer. An offset can be speficied for both the buffer and the image, where the image's is in three dimensions. The buffer also has an optional pitch that determines the length of each image row. */
 void MemoryPool::copy(buffer_h buffer, image_h image, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset, const Rendering::CommandBuffer& command_buffer, VkQueue vk_queue, bool wait_queue_idle) {
-    DENTER("Rendering::MemoryPool::copy(Buffer, Image)");
+    
 
     // Start recording, record the schedule, then submit it
     command_buffer.begin();
@@ -830,7 +823,7 @@ void MemoryPool::copy(buffer_h buffer, image_h image, VkDeviceSize buffer_offset
     command_buffer.end(vk_queue, wait_queue_idle);
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -839,7 +832,7 @@ void MemoryPool::copy(buffer_h buffer, image_h image, VkDeviceSize buffer_offset
 void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
     using std::swap;
 
-    DENTER("Rendering::swap(MemoryPool)");
+    
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
@@ -856,14 +849,14 @@ void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
     swap(mp1.vk_used_blocks, mp2.vk_used_blocks);
     swap(mp1.free_list, mp2.free_list);
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Static function that helps users decide the best memory queue for buffers. */
 uint32_t MemoryPool::select_memory_type(const GPU& gpu, VkBufferUsageFlags usage_flags, VkMemoryPropertyFlags memory_properties, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    DENTER("Rendering::MemoryPool::select_memory_type(buffer)");
+    
 
     // Get the available memory in the internal device
     VkPhysicalDeviceMemoryProperties gpu_properties;
@@ -890,18 +883,18 @@ uint32_t MemoryPool::select_memory_type(const GPU& gpu, VkBufferUsageFlags usage
     // Try to find suitable memory (i.e., check if the device has enough memory bits(?) and if the required properties match)
     for (uint32_t i = 0; i < gpu_properties.memoryTypeCount; i++) {
         if (mem_requirements.memoryTypeBits & (1 << i) && (gpu_properties.memoryTypes[i].propertyFlags & memory_properties) == memory_properties) {
-            DRETURN i;
+            return i;
         }
     }
 
     // Didn't find any
     DLOG(fatal, "No suitable memory on device for given buffer configuration.");
-    DRETURN 0;
+    return 0;
 }
 
 /* Static function that helps users decide the best memory queue for images. */
 uint32_t MemoryPool::select_memory_type(const GPU& gpu, VkFormat format, VkImageLayout layout, VkImageUsageFlags usage_flags, VkMemoryPropertyFlags memory_properties, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    DENTER("Rendering::MemoryPool::select_memory_type(image)");
+    
 
     // Get the available memory in the internal device
     VkPhysicalDeviceMemoryProperties gpu_properties;
@@ -928,11 +921,11 @@ uint32_t MemoryPool::select_memory_type(const GPU& gpu, VkFormat format, VkImage
     // Try to find suitable memory (i.e., check if the device has enough memory bits(?) and if the required properties match)
     for (uint32_t i = 0; i < gpu_properties.memoryTypeCount; i++) {
         if (mem_requirements.memoryTypeBits & (1 << i) && (gpu_properties.memoryTypes[i].propertyFlags & memory_properties) == memory_properties) {
-            DRETURN i;
+            return i;
         }
     }
 
     // Didn't find any
     DLOG(fatal, "No suitable memory on device for given image configuration.");
-    DRETURN 0;
+    return 0;
 }

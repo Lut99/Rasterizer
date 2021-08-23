@@ -14,7 +14,6 @@
 **/
 
 #include <cstring>
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Subpass.hpp"
@@ -22,13 +21,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSubpassDescription struct. */
 static void populate_subpass(VkSubpassDescription& subpass, VkAttachmentReference* color_attachment_refs, uint32_t n_attachments, VkAttachmentReference* depth_attachment_ref, VkPipelineBindPoint bind_point) {
-    DENTER("populate_subpass");
+    
 
     // Set to default
     subpass = {};
@@ -48,7 +46,7 @@ static void populate_subpass(VkSubpassDescription& subpass, VkAttachmentReferenc
     subpass.preserveAttachmentCount = 0;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -62,7 +60,7 @@ Subpass::Subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& color_a
     n_color_attachments(color_attachment_refs.size()),
     depth_attachment_ref(new VkAttachmentReference)
 {
-    DENTER("Rendering::Subpass::Subpass");
+    
 
     // Populate the attachment reference list
     for (uint32_t i = 0; i < this->n_color_attachments; i++) {
@@ -78,8 +76,6 @@ Subpass::Subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& color_a
 
     // With that and the bind point, populate the VkSubpassDescription struct
     populate_subpass(this->vk_subpass, this->color_attachment_refs, this->n_color_attachments, this->depth_attachment_ref, bind_point);
-
-    DLEAVE;
 }
 
 /* Copy constructor for the Subpass class. */
@@ -89,7 +85,7 @@ Subpass::Subpass(const Subpass& other) :
     n_color_attachments(other.n_color_attachments),
     depth_attachment_ref(new VkAttachmentReference(*other.depth_attachment_ref))
 {
-    DENTER("Rendering::Subpass::Subpass(copy)");
+    
 
     // Copy the elements over from the old to the new list of attachment references
     memcpy(this->color_attachment_refs, other.color_attachment_refs, this->n_color_attachments * sizeof(VkAttachmentReference));
@@ -97,8 +93,6 @@ Subpass::Subpass(const Subpass& other) :
     // Mark the new array as the one in the internal list
     this->vk_subpass.pColorAttachments = this->color_attachment_refs;
     this->vk_subpass.pDepthStencilAttachment = this->depth_attachment_ref;
-
-    DLEAVE;
 }
 
 /* Move constructor for the Subpass class. */
@@ -115,7 +109,7 @@ Subpass::Subpass(Subpass&& other) :
 
 /* Destructor for the Subpass class. */
 Subpass::~Subpass() {
-    DENTER("Rendering::Subpass::~Subpass");
+    
 
     // If needed, deallocate the attachment references
     if (this->depth_attachment_ref != nullptr) {
@@ -124,8 +118,6 @@ Subpass::~Subpass() {
     if (this->color_attachment_refs != nullptr) {
         delete[] this->color_attachment_refs;
     }
-
-    DLEAVE;
 }
 
 

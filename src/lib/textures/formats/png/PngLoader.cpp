@@ -14,21 +14,18 @@
 **/
 
 #include <vector>
-#include "tools/CppDebugger.hpp"
-
 #include "LodePNG.hpp"
 #include "PngLoader.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Textures;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** LIBRARY FUNCTIONS *****/
 /* Loads the file at the given path as a .png file, and populates the given Texture component from it. */
 void Textures::load_png_texture(Rendering::MemoryManager& memory_manager, ECS::Texture& texture, const std::string& path) {
-    DENTER("Textures::load_png_texture");
+    
 
     // Try to load the given .png file with lodepng
     std::vector<unsigned char> png;
@@ -65,5 +62,5 @@ void Textures::load_png_texture(Rendering::MemoryManager& memory_manager, ECS::T
     memory_manager.
     stage.copyto(image, memory_manager.copy_cmd());
 
-    DRETURN;
+    return;
 }

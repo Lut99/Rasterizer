@@ -18,7 +18,6 @@
 #include <cstring>
 #include <cerrno>
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Shader.hpp"
@@ -26,13 +25,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Function that populates the given VkShaderModuleCreateInfo struct with the given values. */
 static void populate_shader_module_info(VkShaderModuleCreateInfo& shader_module_info, const std::vector<char>& raw_shader) {
-    DENTER("populate_shader_module_info");
+    
 
     // Set to default
     shader_module_info = {};
@@ -43,7 +41,7 @@ static void populate_shader_module_info(VkShaderModuleCreateInfo& shader_module_
     shader_module_info.pCode = reinterpret_cast<const uint32_t*>(raw_shader.data());
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -57,7 +55,7 @@ Shader::Shader(const GPU& gpu, const std::string& path, const std::string& entry
     path(path),
     entry(entry_function)
 {
-    DENTER("Rendering::Shader::Shader");
+    
     DLOG(info, "Initializing shader '" + path.substr(path.find_last_of("/") != string::npos ? path.find_last_of("/") + 1 : 0) + "'");
     DINDENT;
 
@@ -65,7 +63,6 @@ Shader::Shader(const GPU& gpu, const std::string& path, const std::string& entry
     this->reload();
 
     DDEDENT;
-    DLEAVE;
 }
 
 /* Copy constructor for the Shader class. */
@@ -74,14 +71,12 @@ Shader::Shader(const Shader& other) :
     path(other.path),
     entry(other.entry)
 {
-    DENTER("Rendering::Shader::Shader(copy)");
+    
     
     // Once again we rely on reload
     DMUTE("Rendering::Shader::reload");
     this->reload();
     DUNMUTE("Rendering::Shader::reload");
-
-    DLEAVE;
 }
 
 /* Move constructor for the Shader class. */
@@ -97,20 +92,18 @@ Shader::Shader(Shader&& other) :
 
 /* Destructor for the Shader class. */
 Shader::~Shader() {
-    DENTER("Rendering::Shader::~Shader");
+    
     
     if (this->vk_shader_module != nullptr) {
         vkDestroyShaderModule(this->gpu, this->vk_shader_module, nullptr);
     }
-
-    DLEAVE;
 }
 
 
 
 /* Reloads the shader from disk, and recompiles it. */
 void Shader::reload() {
-    DENTER("Rendering::Shader::reload");
+    
 
     // Start by loading the file
     DLOG(info, "Loading file '" + this->path + "'...");
@@ -156,14 +149,14 @@ void Shader::reload() {
     }
 
     // Done!
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the Shader class. */
 void Rendering::swap(Shader& s1, Shader& s2) {
-    DENTER("Rendering::swap(Shader)");
+    
 
     using std::swap;
 
@@ -180,5 +173,5 @@ void Rendering::swap(Shader& s1, Shader& s2) {
     swap(s1.entry, s2.entry);
 
     // Done
-    DRETURN;
+    return;
 }

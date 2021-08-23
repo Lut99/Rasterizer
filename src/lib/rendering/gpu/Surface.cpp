@@ -13,7 +13,6 @@
  *   GLFW window.
 **/
 
-#include "tools/Tracer.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Surface.hpp"
@@ -29,16 +28,13 @@ Surface::Surface(const Tools::Logger::InitData& init_data, const Instance& insta
     instance(instance),
     logger(init_data, "Surface")
 {
-    TENTER("Rendering::Surface::Surface");
     this->logger.log(Verbosity::debug, "Initializing window surface...");
 
     // We can simply use the GLFW constructor for our surface
     VkResult vk_result;
-    if ((vk_result = TCALLR(glfwCreateWindowSurface(this->instance, glfw_window, nullptr, &this->vk_surface))) != VK_SUCCESS) {
+    if ((vk_result = glfwCreateWindowSurface(this->instance, glfw_window, nullptr, &this->vk_surface)) != VK_SUCCESS) {
         this->logger.fatal("Could not create VkSurface from GLFW window: ", vk_error_map[vk_result]);
     }
-
-    TLEAVE;
 }
 
 /* Move constructor for the Surface class. */
@@ -53,23 +49,17 @@ Surface::Surface(Surface&& other) :
 
 /* Destructor for the Surface class. */
 Surface::~Surface() {
-    TENTER("Rendering::Surface::~Surface");
-
     // Deallocate the surface if it no longer exists
     if (this->vk_surface != nullptr) {
         this->logger.log(Verbosity::debug, "Destroying window surface...");
         vkDestroySurfaceKHR(this->instance, this->vk_surface, nullptr);
     }
-
-    TLEAVE;
 }
 
 
 
 /* Swap operator for the Surface class. */
 void Rendering::swap(Surface& s1, Surface& s2) {
-    TENTER("Rendering::swap(Surface)");
-
     #ifndef NDEBUG
     // Check if the instances are actually the same
     if (s1.instance != s2.instance) { throw std::runtime_error("Cannot swap surfaces with different instances"); }
@@ -79,7 +69,4 @@ void Rendering::swap(Surface& s1, Surface& s2) {
     using std::swap;
     swap(s1.logger, s2.logger);
     swap(s1.vk_surface, s2.vk_surface);
-
-    // Done
-    TLEAVE;
 }

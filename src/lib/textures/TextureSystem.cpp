@@ -13,14 +13,11 @@
  *   managing textures for an entity.
 **/
 
-#include "tools/CppDebugger.hpp"
-
 #include "TextureSystem.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Textures;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** TEXTURESYSTEM CLASS *****/
@@ -46,7 +43,7 @@ TextureSystem::~TextureSystem() {}
 
 /* Loads a new texture for the given entity using the given format. */
 void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t entity, const std::string& path, TextureFormat format = TextureFormat::png) {
-    DENTER("Textures::TextureSystem::load_texture");
+    
     DLOG(info, "Loading texture for entity " + std::to_string(entity) + "...");
     DINDENT;
 
@@ -69,12 +66,12 @@ void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t en
 
     // Done
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Unloads the texture loaded for the given entity. */
 void TextureSystem::unload_texture(ECS::EntityManager& entity_manager, entity_t entity) {
-    DENTER("Textures::TextureSystem::unload_texture");
+    
     DLOG(info, "Deallocating texture for entity " + std::to_string(entity) + "...");
     DINDENT;
 
@@ -86,25 +83,25 @@ void TextureSystem::unload_texture(ECS::EntityManager& entity_manager, entity_t 
 
     // Done
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 
 
 /* Binds the model-related buffers and junk for the given mesh component to the given command buffer. */
 void TextureSystem::schedule(const ECS::Texture& entity_texture, const Rendering::CommandBuffer& draw_cmd) const {
-    DENTER("Textures::TextureSystem::schedule");
+    
 
 
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the TextureSystem class. */
 void Rasterizer::Textures::swap(TextureSystem& ts1, TextureSystem& ts2) {
-    DENTER("Textures::swap(TextureSystem)");
+    
 
     #ifndef NDEBUG
     if (&ts1.memory_manager != &ts2.memory_manager) {
@@ -116,5 +113,5 @@ void Rasterizer::Textures::swap(TextureSystem& ts1, TextureSystem& ts2) {
     using std::swap;
 
     // Done
-    DRETURN;
+    return;
 }

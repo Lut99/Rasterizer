@@ -13,7 +13,6 @@
  *   object. Only usable in the context of the MemoryPool.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Image.hpp"
@@ -21,7 +20,6 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** IMAGE CLASS *****/

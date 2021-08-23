@@ -13,7 +13,6 @@
  *   VkPipelineVertexInputStateDescription struct and associated pointers.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "VertexState.hpp"
@@ -21,13 +20,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkPipelineVertexInputStateCreateInfo struct. */
 static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& vertex_state_info, VkVertexInputBindingDescription* vk_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_attribute_descriptions) {
-    DENTER("populate_vertex_state_info");
+    
 
     // Set to default
     vertex_state_info = {};
@@ -42,7 +40,7 @@ static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& ver
     vertex_state_info.pVertexAttributeDescriptions = vk_attribute_descriptions.rdata();
 
     // We're done
-    DRETURN;
+    return;
 }
 
 
@@ -52,7 +50,7 @@ static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& ver
 /***** VERTEXSTATE CLASS *****/
 /* Constructor for the VertexState class, which takes a VkVertexInputBindingDescription and a list of VkVertexInputAttributeDescriptions. */
 VertexState::VertexState(const VkVertexInputBindingDescription& vk_vertex_binding, const Tools::Array<VkVertexInputAttributeDescription>& vk_vertex_attributes) {
-    DENTER("Rendering::VertexState::VertexState");
+    
 
     // Store the vertex binding & attributes safely
     this->vk_vertex_binding = new VkVertexInputBindingDescription(vk_vertex_binding);
@@ -62,12 +60,11 @@ VertexState::VertexState(const VkVertexInputBindingDescription& vk_vertex_bindin
     populate_vertex_state_info(this->vk_vertex_state_info, this->vk_vertex_binding, this->vk_vertex_attributes);
 
     // DOne
-    DLEAVE;
 }
 
 /* Copy constructor for the VertexState class. */
 VertexState::VertexState(const VertexState& other) {
-    DENTER("Rendering::VertexState::VertexState(copy)");
+    
 
     // Copy the binding & attributes
     this->vk_vertex_binding = new VkVertexInputBindingDescription(*other.vk_vertex_binding);
@@ -75,9 +72,6 @@ VertexState::VertexState(const VertexState& other) {
 
     // Re-populate our vertex state info
     populate_vertex_state_info(this->vk_vertex_state_info, this->vk_vertex_binding, this->vk_vertex_attributes);
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the VertexState class. */
@@ -91,14 +85,12 @@ VertexState::VertexState(VertexState&& other) :
 
 /* Destructor for the VertexState class. */
 VertexState::~VertexState() {
-    DENTER("Rendering::VertexState::~VertexState");
+    
 
     // Only delete the vertex binding if needed
     if (this->vk_vertex_binding != nullptr) {
         delete this->vk_vertex_binding;
     }
-
-    DLEAVE;
 }
 
 

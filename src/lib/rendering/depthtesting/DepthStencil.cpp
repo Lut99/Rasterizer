@@ -13,7 +13,6 @@
  *   be used by the pipeline to perform depth testing.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "DepthStencil.hpp"
@@ -21,13 +20,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** HELPER FUNCTIONS *****/
 /* Finds a suitable format for our depth image. */
 static VkFormat find_depth_format(const Rendering::GPU& gpu) {
-    DENTER("find_depth_format");
+    
 
     // Go through the list of suggested formats
     Tools::Array<VkFormat> candidates = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
@@ -38,13 +36,13 @@ static VkFormat find_depth_format(const Rendering::GPU& gpu) {
 
         // If the format is supported for depth stencil attachments, pick it
         if ((properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-            DRETURN candidates[i];
+            return candidates[i];
         }
     }
 
     // Otherwise, no format we like
     DLOG(fatal, "Could not find a supported format.");
-    DRETURN VK_FORMAT_MAX_ENUM;
+    return VK_FORMAT_MAX_ENUM;
 }
 
 
@@ -54,7 +52,7 @@ static VkFormat find_depth_format(const Rendering::GPU& gpu) {
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkImageViewCreateInfo struct. */
 static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& vk_image, const VkFormat& vk_format) {
-    DENTER("populate_view_info");
+    
 
     // Set the struct's default values
     view_info = {};
@@ -81,7 +79,7 @@ static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& 
     view_info.subresourceRange.layerCount = 1;
 
     // We're done
-    DRETURN;
+    return;
 }
 
 
@@ -94,7 +92,7 @@ DepthStencil::DepthStencil(const Rendering::GPU& gpu, Rendering::MemoryPool& dra
     gpu(gpu),
     draw_pool(draw_pool)
 {
-    DENTER("Rendering::DepthStencil::DepthStencil");
+    
     DLOG(info, "Initializing depth stencil...");
     DINDENT;
 
@@ -121,7 +119,6 @@ DepthStencil::DepthStencil(const Rendering::GPU& gpu, Rendering::MemoryPool& dra
 
     // Done
     DDEDENT;
-    DLEAVE;
 }
 
 /* Copy constructor for the DepthStencil class. */
@@ -129,7 +126,7 @@ DepthStencil::DepthStencil(const DepthStencil& other) :
     gpu(other.gpu),
     draw_pool(other.draw_pool)
 {
-    DENTER("Rendering::DepthStencil::DepthStencil(copy)");
+    
 
 
 
@@ -147,11 +144,6 @@ DepthStencil::DepthStencil(const DepthStencil& other) :
     if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &this->vk_image_view)) != VK_SUCCESS) {
         DLOG(fatal, "Could not create image view: " + vk_error_map[vk_result]);
     }
-    
-
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the DepthStencil class. */
@@ -168,7 +160,7 @@ DepthStencil::DepthStencil(DepthStencil&& other) :
 
 /* Destructor for the DepthStencil class. */
 DepthStencil::~DepthStencil() {
-    DENTER("Rendering::DepthStencil::~DepthStencil");
+    
 
     // Deallocate the image view if we need to
     if (this->vk_image_view != nullptr) {
@@ -178,15 +170,13 @@ DepthStencil::~DepthStencil() {
     if (this->rendering_image != nullptr) {
         this->draw_pool.free(this->rendering_image);
     }
-
-    DLEAVE;
 }
 
 
 
 /* Resizes the depth stencil to the given size. */
 void DepthStencil::resize(const VkExtent2D& new_extent) {
-    DENTER("Rasterizer::DepthStencil::resize");
+    
 
     // Deallocate the old image view
     vkDestroyImageView(this->gpu, this->vk_image_view, nullptr);
@@ -205,14 +195,14 @@ void DepthStencil::resize(const VkExtent2D& new_extent) {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the DepthStencil class. */
 void Rendering::swap(DepthStencil& ds1, DepthStencil& ds2) {
-    DENTER("Rendering::swap(DepthStencil)");
+    
 
     #ifndef NDEBUG
     // Make sure the GPU and the pool match
@@ -231,6 +221,6 @@ void Rendering::swap(DepthStencil& ds1, DepthStencil& ds2) {
     swap(ds1.vk_image_view, ds2.vk_image_view);
 
     // Done
-    DRETURN;
+    return;
 }
 

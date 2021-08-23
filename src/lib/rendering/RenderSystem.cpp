@@ -18,8 +18,6 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-#include "tools/CppDebugger.hpp"
-
 #include "ecs/components/Transform.hpp"
 #include "ecs/components/Meshes.hpp"
 #include "ecs/components/Camera.hpp"
@@ -36,13 +34,12 @@ using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::ECS;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSubmitInfo struct. */
 static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer* cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
-    DENTER("populate_submit_info");
+    
 
     // Set to default
     submit_info = {};
@@ -62,12 +59,12 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer*
     submit_info.pSignalSemaphores = &signal_after_semaphore.semaphore();
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPresentInfo struct. */
 static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchain& swapchain, const uint32_t& swapchain_index, const Semaphore& wait_for_semaphore) {
-    DENTER("populate_present_info");
+    
 
     // Set to default
     present_info = {};
@@ -86,7 +83,7 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
     present_info.pResults = nullptr;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -118,7 +115,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     current_frame(0)
 {
-    DENTER("Rendering::RenderSystem::RenderSystem");
+    
 
     // Initialize the render pass
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -147,7 +144,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     // Done initializing
     DLOG(info, "Intialized the RenderSystem.");
-    DLEAVE;
 }
 
 /* Copy constructor for the RenderSystem class. */
@@ -174,11 +170,9 @@ RenderSystem::RenderSystem(const RenderSystem& other) :
 
     current_frame(other.current_frame)
 {
-    DENTER("Rendering::RenderSystem::RenderSystem(copy)");
+    
 
     // Nothing as of yet
-
-    DLEAVE;
 }
 
 /* Move constructor for the RenderSystem class. */
@@ -208,18 +202,16 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
 
 /* Destructor for the RenderSystem class. */
 RenderSystem::~RenderSystem() {
-    DENTER("Rendering::RenderSystem::~RenderSystem");
+    
 
     // Nothing as of yet
-
-    DLEAVE;
 }
 
 
 
 /* Private helper function that resizes all required structures for a new window size. */
 void RenderSystem::_resize() {
-    DENTER("Rendering::RenderSystem::_resize");
+    
 
     // First, wait until the device is idle
     this->window.gpu().wait_for_idle();
@@ -238,20 +230,20 @@ void RenderSystem::_resize() {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Runs a single iteration of the game loop. Returns whether or not the RenderSystem is asked to close the window (false) or not (true). */
 bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
-    DENTER("Rendering::RenderSystem::render_frame");
+    
 
     /* PREPARATION */
     // First, do the window
     bool can_continue = this->window.loop();
     if (!can_continue) {
-        DRETURN false;
+        return false;
     }
 
     // Before we get the swapchain images, be sure to wait for the current frame to be available
@@ -265,7 +257,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         this->_resize();
 
         // Next, we early quit, to make sure that the proper images are acquired
-        DRETURN true;
+        return true;
     } else if (vk_result != VK_SUCCESS) {
         DLOG(fatal, "Could not get image from swapchain: " + vk_error_map[vk_result]);
     }
@@ -346,14 +338,14 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
     // Done with this iteration
     this->current_frame = (this->current_frame + 1) % RenderSystem::max_frames_in_flight;
-    DRETURN true;
+    return true;
 }
 
 
 
 /* Swap operator for the RenderSystem class. */
 void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
-    DENTER("Rendering::swap(RenderSystem)");
+    
 
     #ifndef NDEBUG
     if (&rs1.window != &rs2.window) {
@@ -389,5 +381,5 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
     swap(rs1.current_frame, rs2.current_frame);
 
     // Done
-    DRETURN;
+    return;
 }

@@ -17,8 +17,6 @@
 #include <algorithm>
 
 #include "tools/Common.hpp"
-#include "tools/CppDebugger.hpp"
-
 #include "formats/obj/ObjLoader.hpp"
 
 #include "ModelSystem.hpp"
@@ -26,7 +24,6 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Models;
-using namespace CppDebugger::SeverityValues;
 
 
 
@@ -37,24 +34,21 @@ using namespace CppDebugger::SeverityValues;
 ModelSystem::ModelSystem(Rendering::MemoryManager& memory_manager) :
     memory_manager(memory_manager)
 {
-    DENTER("Models::ModelManger::ModelManager");
+    
 
     // Nothing as of yet
 
     // Done
     DLOG(info, "Initialized ModelManager.");
-    DLEAVE;
 }
 
 /* Copy constructor for the ModelSystem class. */
 ModelSystem::ModelSystem(const ModelSystem& other) :
     memory_manager(other.memory_manager)
 {
-    DENTER("Models::ModelManger::ModelManager(copy)");
+    
 
     // Nothing as of yet
-
-    DLEAVE;
 }
 
 /* Move constructor for the ModelSystem class. */
@@ -64,18 +58,16 @@ ModelSystem::ModelSystem(ModelSystem&& other) :
 
 /* Destructor for the ModelSystem class. */
 ModelSystem::~ModelSystem() {
-    DENTER("Models::ModelManager::~ModelManager");
+    
 
     // Nothing as of yet
-
-    DLEAVE;
 }
 
 
 
 /* Loads a model at the given path and with the given format and adds it to the given entity in the given entity manager. */
 void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity, const std::string& path, ModelFormat format) {
-    DENTER("Models::ModelManager::load_model");
+    
     DLOG(info, "Loading model for entity " + std::to_string(entity) + "...");
     DINDENT;
 
@@ -180,12 +172,12 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
 
     // Done
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Unloads the model belonging to the given entity in the given entity manager. */
 void ModelSystem::unload_model(ECS::EntityManager& entity_manager, entity_t entity) {
-    DENTER("Models::ModelManager::unload_model");
+    
     DLOG(info, "Deallocating model for entity " + std::to_string(entity) + "...");
     DINDENT;
 
@@ -202,12 +194,12 @@ void ModelSystem::unload_model(ECS::EntityManager& entity_manager, entity_t enti
 
     // Done
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Binds the model-related buffers for the given mesh component to the given command buffer. */
 void ModelSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& entity_mesh) const {
-    DENTER("Models::ModelManager::unload_model");
+    
 
     // Bind the buffers
     VkDeviceSize offsets[] = { 0 };
@@ -215,14 +207,14 @@ void ModelSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::
     vkCmdBindIndexBuffer(draw_cmd->command_buffer(), entity_mesh.indices->buffer(), 0, VK_INDEX_TYPE_UINT32);
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the ModelSystem class. */
 void Models::swap(ModelSystem& mm1, ModelSystem& mm2) {
-    DENTER("Models::swap(ModelManager)");
+    
 
     #ifndef NDEBUG
     // Make sure the all pools overlap
@@ -235,5 +227,5 @@ void Models::swap(ModelSystem& mm1, ModelSystem& mm2) {
     using std::swap;
 
     // Done
-    DRETURN;
+    return;
 }

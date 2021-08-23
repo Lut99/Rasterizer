@@ -15,7 +15,6 @@
 **/
 
 #include <cstring>
-#include "tools/Tracer.hpp"
 #include "tools/Common.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
@@ -79,12 +78,12 @@ static bool gpu_supports_extensions(Tools::Logger& logger, const VkPhysicalDevic
     // Get a list of all extensions supported on this device
     uint32_t n_supported_extensions = 0;
     VkResult vk_result;
-    if ((vk_result = TCALLR(vkEnumerateDeviceExtensionProperties(vk_physical_device, nullptr, &n_supported_extensions, nullptr))) != VK_SUCCESS) {
+    if ((vk_result = vkEnumerateDeviceExtensionProperties(vk_physical_device, nullptr, &n_supported_extensions, nullptr)) != VK_SUCCESS) {
         logger.warning("Could not get the number of supported extensions on the GPU.");
         return false;
     }
     Tools::Array<VkExtensionProperties> supported_extensions(n_supported_extensions);
-    if ((vk_result = TCALLR(vkEnumerateDeviceExtensionProperties(vk_physical_device, nullptr, &n_supported_extensions, supported_extensions.wdata(n_supported_extensions)))) != VK_SUCCESS) {
+    if ((vk_result = vkEnumerateDeviceExtensionProperties(vk_physical_device, nullptr, &n_supported_extensions, supported_extensions.wdata(n_supported_extensions))) != VK_SUCCESS) {
         logger.warning("Could not get the number of supported extensions on the GPU.");
         return false;
     }
@@ -119,10 +118,10 @@ static bool is_suitable_gpu(Tools::Logger& logger, const VkPhysicalDevice& vk_ph
     QueueInfo queue_info(logger, vk_physical_device, surface);
 
     // Next, check if the device supports the extensions we want
-    bool supports_extensions = TCALLR(gpu_supports_extensions(logger, vk_physical_device, device_extensions));
+    bool supports_extensions = gpu_supports_extensions(logger, vk_physical_device, device_extensions);
 
     // With those two, return it the GPU is suitable
-    return TCALLR(queue_info.supports(QueueType::graphics)) && TCALLR(queue_info.supports(QueueType::compute)) && TCALLR(queue_info.supports(QueueType::memory)) && TCALLR(queue_info.supports(QueueType::present)) && supports_extensions;
+    return queue_info.supports(QueueType::graphics) && queue_info.supports(QueueType::compute) && queue_info.supports(QueueType::memory) && queue_info.supports(QueueType::present) && supports_extensions;
 }
 
 /* Selects a suitable GPU from the ones that support Vulkan. */
@@ -146,7 +145,7 @@ static VkPhysicalDevice select_gpu(Tools::Logger& logger, const Instance& instan
     // Iterate through each of them to find a suitable one
     for (uint32_t i = 0; i < available_devices.size(); i++) {
         // Just take the first suitable one
-        if (TCALLR(is_suitable_gpu(logger, available_devices[i], surface, device_extensions))) {
+        if (is_suitable_gpu(logger, available_devices[i], surface, device_extensions)) {
             return available_devices[i];
         }
     }
@@ -169,18 +168,14 @@ GPU::GPU(const Tools::Logger::InitData& init_data, const Instance& instance, con
     vk_swapchain_info(this->logger),
     vk_extensions(extensions)
 {
-    TENTER("Rendering::GPU::GPU");
-
-
-
     // Then, we move to getting a phsysical device that supports our desired properties
     this->logger.log(Verbosity::details, "Choosing physical device...");
 
     // Start by selecting a proper one
-    this->vk_physical_device = TCALLR(select_gpu(logger, this->instance, this->surface, this->vk_extensions));
+    this->vk_physical_device = select_gpu(logger, this->instance, this->surface, this->vk_extensions);
 
     // Next, get some of its properties, like the name & queue info
-    TCALL(vkGetPhysicalDeviceProperties(this->vk_physical_device, &this->vk_physical_device_properties));
+    vkGetPhysicalDeviceProperties(this->vk_physical_device, &this->vk_physical_device_properties);
     this->vk_queue_info = QueueInfo(this->logger, this->vk_physical_device, this->surface);
     this->vk_swapchain_info = SwapchainInfo(this->logger, this->vk_physical_device, this->surface);
     this->logger.log(Verbosity::important, "Selected GPU: '", this->vk_physical_device_properties.deviceName, '\'');
@@ -198,19 +193,19 @@ GPU::GPU(const Tools::Logger::InitData& init_data, const Instance& instance, con
 
     // Collect the qeuues we want to use for this device(s) by creating a list of queue create infos.
     Tools::Array<VkDeviceQueueCreateInfo> queue_infos;
-    TCALL(populate_queue_infos(queue_infos, this->vk_queue_info, queue_counts, queue_priorities));
+    populate_queue_infos(queue_infos, this->vk_queue_info, queue_counts, queue_priorities);
 
     // Next, populate the list of features we like from our device.
     VkPhysicalDeviceFeatures device_features;
-    TCALL(populate_device_features(device_features));
+    populate_device_features(device_features);
 
     // Then, use the queue indices and the features to populate the create info for the device itself
     VkDeviceCreateInfo device_info;
-    TCALL(populate_device_info(device_info, queue_infos, device_features, this->vk_extensions));
+    populate_device_info(device_info, queue_infos, device_features, this->vk_extensions);
 
     // With the device info ready, create it
     VkResult vk_result;
-    if ((vk_result = TCALLR(vkCreateDevice(this->vk_physical_device, &device_info, nullptr, &this->vk_device))) != VK_SUCCESS) {
+    if ((vk_result = vkCreateDevice(this->vk_physical_device, &device_info, nullptr, &this->vk_device)) != VK_SUCCESS) {
         this->logger.fatal("Could not create the logical device: ", vk_error_map[vk_result]);
     }
     
@@ -228,14 +223,9 @@ GPU::GPU(const Tools::Logger::InitData& init_data, const Instance& instance, con
     for (uint32_t i = 0; i < QueueInfo::n_queues; i++) {
         this->vk_queues[i].resize(queue_counts[i]);
         for (uint32_t j = 0; j < queue_counts[i]; j++) {
-            TCALL(vkGetDeviceQueue(this->vk_device, this->vk_queue_info[(QueueType) i], j, &this->vk_queues[i][j]));
+            vkGetDeviceQueue(this->vk_device, this->vk_queue_info[(QueueType) i], j, &this->vk_queues[i][j]);
         }
     }
-
-
-
-    // We're done initializing!
-    TLEAVE;
 }
 
 /* Copy constructor for the GPU class. */
@@ -249,7 +239,6 @@ GPU::GPU(const GPU& other) :
     vk_swapchain_info(other.vk_swapchain_info),
     vk_extensions(other.vk_extensions)
 {
-    TENTER("Rendering::GPU::GPU(copy)");
     this->logger.log(Verbosity::details, "Starting copy...");
 
     // The physical device can be copied literally; just create a new instance of the logical device
@@ -265,15 +254,15 @@ GPU::GPU(const GPU& other) :
 
     // Collect the qeuues we want to use for this device(s) by creating a list of queue create infos.
     Tools::Array<VkDeviceQueueCreateInfo> queue_infos;
-    TCALL(populate_queue_infos(queue_infos, this->vk_queue_info, queue_counts, queue_priorities));
+    populate_queue_infos(queue_infos, this->vk_queue_info, queue_counts, queue_priorities);
 
     // Next, populate the list of features we like from our device.
     VkPhysicalDeviceFeatures device_features;
-    TCALL(populate_device_features(device_features));
+    populate_device_features(device_features);
 
     // Then, use the queue indices and the features to populate the create info for the device itself
     VkDeviceCreateInfo device_info;
-    TCALL(populate_device_info(device_info, queue_infos, device_features, this->vk_extensions));
+    populate_device_info(device_info, queue_infos, device_features, this->vk_extensions);
 
     // With the device info ready, create it
     VkResult vk_result;
@@ -285,11 +274,9 @@ GPU::GPU(const GPU& other) :
     for (uint32_t i = 0; i < QueueInfo::n_queues; i++) {
         this->vk_queues[i].resize(queue_counts[i]);
         for (uint32_t j = 0; j < queue_counts[i]; j++) {
-            TCALL(vkGetDeviceQueue(this->vk_device, this->vk_queue_info[(QueueType) i], j, &this->vk_queues[i][j]));
+            vkGetDeviceQueue(this->vk_device, this->vk_queue_info[(QueueType) i], j, &this->vk_queues[i][j]);
         }
     }
-
-    TLEAVE;
 }
 
 /* Move constructor for the GPU class. */
@@ -315,8 +302,6 @@ GPU::GPU(GPU&& other) :
 
 /* Destructor for the GPU class. */
 GPU::~GPU() {
-    TENTER("Rendering::GPU::~GPU");
-
     // Destroy them in reverse order: first, the logical device
     if (this->vk_device != nullptr) {
         this->logger.log(Verbosity::details, "Cleaning logical device...");
@@ -324,9 +309,6 @@ GPU::~GPU() {
     }
 
     // Physical devices need no destructing
-
-    // We're done here
-    TLEAVE;
 }
 
 
@@ -341,8 +323,6 @@ void GPU::refresh_swapchain_info() {
 
 /* Swap operator for the GPU class. */
 void Rendering::swap(GPU& g1, GPU& g2) {
-    TENTER("Rendering::swap(GPU)");
-
     #ifndef NDEBUG
     // Check if the instances are actually the same
     if (g1.instance != g2.instance) { throw std::runtime_error("Cannot swap gpus with different instances"); }
@@ -361,7 +341,4 @@ void Rendering::swap(GPU& g1, GPU& g2) {
     swap(g1.vk_device, g2.vk_device);
     swap(g1.vk_extensions, g2.vk_extensions);
     swap(g1.vk_queues, g2.vk_queues);
-
-    // Done
-    TLEAVE;
 }

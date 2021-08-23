@@ -25,8 +25,6 @@
 /***** INCLUDES *****/
 #include <fstream>
 #include <sstream>
-#include "tools/CppDebugger.hpp"
-
 #include "../../auxillary/TokenizerTools.hpp"
 #include "ValueTerminal.hpp"
 #include "Tokenizer.hpp"
@@ -35,7 +33,6 @@ using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Mtl;
-using namespace CppDebugger::SeverityValues;
 
 
 
@@ -49,7 +46,7 @@ Tokenizer::Tokenizer(const std::string& path) :
     col(0),
     last_sentence_start(0)
 {
-    DENTER("Models::Mtl::Tokenizer::Tokenizer");
+    
 
     // First, open a handle
     std::ifstream* is = new std::ifstream(this->path, std::ios::ate);
@@ -71,9 +68,6 @@ Tokenizer::Tokenizer(const std::string& path) :
     // Reset the file to the start
     is->seekg(0);
     is->clear();
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the Tokenizer class. */
@@ -94,7 +88,7 @@ Tokenizer::Tokenizer(Tokenizer&& other) :
 
 /* Destructor for the Tokenizer class. */
 Tokenizer::~Tokenizer() {
-    DENTER("Models::Mtl::Tokenizer::~Tokenizer");
+    
 
     for (uint32_t i = 0; i < this->terminal_buffer.size(); i++) {
         delete this->terminal_buffer[i];
@@ -102,21 +96,19 @@ Tokenizer::~Tokenizer() {
     if (this->file != nullptr) {
         delete this->file;
     }
-
-    DLEAVE;
 }
 
 
 
 /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
 Terminal* Tokenizer::get() {
-    DENTER("Models::Mtl::Tokenizer::get");
+    
 
     // If there's something in the buffer, pop that off first
     if (this->terminal_buffer.size() > 0) {
         Terminal* result = this->terminal_buffer.last();
         this->terminal_buffer.pop_back();
-        DRETURN result;
+        return result;
     }
 
     // Prepare some variables
@@ -180,13 +172,13 @@ start: {
     } else if (c == EOF) {
         // End-of-file; return that we reached it
         DEBUG_PATH("EOF", "done");
-        DRETURN new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { "" }));
+        return new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { "" }));
 
     } else {
         // Unexpected token
         DebugInfo debug(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) });
         debug.print_error(cerr, std::string("Unexpected character '") + readable_char(c) + "'");
-        DRETURN nullptr;
+        return nullptr;
 
     }
 }
@@ -377,7 +369,7 @@ Kd: {
         // Make sure that the next one is a whitespace
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        DRETURN new Terminal(TerminalType::Kd, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Terminal(TerminalType::Kd, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
 
     } else {
         // Unknown token instead!
@@ -432,15 +424,15 @@ float_start: {
         } catch (std::invalid_argument& e) {
             // printf("'\n");
             debug_info.print_error(cerr, "Illegal character parsing a decimal: " + std::string(e.what()));
-            DRETURN nullptr;
+            return nullptr;
         } catch (std::out_of_range&) {
             // printf("'\n");
             debug_info.print_error(cerr, "Value is out-of-range for a decimal (maximum: " + std::to_string(std::numeric_limits<float>::max()) + ").");
-            DRETURN nullptr;
+            return nullptr;
         }
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        return (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -487,15 +479,15 @@ float_dot: {
         } catch (std::invalid_argument& e) {
             debug_info.print_error(cerr, "Illegal character parsing a decimal number: " + std::string(e.what()));
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         } catch (std::out_of_range&) {
             debug_info.print_error(cerr, "Value is out-of-range for a 32-bit floating-point (maximum: " + std::to_string(std::numeric_limits<float>::max()) + ").");
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         }
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        return (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -526,7 +518,7 @@ float_e_start: {
         UNGET_CHAR(this->file, this->col);
         DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Encountered scientific 'E' but without power.");
-        DRETURN nullptr;
+        return nullptr;
 
     } else {
         // Parse as unknown token
@@ -567,15 +559,15 @@ float_e: {
         } catch (std::invalid_argument& e) {
             debug_info.print_error(cerr, "Illegal character parsing a decimal number: " + std::string(e.what()));
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         } catch (std::out_of_range&) {
             debug_info.print_error(cerr, "Value is out-of-range for a 32-bit floating-point (maximum: " + std::to_string(std::numeric_limits<float>::max()) + ").");
             // printf("'\n");
-            DRETURN nullptr;
+            return nullptr;
         }
 
         // Otherwise, we have a valid value
-        DRETURN (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        return (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -601,7 +593,7 @@ name_start: {
         // It's over before we begun; return only the to_return
         DEBUG_PATH("newline", "done");
         UNGET_CHAR(this->file, this->col);
-        DRETURN to_return;
+        return to_return;
 
     } else if (IS_WHITESPACE(c)) {
         // Wait until we find a non-whitespace
@@ -622,7 +614,7 @@ name_start: {
         DebugInfo debug_info(this->path, this->line, this->col - 1, { get_line(this->file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Illegal name character '" + std::string(readable_char(c)) + "'.");
         delete to_return;
-        DRETURN nullptr;
+        return nullptr;
 
     }
 
@@ -642,7 +634,7 @@ name_contd: {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
         this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
-        DRETURN to_return;
+        return to_return;
 
     } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
         // Keep parsing as name
@@ -697,7 +689,7 @@ unknown_token: {
         UNGET_CHAR(this->file, this->col);
         DebugInfo debug(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
         debug.print_error(cerr, "Unknown token '" + sstr.str() + "'.");
-        DRETURN nullptr;
+        return nullptr;
     } else {
         // Keep consuming
         DEBUG_PATH("other", "retrying");
@@ -710,18 +702,18 @@ unknown_token: {
 
     // We should never get here
     DLOG(fatal, "Hole in jump logic encountered; reached point we should never reach");
-    DRETURN nullptr;
+    return nullptr;
 }
 
 /* Puts a token back on the internal list of tokens, so it can be returned next get call. Note that the Tokenizer will deallocate these if it gets deallocated. */
 void Tokenizer::unget(Terminal* term) {
-    DENTER("Models::Mtl::Tokenizer::unget");
+    
 
     // Put the token back on the list of tokens
     this->terminal_buffer.push_back(term);
 
     // Done
-    DRETURN;
+    return;
 }
 
 

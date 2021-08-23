@@ -13,7 +13,6 @@
  *   rendering process.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 #include "../auxillary/ShaderStages.hpp"
 #include "../auxillary/Vertex.hpp"
@@ -23,13 +22,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkPipelineInputAssemblyStateCreateInfo struct. */
 static void populate_assembly_state_info(VkPipelineInputAssemblyStateCreateInfo& assembly_state_info, VkPrimitiveTopology topology, VkBool32 primitive_restart) {
-    DENTER("populate_assembly_state_info");
+    
 
     // Set to default
     assembly_state_info = {};
@@ -40,12 +38,12 @@ static void populate_assembly_state_info(VkPipelineInputAssemblyStateCreateInfo&
     assembly_state_info.primitiveRestartEnable = primitive_restart;
 
     // DOne
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPipelineDepthStencilStateCreateInfo struct. */
 static void populate_depth_stencil_state_info(VkPipelineDepthStencilStateCreateInfo& depth_stencil_state_info, VkBool32 vk_enable, VkCompareOp vk_compare_op) {
-    DENTER("populate_depth_stencil_state_info");
+    
 
     // Set to default
     depth_stencil_state_info = {};
@@ -69,12 +67,12 @@ static void populate_depth_stencil_state_info(VkPipelineDepthStencilStateCreateI
     depth_stencil_state_info.back = {};
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPipelineViewportStateCreateInfo struct. */
 static void populate_viewport_state_info(VkPipelineViewportStateCreateInfo& viewport_state_info, const VkViewport& vk_viewport, const VkRect2D& vk_scissor) {
-    DENTER("populate_viewport_state_info");
+    
 
     // Set to default
     viewport_state_info = {};
@@ -87,12 +85,12 @@ static void populate_viewport_state_info(VkPipelineViewportStateCreateInfo& view
     viewport_state_info.pScissors = &vk_scissor;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPipelineRasterizationStateCreateInfo struct. */
 static void populate_rasterizer_state_info(VkPipelineRasterizationStateCreateInfo& rasterizer_state_info, VkCullModeFlags cull_mode, VkFrontFace front_face, VkBool32 depth_clamp, VkPolygonMode polygon_mode, float line_width, VkBool32 disable_rasterizer) {
-    DENTER("populate_rasterizer_state_info");
+    
 
     // Set the struct to default
     rasterizer_state_info = {};
@@ -120,12 +118,12 @@ static void populate_rasterizer_state_info(VkPipelineRasterizationStateCreateInf
     // Set the rasterizer enabled status
     rasterizer_state_info.rasterizerDiscardEnable = disable_rasterizer;
 
-    DRETURN;
+    return;
 }
 
 /* Populate sthe given VkPipelineMultisampleStateCreateInfo struct. */
 static void populate_multisample_state(VkPipelineMultisampleStateCreateInfo& multisample_state_info) {
-    DENTER("populate_multisample_state");
+    
 
     // Define the standard stuff
     multisample_state_info = {};
@@ -140,12 +138,12 @@ static void populate_multisample_state(VkPipelineMultisampleStateCreateInfo& mul
     multisample_state_info.alphaToOneEnable = VK_FALSE;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPipelineColorBlendAttachmentState struct. */
 static void populate_color_attachment_state(VkPipelineColorBlendAttachmentState& color_attachment_state, VkBool32 enable_blending, VkBlendFactor src_color_factor, VkBlendFactor dst_color_factor, VkBlendOp color_op, VkBlendFactor src_alpha_factor, VkBlendFactor dst_alpha_factor, VkBlendOp alpha_op) {
-    DENTER("populate_color_attachment_state");
+    
 
     // Set to default
     color_attachment_state = {};
@@ -167,12 +165,12 @@ static void populate_color_attachment_state(VkPipelineColorBlendAttachmentState&
     color_attachment_state.alphaBlendOp = alpha_op;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPipelineColorBlendStateCreateInfo struct. */
 static void populate_color_state_info(VkPipelineColorBlendStateCreateInfo& color_state_info, const Tools::Array<VkPipelineColorBlendAttachmentState>& color_attachments, VkBool32 enable_logic, VkLogicOp logic_op) {
-    DENTER("populate_color_state_info");
+    
 
     // Set to default
     color_state_info = {};
@@ -193,12 +191,12 @@ static void populate_color_state_info(VkPipelineColorBlendStateCreateInfo& color
     color_state_info.blendConstants[3] = 0.0f;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPipelineLayoutCreateInfo struct. */
 static void populate_layout_info(VkPipelineLayoutCreateInfo& layout_info, const Tools::Array<VkDescriptorSetLayout>& vk_layouts, const Tools::Array<VkPushConstantRange>& vk_push_constants) {
-    DENTER("populate_layout_info");
+    
 
     // Set to default first
     layout_info = {};
@@ -213,7 +211,7 @@ static void populate_layout_info(VkPipelineLayoutCreateInfo& layout_info, const 
     layout_info.pPushConstantRanges = vk_push_constants.rdata();
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -227,9 +225,8 @@ Pipeline::Pipeline(const Rendering::GPU& gpu) :
     vk_pipeline_layout(nullptr),
     vertex_state_info(Vertex::input_binding_description(), Vertex::input_attribute_descriptions())
 {
-    DENTER("Rendering::Pipeline::Pipeline");
+    
     DLOG(info, "Started pipeline initialization.");
-    DLEAVE;
 }
 
 /* Copy constructor for the Pipeline class. */
@@ -255,7 +252,7 @@ Pipeline::Pipeline(const Pipeline& other) :
     vk_color_blending(other.vk_color_blending),
     vk_color_state_info(other.vk_color_state_info)
 {
-    DENTER("Rendering::Pipeline::Pipeline(copy)");
+    
 
     // Re-create the pipeline layout if needed using the create info we got
     if (this->vk_pipeline_layout != nullptr) {
@@ -264,8 +261,6 @@ Pipeline::Pipeline(const Pipeline& other) :
             DLOG(fatal, "Could not re-create pipeline layout: " + vk_error_map[vk_result]);
         }
     }
-
-    DLEAVE;
 }
 
 /* Move constructor for the Pipeline class. */
@@ -300,7 +295,7 @@ Pipeline::Pipeline(Pipeline&& other) :
 
 /* Destructor for the Pipeline class. */
 Pipeline::~Pipeline() {
-    DENTER("Rendering::Pipeline::~Pipeline");
+    
     DLOG(info, "Destroying Pipeline...")
     DINDENT;
 
@@ -315,14 +310,13 @@ Pipeline::~Pipeline() {
     }
 
     DDEDENT;
-    DLEAVE;
 }
 
 
 
 /* Loads a shader in the given shader stage mask. */
 void Pipeline::init_shader_stage(const Rendering::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, BinaryString>& specialization_constants) {
-    DENTER("Rendering::Pipeline::init_shader_stage");
+    
 
     // Store the shader
     this->shaders.push_back(shader);
@@ -334,12 +328,12 @@ void Pipeline::init_shader_stage(const Rendering::Shader& shader, VkShaderStageF
     DINDENT;
     DLOG(info, "Initialized Pipeline shader for the " + vk_shader_stage_map[shader_stage] + " stage");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Tells the Pipeline what to do with the vertex we gave it. */
 void Pipeline::init_input_assembly(VkPrimitiveTopology topology, VkBool32 restart_enable) {
-    DENTER("Rendering::Pipeline::init_input_assembly");
+    
 
     // Prepare the interal VkPipelineInputAssemblyStateCreateInfo struct
     populate_assembly_state_info(this->vk_assembly_state_info, topology, restart_enable);
@@ -347,24 +341,24 @@ void Pipeline::init_input_assembly(VkPrimitiveTopology topology, VkBool32 restar
     DINDENT;
     DLOG(info, "Initialized Pipeline input assembly");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Tells the Pipeline what to do with depth stencil testing. */
 void Pipeline::init_depth_testing(VkBool32 enable_testing, VkCompareOp compare_op) {
-    DENTER("Rendering::Pipeline::init_depth_testing");
+    
 
     populate_depth_stencil_state_info(this->vk_depth_stencil_state_info, enable_testing, compare_op);
 
     DINDENT;
     DLOG(info, "Initialized Pipeline depth testing");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Tells the Pipeline how the render the output frame. The Viewport is used to stretch it, and the Scissor is used to cut it off. */
 void Pipeline::init_viewport_transformation(const Rectangle& viewport, const Rectangle& scissor) {
-    DENTER("Rendering::Pipeline::init_viewport_transformation");
+    
 
     // First, prepare the VkViewport object
     this->vk_viewport = {};
@@ -386,7 +380,7 @@ void Pipeline::init_viewport_transformation(const Rectangle& viewport, const Rec
     DINDENT;
     DLOG(info, "Initialized Pipeline viewport");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Tells the Pipeline how to configure the Rasterizer stage.
@@ -399,7 +393,7 @@ void Pipeline::init_viewport_transformation(const Rectangle& viewport, const Rec
  * @param disable_rasterizer If set to TRUE, then discards the output of the rasterizer, disabling it in effect.
  */
 void Pipeline::init_rasterizer(VkCullModeFlags cull_mode, VkFrontFace front_face, VkBool32 depth_clamp, VkPolygonMode polygon_mode, float line_width, VkBool32 disable_rasterizer) {
-    DENTER("Rendering::Pipeline::init_rasterizer");
+    
 
     // Simply populate the correct struct
     populate_rasterizer_state_info(this->vk_rasterizer_state_info, cull_mode, front_face, depth_clamp, polygon_mode, line_width, disable_rasterizer);
@@ -407,12 +401,12 @@ void Pipeline::init_rasterizer(VkCullModeFlags cull_mode, VkFrontFace front_face
     DINDENT;
     DLOG(info, "Initialized Pipeline rasterizer");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Tells the pipeline how to handle multi-sampling. For now, perpetuably disabled. */
 void Pipeline::init_multisampling() {
-    DENTER("Rendering::Pipeline::init_multisampling");
+    
 
     // Populate the struct
     populate_multisample_state(this->vk_multisample_state_info);
@@ -421,7 +415,7 @@ void Pipeline::init_multisampling() {
     DINDENT;
     DLOG(info, "Initialized Pipeline multisampling");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Tells the Pipeline how to blend the new, computed color of a pixel with the one already in the framebuffer. This is per output framebuffer, and may thus need to be called multiple times.
@@ -436,7 +430,7 @@ void Pipeline::init_multisampling() {
  * @param alpha_op How to combine the two alpha channels into one
  */
 void Pipeline::init_color_blending(uint32_t framebuffer, VkBool32 enable_blending, VkBlendFactor src_color_factor, VkBlendFactor dst_color_factor, VkBlendOp color_op, VkBlendFactor src_alpha_factor, VkBlendFactor dst_alpha_factor, VkBlendOp alpha_op) {
-    DENTER("Rendering::Pipeline::init_color_blending");
+    
 
     // See if we have a framebuffer with this index yet
     if (framebuffer == this->vk_color_blending.size()) {
@@ -452,7 +446,7 @@ void Pipeline::init_color_blending(uint32_t framebuffer, VkBool32 enable_blendin
     DINDENT;
     DLOG(info, "Initialized Pipeline color blending for framebuffer " + std::to_string(framebuffer));
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Tells the Pipeline how to generally blend the new, computed color of a pixel with the one already there. This one uses logical operations instead of a blending one, and holds for ALL framebuffers.
@@ -462,7 +456,7 @@ void Pipeline::init_color_blending(uint32_t framebuffer, VkBool32 enable_blendin
  * @param logic_op Which logic operation to apply.
  */
 void Pipeline::init_color_logic(VkBool32 enable_logic, VkLogicOp logic_op) {
-    DENTER("Rendering::Pipeline::init_color_logic");
+    
 
     // Populate the color blend state with the array we collected with init_color_blending() calls
     populate_color_state_info(this->vk_color_state_info, this->vk_color_blending, enable_logic, logic_op);
@@ -470,12 +464,12 @@ void Pipeline::init_color_logic(VkBool32 enable_logic, VkLogicOp logic_op) {
     DINDENT;
     DLOG(info, "Initialized Pipeline general color blending");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Initiates the pipeline layout based on the list of descriptor set layouts and on the list of push constants. */
 void Pipeline::init_pipeline_layout(const Tools::Array<DescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants) {
-    DENTER("Rendering::Pipeline::init_pipeline_layout");
+    
 
     // Begin by converting the list of layouts to vulkan VkDescriptorSetLayouts
     this->vk_descriptor_set_layouts.resize(layouts.size());
@@ -514,12 +508,12 @@ void Pipeline::init_pipeline_layout(const Tools::Array<DescriptorSetLayout>& lay
     DINDENT;
     DLOG(info, "Initialized Pipeline layout");
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* When called, completes the pipeline with the settings given by the other initialization functions. */
 void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
-    DENTER("Rendering::Pipeline::finalize");
+    
 
     // Finally, begin prepare the create info
     VkGraphicsPipelineCreateInfo pipeline_info = {};
@@ -561,59 +555,59 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
     }
 
     // Done :)
-    DRETURN;
+    return;
 }
 
 
 
 /* Schedules the pipeline to be run and thus drawn in the given command buffer. Optionally takes another bind point. */
 void Pipeline::schedule(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point) {
-    DENTER("Rendering::Pipeline::schedule");
+    
 
     // Simply bind the pipeline at this point in the command buffer
     vkCmdBindPipeline(cmd->command_buffer(), vk_bind_point, this->vk_pipeline);
 
     // We're done
-    DRETURN;
+    return;
 }
 
 /* Schedules a new push constant to be pushed to the shader(s) in the pipeline. */
 void Pipeline::schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data) {
-    DENTER("Rendering::Pipeline::schedule_push_constants");
+    
 
     // Simply schedule it
     vkCmdPushConstants(cmd->command_buffer(), this->vk_pipeline_layout, shader_stage, offset, size, data);
 
-    DRETURN;
+    return;
 }
 
 /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
 void Pipeline::schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) {
-    DENTER("Rendering::Pipeline::schedule_draw");
+    
 
     // Simply do the draw call
     vkCmdDraw(cmd->command_buffer(), vertex_count, instance_count, first_vertex, first_instance);
 
     // We're done
-    DRETURN;
+    return;
 }
 
 /* Schedules the draw call for the pipeline, except that is uses an index buffer instead of just a list of vertices. Takes the number of indices, the number of instances, the first vertex, the first index and the first instance. */
 void Pipeline::schedule_draw_indexed(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_index, uint32_t first_instance) {
-    DENTER("Rendering::Pipeline::schedule_draw_indexed");
+    
 
     // Simply do the draw call
     vkCmdDrawIndexed(cmd->command_buffer(), index_count, instance_count, first_index, first_vertex, first_instance);
 
     // We're done
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the Pipeline class. */
 void Rendering::swap(Pipeline& p1, Pipeline& p2) {
-    DENTER("Rendering::swap(Pipeline)");
+    
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
@@ -646,5 +640,5 @@ void Rendering::swap(Pipeline& p1, Pipeline& p2) {
     swap(p1.vk_color_state_info, p2.vk_color_state_info);
 
     // Done
-    DRETURN;
+    return;
 }

@@ -12,7 +12,6 @@
  *   Contains a class that wraps a VkFence object.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Fence.hpp"
@@ -20,13 +19,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkFenceCreateInfo struct. */
 static void populate_fence_info(VkFenceCreateInfo& fence_info, VkFenceCreateFlags create_flags) {
-    DENTER("populate_fence_info");
+    
 
     // Set to default
     fence_info = {};
@@ -36,7 +34,7 @@ static void populate_fence_info(VkFenceCreateInfo& fence_info, VkFenceCreateFlag
     fence_info.flags = create_flags;
 
     // And done!
-    DRETURN;
+    return;
 }
 
 
@@ -49,7 +47,7 @@ Fence::Fence(const Rendering::GPU& gpu, VkFenceCreateFlags create_flags) :
     gpu(gpu),
     vk_create_flags(create_flags)
 {
-    DENTER("Rendering::Fence::Fence");
+    
 
     // Populate the create info
     VkFenceCreateInfo fence_info;
@@ -60,9 +58,6 @@ Fence::Fence(const Rendering::GPU& gpu, VkFenceCreateFlags create_flags) :
     if ((vk_result = vkCreateFence(this->gpu, &fence_info, nullptr, &this->vk_fence)) != VK_SUCCESS) {
         DLOG(fatal, "Could not create fence: " + vk_error_map[vk_result]);
     }
-
-    // Done
-    DLEAVE;
 }
 
 /* Copy constructor for the Fence class. */
@@ -70,7 +65,7 @@ Fence::Fence(const Fence& other) :
     gpu(other.gpu),
     vk_create_flags(other.vk_create_flags)
 {
-    DENTER("Rendering::Fence::Fence(copy)");
+    
 
     // Populate the create info
     VkFenceCreateInfo fence_info;
@@ -81,9 +76,6 @@ Fence::Fence(const Fence& other) :
     if ((vk_result = vkCreateFence(this->gpu, &fence_info, nullptr, &this->vk_fence)) != VK_SUCCESS) {
         DLOG(fatal, "Could not re-create fence: " + vk_error_map[vk_result]);
     }
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the Fence class. */
@@ -98,20 +90,20 @@ Fence::Fence(Fence&& other) :
 
 /* Destructor for the Fence class. */
 Fence::~Fence() {
-    DENTER("Rendering::Fence::~Fence");
+    
 
     if (this->vk_fence != nullptr) {
         vkDestroyFence(this->gpu, this->vk_fence, nullptr);
     }
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the Fence class. */
 void Rendering::swap(Fence& f1, Fence& f2) {
-    DENTER("Rendering::swap(Fence)");
+    
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
@@ -126,5 +118,5 @@ void Rendering::swap(Fence& f1, Fence& f2) {
     swap(f1.vk_create_flags, f2.vk_create_flags);
 
     // Done
-    DRETURN;
+    return;
 }

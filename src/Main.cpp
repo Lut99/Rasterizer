@@ -18,7 +18,6 @@
 #include <cmath>
 #include <GLFW/glfw3.h>
 
-#include "tools/Tracer.hpp"
 #include "tools/Logger.hpp"
 #include "tools/Common.hpp"
 
@@ -36,7 +35,6 @@
 
 using namespace std;
 using namespace Rasterizer;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** HELPER STRUCTS *****/
@@ -62,7 +60,7 @@ struct Options {
 static Tools::Array<const char*> get_glfw_extensions() {
     // We first collect a list of GLFW extensions
     uint32_t n_extensions = 0;
-    const char** raw_extensions = TCALLR(glfwGetRequiredInstanceExtensions(&n_extensions));
+    const char** raw_extensions = glfwGetRequiredInstanceExtensions(&n_extensions);
 
     // Return them as an array
     return Tools::Array<const char*>(raw_extensions, n_extensions);
@@ -75,7 +73,7 @@ static void print_usage(std::ostream& os, const std::string& filename) {
 
 /* Prints the help string. */
 static void print_help(std::ostream& os, const std::string& filename) {
-    TCALL(print_usage(os, filename));
+    print_usage(os, filename);
 
     os << endl;
     os << "Options:" << endl;
@@ -156,7 +154,7 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                     
                 } else if (option == "help") {
                     // Print the help string!
-                    TCALL(print_help(cout, argv[0]));
+                    print_help(cout, argv[0]);
                     exit(EXIT_SUCCESS);
 
                 } else {
@@ -171,7 +169,7 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                 switch(arg[2]) {
                     case 'h':
                         // Print the help string!
-                        TCALL(print_help(cout, argv[0]));
+                        print_help(cout, argv[0]);
                         exit(EXIT_SUCCESS);
                     
                     default:
@@ -195,31 +193,29 @@ static void parse_args(Options& opts, int argc, const char** argv) {
 
 /***** ENTRY POINT *****/
 int main(int argc, const char** argv) {
-    TSTART("main"); TENTER("main");
-
     // Declare the logger
     Tools::Logger logger(cout, cerr, Verbosity::debug, "main");
 
     try {
         // Parse the arguments
         Options opts;
-        TCALL(parse_args(opts, argc, argv));
+        parse_args(opts, argc, argv);
 
         // Indicate that we're starting
         logger.log(Verbosity::important, "Initializing Rasterizer...");
 
         // Initialize the GLFW library
         logger.log(Verbosity::important, "Initializing GLFW...");
-        TCALL(glfwInit());
-        TCALL(glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API));
-        TCALL(glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE));
+        glfwInit();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         // Prepare the Vulkan instance first
         Rendering::Instance instance(logger, Rendering::instance_extensions + get_glfw_extensions());
 
         // Use that to prepare the Window class
         uint32_t width = 800, height = 600;
-        Window window(logger ,instance, "Rasterizer", width, height);
+        Window window(logger, instance, "Rasterizer", width, height);
         // Prepare the memory manager
         Rendering::MemoryManager memory_manager(window.gpu(), opts.local_memory_size, opts.visible_memory_size);
         // Initialize the WorldSystem
@@ -314,15 +310,15 @@ int main(int argc, const char** argv) {
 
         // Wait for the GPU to be idle before we stop
         logger.log(Verbosity::important, "Cleaning up...");
-        TCALL(window.gpu().wait_for_idle());
+        window.gpu().wait_for_idle();
 
         // We're done
-        TCALL(glfwTerminate());
-        TRETURN EXIT_SUCCESS;
+        glfwTerminate();
+        return EXIT_SUCCESS;
 
     } catch (std::exception& e) {
-        // Otherwise, re-throw with the tracer
-        Tools::tracer.throw_error(e.what());
-        TRETURN EXIT_FAILURE;
+        // Otherwise, print the error and return
+        logger.error(e.what());
+        return EXIT_FAILURE;
     }
 }

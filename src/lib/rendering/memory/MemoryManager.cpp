@@ -12,14 +12,11 @@
  *   <Todo>
 **/
 
-#include "tools/CppDebugger.hpp"
-
 #include "MemoryManager.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** MEMORYMANAGER CLASS *****/
@@ -73,20 +70,18 @@ MemoryManager::MemoryManager(MemoryManager&& other) :
 
 /* Destructor for the MemoryManager class. */
 MemoryManager::~MemoryManager() {
-    DENTER("Rendering::MemoryManager::~MemoryManager");
+    
 
     if (this->copy_cmd != nullptr) {
         this->mem_cmd_pool.free(this->copy_cmd);
     }
-
-    DLEAVE;
 }
 
 
 
 /* Swap operator for the MemoryManager class. */
 void Rendering::swap(MemoryManager& mm1, MemoryManager& mm2) {
-    DENTER("Rendering::swap(MemoryManager)");
+    
 
     #ifndef NDEBUG
     if (mm1.gpu != mm2.gpu) {
@@ -108,5 +103,5 @@ void Rendering::swap(MemoryManager& mm1, MemoryManager& mm2) {
     swap(mm1.copy_cmd, mm2.copy_cmd);
 
     // Done
-    DRETURN;
+    return;
 }

@@ -13,7 +13,6 @@
  *   destroying command buffers for a single device queue.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "CommandPool.hpp"
@@ -21,13 +20,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Functions that populates a given VkCommandPoolCreateInfo struct with the given values. */
 static void populate_command_pool_info(VkCommandPoolCreateInfo& command_pool_info, uint32_t queue_index, VkCommandPoolCreateFlags create_flags) {
-    DENTER("populate_command_pool_info");
+    
 
     // Set to default
     command_pool_info = {};
@@ -40,12 +38,12 @@ static void populate_command_pool_info(VkCommandPoolCreateInfo& command_pool_inf
     command_pool_info.flags = create_flags;
 
     // Done!
-    DRETURN;
+    return;
 }
 
 /* Function that populates a given VkCommandBufferAllocateInfo struct with the given values. */
 static void populate_allocate_info(VkCommandBufferAllocateInfo& allocate_info, VkCommandPool vk_command_pool, uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
-    DENTER("populate_allocate_info");
+    
 
     // Set to default
     allocate_info = {};
@@ -61,7 +59,7 @@ static void populate_allocate_info(VkCommandBufferAllocateInfo& allocate_info, V
     allocate_info.commandBufferCount = n_buffers;
 
     // Done!
-    DRETURN;
+    return;
 }
 
 
@@ -75,7 +73,7 @@ CommandPool::CommandPool(const GPU& gpu, uint32_t queue_index, VkCommandPoolCrea
     vk_queue_index(queue_index),
     vk_create_flags(create_flags)
 {
-    DENTER("Rendering::CommandPool::CommandPool");
+    
     DLOG(info, "Initializing CommandPool for queue " + std::to_string(this->vk_queue_index) + "...");
 
     // Start by populating the create info
@@ -87,9 +85,6 @@ CommandPool::CommandPool(const GPU& gpu, uint32_t queue_index, VkCommandPoolCrea
     if ((vk_result = vkCreateCommandPool(this->gpu, &command_pool_info, nullptr, &this->vk_command_pool)) != VK_SUCCESS) {
         DLOG(fatal, "Could not create CommandPool: " + vk_error_map[vk_result]);
     }
-
-    // Done
-    DLEAVE;
 }
 
 /* Copy constructor for the CommandPool class. */
@@ -98,7 +93,7 @@ CommandPool::CommandPool(const CommandPool& other) :
     vk_queue_index(other.vk_queue_index),
     vk_create_flags(other.vk_create_flags)
 {
-    DENTER("Rendering::CommandPool::CommandPool(copy)");
+    
 
     // Start by populating the create info
     VkCommandPoolCreateInfo command_pool_info;
@@ -109,8 +104,6 @@ CommandPool::CommandPool(const CommandPool& other) :
     if ((vk_result = vkCreateCommandPool(this->gpu, &command_pool_info, nullptr, &this->vk_command_pool)) != VK_SUCCESS) {
         DLOG(fatal, "Could not create CommandPool: " + vk_error_map[vk_result]);
     }
-
-    DLEAVE;
 }
 
 /* Move constructor for the CommandPool class. */
@@ -126,7 +119,7 @@ CommandPool::CommandPool(CommandPool&& other) :
 
 /* Destructor for the CommandPool class. */
 CommandPool::~CommandPool() {
-    DENTER("Rendering::CommandPool::~CommandPool");
+    
     DLOG(info, "Cleaning CommandPool for queue " + std::to_string(this->vk_queue_index) + "...");
     DINDENT;
 
@@ -143,14 +136,13 @@ CommandPool::~CommandPool() {
     }
 
     DDEDENT;
-    DLEAVE;
 }
 
 
 
 /* Allocates a single, new command buffer of the given level. Returns by handle. */
 CommandBuffer* CommandPool::allocate(VkCommandBufferLevel buffer_level) {
-    DENTER("Rendering::CommandPool::allocate");
+    
 
     // Prepare the create info
     VkCommandBufferAllocateInfo allocate_info;
@@ -168,12 +160,12 @@ CommandBuffer* CommandPool::allocate(VkCommandBufferLevel buffer_level) {
     this->command_buffers.push_back(cmd_buffer);
 
     // Done, return the handle
-    DRETURN cmd_buffer;
+    return cmd_buffer;
 }
 
 /* Allocates N new command buffers of the given level. Returns by handles. */
 Tools::Array<CommandBuffer*> CommandPool::nallocate(uint32_t n_buffers, VkCommandBufferLevel buffer_level) {
-    DENTER("Rendering::CommandPool::nallocate");
+    
 
     // Prepare some temporary local space for the buffers
     Tools::Array<VkCommandBuffer> buffers(n_buffers);
@@ -197,14 +189,14 @@ Tools::Array<CommandBuffer*> CommandPool::nallocate(uint32_t n_buffers, VkComman
     }
 
     // Done, return the list of handles
-    DRETURN result;
+    return result;
 }
 
 
 
 /* Deallocates the CommandBuffer behind the given handle. Note that all buffers are deallocated automatically when the CommandPool is destructed, but this could save you memory. */
 void CommandPool::free(const CommandBuffer* buffer) {
-    DENTER("Rendering::CommandPool::free");
+    
 
     // Try to remove the pointer from the list
     bool found = false;
@@ -226,12 +218,12 @@ void CommandPool::free(const CommandBuffer* buffer) {
     delete buffer;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Deallocates an array of given command buffer handles. */
 void CommandPool::nfree(const Tools::Array<CommandBuffer*>& buffers) {
-    DENTER("Rendering::CommandPool::nfree");
+    
 
     // First, we check if all handles exist
     Tools::Array<VkCommandBuffer> to_remove(buffers.size());
@@ -259,13 +251,13 @@ void CommandPool::nfree(const Tools::Array<CommandBuffer*>& buffers) {
     vkFreeCommandBuffers(this->gpu, this->vk_command_pool, to_remove.size(), to_remove.rdata());
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 /* Swap operator for the CommandPool class. */
 void Rendering::swap(CommandPool& cp1, CommandPool& cp2) {
-    DENTER("Rendering::swap(CommandPool)");
+    
 
     using std::swap;
 
@@ -281,5 +273,5 @@ void Rendering::swap(CommandPool& cp1, CommandPool& cp2) {
     swap(cp1.vk_create_flags, cp2.vk_create_flags);
     swap(cp1.command_buffers, cp2.command_buffers);
 
-    DRETURN;
+    return;
 }

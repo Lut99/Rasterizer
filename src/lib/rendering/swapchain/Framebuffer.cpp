@@ -13,7 +13,6 @@
  *   RenderPass class, since its associated with its attachments.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Framebuffer.hpp"
@@ -21,13 +20,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkFramebufferCreateInfo struct. */
 static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info, const VkRenderPass& vk_render_pass, const Tools::Array<VkImageView>& attachments, const VkExtent2D& vk_extent) {
-    DENTER("populate_framebuffer_info");
+    
 
     // Set to default
     framebuffer_info = {};
@@ -46,7 +44,7 @@ static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info,
     framebuffer_info.layers = 1;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -61,7 +59,7 @@ Framebuffer::Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_rende
     vk_color_view(vk_color_view),
     vk_depth_view(vk_depth_view)
 {
-    DENTER("Rendering::Framebuffer::Framebuffer");
+    
 
     // Populate the create info
     Tools::Array<VkImageView> attachments = { this->vk_color_view, this->vk_depth_view };
@@ -74,7 +72,7 @@ Framebuffer::Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_rende
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Copy constructor for the Framebuffer class. */
@@ -85,7 +83,7 @@ Framebuffer::Framebuffer(const Framebuffer& other) :
     vk_depth_view(other.vk_depth_view),
     vk_framebuffer_info(other.vk_framebuffer_info)
 {
-    DENTER("Rendering::Framebuffer::Framebuffer(copy)");
+    
 
     // Re-create the internal framebuffer
     VkResult vk_result;
@@ -93,7 +91,7 @@ Framebuffer::Framebuffer(const Framebuffer& other) :
         DLOG(fatal, "Could not re-create framebuffer: " + vk_error_map[vk_result]);
     }
 
-    DRETURN;
+    return;
 }
 
 /* Move constructor for the Framebuffer class. */
@@ -111,20 +109,20 @@ Framebuffer::Framebuffer(Framebuffer&& other) :
 
 /* Destructor for the Framebuffer class. */
 Framebuffer::~Framebuffer() {
-    DENTER("Rendering::Framebuffer::~Framebuffer");
+    
 
     if (this->vk_framebuffer != nullptr) {
         vkDestroyFramebuffer(this->gpu, this->vk_framebuffer, nullptr);
     }
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the Framebuffer class. */
 void Rendering::swap(Rendering::Framebuffer& fb1, Rendering::Framebuffer& fb2) {
-    DENTER("Rendering::swap(Framebuffer)");
+    
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
@@ -142,5 +140,5 @@ void Rendering::swap(Rendering::Framebuffer& fb1, Rendering::Framebuffer& fb2) {
     swap(fb1.vk_framebuffer_info, fb2.vk_framebuffer_info);
 
     // Done
-    DRETURN;
+    return;
 }

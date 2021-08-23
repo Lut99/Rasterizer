@@ -13,8 +13,6 @@
  *   present on the GPU and by what index.
 **/
 
-#include "tools/Tracer.hpp"
-
 #include "QueueInfo.hpp"
 
 using namespace std;
@@ -39,12 +37,10 @@ QueueInfo::QueueInfo(const Tools::Logger::InitData& init_data, const VkPhysicalD
     // Initialize the queue info to nothing being supported
     QueueInfo(init_data)
 {
-    TENTER("Rendering::QueueInfo::QueueInfo(gpu, surface)");
+    
 
     // Simply call refresh()
     this->refresh(vk_physical_device, vk_surface);
-
-    TLEAVE;
 }
 
 
@@ -55,9 +51,9 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
 
     // First, get a list of all the queues supported by the GPU
     uint32_t n_supported_queues;
-    TCALL(vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, nullptr));
+    vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, nullptr);
     Array<VkQueueFamilyProperties> supported_queues(n_supported_queues);
-    TCALL(vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, supported_queues.wdata(n_supported_queues)));
+    vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, supported_queues.wdata(n_supported_queues));
 
     // Prepare a list of UINT32_MAX uint32_t numbers that we'll use to determine the "speciality" of a queue
     uint32_t best_specialities[QueueInfo::n_queues];
@@ -73,7 +69,7 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
         capabilities[0] = supported_queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT;
         capabilities[1] = supported_queues[i].queueFlags & VK_QUEUE_COMPUTE_BIT;
         capabilities[2] = supported_queues[i].queueFlags & VK_QUEUE_TRANSFER_BIT;
-        TCALL(vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device, i, vk_surface, &vk_can_present));
+        vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device, i, vk_surface, &vk_can_present);
         capabilities[3] = (bool) vk_can_present;
 
         // Use that to count how many abilities the queue has

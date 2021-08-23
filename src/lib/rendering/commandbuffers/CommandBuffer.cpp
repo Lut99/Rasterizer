@@ -14,7 +14,6 @@
  *   CommandPool.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "CommandPool.hpp"
@@ -23,13 +22,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Function that populates a given VkCommandBufferBeginInfo struct with the given values. */
 static void populate_begin_info(VkCommandBufferBeginInfo& begin_info, VkCommandBufferUsageFlags usage_flags) {
-    DENTER("populate_begin_info");
+    
 
     // Set the deafult
     begin_info = {};
@@ -39,12 +37,12 @@ static void populate_begin_info(VkCommandBufferBeginInfo& begin_info, VkCommandB
     begin_info.flags = usage_flags;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Function that populates a given VkSubmitINfo struct with the given values. */
 static void populate_submit_info(VkSubmitInfo& submit_info, const VkCommandBuffer& vk_command_buffer) {
-    DENTER("populate_submit_info");
+    
 
     // Set to default
     submit_info = {};
@@ -59,7 +57,7 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const VkCommandBuffe
     submit_info.waitSemaphoreCount = 0;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -79,7 +77,7 @@ CommandBuffer::~CommandBuffer() {}
 
 /* Begins recording the command buffer. Overwrites whatever is already recorded here, for some reason. Takes optional usage flags for this recording. */
 void CommandBuffer::begin(VkCommandBufferUsageFlags usage_flags) const {
-    DENTER("Rendering::CommandBuffer::begin");
+    
 
     // Populate the begin info struct
     VkCommandBufferBeginInfo begin_info;
@@ -92,12 +90,12 @@ void CommandBuffer::begin(VkCommandBufferUsageFlags usage_flags) const {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Ends recording the command buffer, but does not yet submit to any queue unless one is given. If so, then you can optionally specify to wait or not to wait for the queue to become idle. */
 void CommandBuffer::end(VkQueue vk_queue, bool wait_queue_idle) const {
-    DENTER("Rendering::CommandBuffer::end");
+    
     
     // Whatever the parameters, always call the stop recording
     VkResult vk_result;
@@ -125,17 +123,17 @@ void CommandBuffer::end(VkQueue vk_queue, bool wait_queue_idle) const {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Return the VkSubmitInfo for this command buffer. */
 VkSubmitInfo CommandBuffer::get_submit_info() const {
-    DENTER("Rendering::CommandBuffer::get_submit_info");
+    
     
     // Populate the submit info struct
     VkSubmitInfo submit_info;
     populate_submit_info(submit_info, this->vk_command_buffer);
 
     // Done!
-    DRETURN submit_info;
+    return submit_info;
 }

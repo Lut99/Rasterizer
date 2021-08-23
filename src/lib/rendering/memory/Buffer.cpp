@@ -14,7 +14,6 @@
 **/
 
 #include <cstring>
-#include "tools/CppDebugger.hpp"
 #include "tools/Common.hpp"
 
 #include "../auxillary/ErrorCodes.hpp"
@@ -25,13 +24,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkMappedMemoryRange struct. */
 static void populate_memory_range(VkMappedMemoryRange& memory_range, VkDeviceMemory vk_memory, VkDeviceSize vk_memory_offset, VkDeviceSize vk_memory_size) {
-    DENTER("populate_memory_range");
+    
 
     // Set to default
     memory_range = {};
@@ -43,12 +41,12 @@ static void populate_memory_range(VkMappedMemoryRange& memory_range, VkDeviceMem
     memory_range.size = vk_memory_size;
 
     // Done, return
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkBufferImageCopy struct. */
 static void populate_buffer_image_copy(VkBufferImageCopy& buffer_image_copy, VkDeviceSize buffer_offset, uint32_t buffer_pitch, VkOffset3D image_offset, VkExtent3D image_extent) {
-    DENTER("populate_buffer_image_copy");
+    
 
     // Set to default
     buffer_image_copy = {};
@@ -69,7 +67,7 @@ static void populate_buffer_image_copy(VkBufferImageCopy& buffer_image_copy, VkD
     buffer_image_copy.imageSubresource.layerCount = 1;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -93,7 +91,7 @@ Buffer::~Buffer() {}
 
 /* Sets the buffer using an intermediate staging buffer. The staging buffer is copied using the given command buffer on the given queue. */
 void Buffer::set(void* data, uint32_t n_bytes, const Buffer* staging_buffer, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue) const {
-    DENTER("Rendering::Buffer::set");
+    
 
     // First, map the staging buffer to an CPU-reachable area
     void* mapped_area;
@@ -110,12 +108,12 @@ void Buffer::set(void* data, uint32_t n_bytes, const Buffer* staging_buffer, con
     staging_buffer->copyto(this, static_cast<VkDeviceSize>(n_bytes), 0, 0, command_buffer, vk_queue);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Gets n_bytes data from this buffer using an intermediate staging buffer. The buffers are copied over using the given command buffer on the given queue. The result is put in the given pointer. */
 void Buffer::get(void* data, uint32_t n_bytes, const Buffer* staging_buffer, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue) const {
-    DENTER("Rendering::Buffer::set");
+    
 
     // First, copy the data we have to the staging buffer
     this->copyto(staging_buffer, static_cast<VkDeviceSize>(n_bytes), 0, 0, command_buffer, vk_queue);
@@ -131,14 +129,14 @@ void Buffer::get(void* data, uint32_t n_bytes, const Buffer* staging_buffer, con
     staging_buffer->unmap();
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Maps the buffer to host-memory so it can be written to. Only possible if the VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT is set for the memory of this buffer's pool. Note that the memory is NOT automatically unmapped if the Buffer object is destroyed. */
 void Buffer::map(void** mapped_memory, VkMemoryMapFlags map_flags) const {
-    DENTER("Rendering::Buffer::map");
+    
     
     // If this buffer does not have the host bit set, then we stop immediatement
     if (!(this->pool.properties() & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)) {
@@ -152,16 +150,16 @@ void Buffer::map(void** mapped_memory, VkMemoryMapFlags map_flags) const {
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Flushes all unflushed memory operations done on mapped memory. If the memory of this buffer has VK_MEMORY_PROPERTY_HOST_COHERENT_BIT set, then nothing is done as the memory is already automatically flushed. */
 void Buffer::flush(VkDeviceSize n_bytes) const {
-    DENTER("Rendering::Buffer::flush");
+    
 
     // If this buffer is coherent, quite immediately
     if (!(this->pool.properties() & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        DRETURN;
+        return;
     }
 
     // Resolve the size to copy
@@ -178,25 +176,25 @@ void Buffer::flush(VkDeviceSize n_bytes) const {
     }
 
     // D0ne
-    DRETURN;
+    return;
 }
 
 /* Unmaps buffer's memory. */
 void Buffer::unmap() const {
-    DENTER("Rendering::Buffer::unmap");
+    
 
     // Simply call unmap, done
     vkUnmapMemory(this->gpu, this->pool.memory());
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Schedules a copy to the given buffer on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given. */
 void Buffer::schedule_copyto(const Buffer* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, VkDeviceSize target_offset, const Rendering::CommandBuffer* command_buffer) const {
-    DENTER("Rendering::Buffer::schedule_copyto(Buffer)");
+    
 
     #ifndef NDEBUG
     // Check if the offsets are valid
@@ -237,12 +235,12 @@ void Buffer::schedule_copyto(const Buffer* destination, VkDeviceSize n_bytes, Vk
     vkCmdCopyBuffer(command_buffer->command_buffer(), this->vk_buffer, destination->vk_buffer, 1, &copy_region);
 
     // D0ne
-    DRETURN;
+    return;
 }
 
 /* Schedules a copy to the given image on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given (the latter of which is three dimensional). */
 void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, const VkOffset3D& target_offset, const Rendering::CommandBuffer* command_buffer) const {
-    DENTER("Rendering::Buffer::schedule_copyto(Image)");
+    
 
     #ifndef NDEBUG
     // Check if the offsets are valid
@@ -289,14 +287,14 @@ void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceS
 
     // Update the layout in the image, then D0ne
     destination->vk_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    DRETURN;
+    return;
 }
 
 
 
 /* Copies this buffer's contents to the given Buffer, scheduling the command on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given. Optionally, a queue can be given to run the commands on, which will otherwise default to the first memory queue of the internal GPU. Also, it can be opted to not wait until the given queue is idle again but to return immediately. */
 void Buffer::copyto(const Buffer* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, VkDeviceSize target_offset, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
-    DENTER("Rendering::Buffer::copyto(Buffer)");
+    
 
     // Resolve the queue
     vk_queue = vk_queue == nullptr ? this->gpu.queues(Rendering::QueueType::memory)[0] : vk_queue;
@@ -309,12 +307,12 @@ void Buffer::copyto(const Buffer* destination, VkDeviceSize n_bytes, VkDeviceSiz
     command_buffer->end(vk_queue, wait_queue_idle);
 
     // D0ne
-    DRETURN;
+    return;
 }
 
 /* Copies this buffer's contents to the given Image, scheduling the command on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source buffer and target image can be given. (the latter in three dimensions). Optionally, a queue can be given to run the commands on, which will otherwise default to the first memory queue of the internal GPU. */
 void Buffer::copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, const VkOffset3D& target_offset, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
-     DENTER("Rendering::Buffer::copyto(Image)");
+     
 
     // Resolve the queue
     vk_queue = vk_queue == nullptr ? this->gpu.queues(Rendering::QueueType::memory)[0] : vk_queue;
@@ -327,5 +325,5 @@ void Buffer::copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceSize sourc
     command_buffer->end(vk_queue, wait_queue_idle);
 
     // D0ne
-    DRETURN;
+    return;
 }

@@ -23,7 +23,6 @@
 
 
 /***** INCLUDES *****/
-#include "tools/CppDebugger.hpp"
 #include "tools/LinkedArray.hpp"
 
 #include "tokenizer/ValueTerminal.hpp"
@@ -36,7 +35,6 @@ using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Mtl;
-using namespace CppDebugger::SeverityValues;
 
 
 
@@ -45,7 +43,7 @@ using namespace CppDebugger::SeverityValues;
 /***** HELPER FUNCTIONS *****/
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
 static std::string reduce(std::string& current_mtl, std::unordered_map<std::string, glm::vec3>& new_materials, Tools::LinkedArray<Terminal*>& symbol_stack) {
-    DENTER("reduce");
+    
 
     // Prepare the iterator over the linked array
     Tools::LinkedArray<Terminal*>::iterator iter = symbol_stack.begin();
@@ -55,7 +53,7 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
 
 /* start */ {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (iter == symbol_stack.end()) { DRETURN ""; }
+    if (iter == symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the symbol for this iterator
@@ -66,7 +64,7 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
             if (current_mtl.empty()) {
                 term->debug_info.print_error(cerr, "Encountered colour definition without newmtl.");
                 remove_stack_bottom(symbol_stack, iter);
-                DRETURN "error";
+                return "error";
             }
             goto Kd_start;
 
@@ -74,7 +72,7 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
             // Looking at a decimal without a colour definition; stop
             term->debug_info.print_error(cerr, "Encountered stray colour value.");
             remove_stack_bottom(symbol_stack, iter);
-            DRETURN "error";
+            return "error";
         
         case TerminalType::newmtl:
             // Start of a new material
@@ -82,13 +80,13 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
         
         case TerminalType::eof:
             // Nothing to be done anymore
-            DRETURN "";
+            return "";
 
         default:
             // Unexpected token
             term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "'.");
             remove_stack_bottom(symbol_stack, iter);;
-            DRETURN "error";
+            return "error";
 
     }
 
@@ -98,7 +96,7 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
 
 Kd_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    if (++iter == symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -113,11 +111,11 @@ Kd_start: {
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few values given for diffuse colour (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many values given for diffuse colour (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Otherwise, we can parse the vector; get the coordinates
@@ -131,7 +129,7 @@ Kd_start: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(symbol_stack, --iter);
-            DRETURN "Kd";
+            return "Kd";
 
     }
 }
@@ -140,7 +138,7 @@ Kd_start: {
 
 newmtl_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == symbol_stack.end()) { DRETURN ""; }
+    if (++iter == symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -151,13 +149,13 @@ newmtl_start: {
             current_mtl = ((ValueTerminal<std::string>*) term)->value;
             new_materials.insert(make_pair(current_mtl, glm::vec3(-1.0, -1.0, -1.0)));
             remove_stack_bottom(symbol_stack, iter);
-            DRETURN "newmtl";
+            return "newmtl";
         
         default:
             // Missing filename
             (*(iter - 1))->debug_info.print_error(cerr, "Missing name after new material definition.");
             remove_stack_bottom(symbol_stack, --iter);
-            DRETURN "error";
+            return "error";
 
     }
 }
@@ -166,7 +164,7 @@ newmtl_start: {
 
     // Nothing applied
     DLOG(fatal, "Hole in jump logic encountered.");
-    DRETURN "fatal";
+    return "fatal";
 }
 
 
@@ -175,7 +173,7 @@ newmtl_start: {
 /***** LIBRARY FUNCTIONS *****/
 /* Loads the file at the given path as a .mtl file, and returns a map of material name: color schemes for it. */
 void Models::load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materials, const std::string& path) {
-    DENTER("Models::load_mtl_lib");
+    
 
     // Prepare the Tokenizer
     Tokenizer tokenizer(path);
@@ -246,6 +244,6 @@ void Models::load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materi
     }
 
     // D0ne
-    DRETURN;
+    return;
 }
 

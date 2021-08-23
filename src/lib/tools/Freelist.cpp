@@ -21,7 +21,6 @@
 
 using namespace std;
 using namespace Tools;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** FREELIST CLASS *****/
@@ -30,24 +29,21 @@ Freelist::Freelist(freelist_size_t target_size) :
     current_size(0),
     max_size(target_size)
 {
-    DENTER("Tools::Freelist::Freelist");
+    
 
     // Add the free block for the entire list
     this->blocks.push_back(MemoryBlock({ false, 0, this->max_size }));
-
-    // Done
-    DLEAVE;
 }
 
 
 
 /* Reserves a bit of space in the freelist. If no such space is available, returns an offset of std::numeric_limits<freelist_size_t>::max(). If an offset of std::numeric_limits<freelist_size_t>::max() - 1 is returned, then there is enough space in the freelist but not continously. Note that the size may slightly differ due to the offset; use Freelist::align_size() to get the proper one. */
 freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
-    DENTER("Tools::Freelist::reserve");
+    
 
     // If the size is too much by definition, return the other error code
     if (size > this->max_size - this->current_size) {
-        DRETURN std::numeric_limits<freelist_size_t>::max();
+        return std::numeric_limits<freelist_size_t>::max();
     }
 
     // Search the list for the first free block with enough size
@@ -80,12 +76,12 @@ freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
 
     // Update the size, then return the found (or not found) index
     this->current_size += size;
-    DRETURN result;
+    return result;
 }
 
 /* Releases memory at the given location. Throws errors if that memory is not in use. */
 void Freelist::release(freelist_size_t offset) {
-    DENTER("Tools::Freelist::release");
+    
 
     // Find the block where the offset belongs in
     for (array_size_t i = 0; i < this->blocks.size(); i++) {
@@ -126,7 +122,7 @@ void Freelist::release(freelist_size_t offset) {
             this->current_size -= block_size;
 
             // Done
-            DRETURN;
+            return;
         }
     }
 
@@ -138,7 +134,7 @@ void Freelist::release(freelist_size_t offset) {
 
 /* Clears the freelist, resetting it to empty. */
 void Freelist::clear() {
-    DENTER("Tools::Freelist::clear");
+    
 
     // Clear the list
     this->blocks.clear();
@@ -148,7 +144,7 @@ void Freelist::clear() {
     this->current_size = 0;
 
     // Done
-    DRETURN;
+    return;
 }
 
 

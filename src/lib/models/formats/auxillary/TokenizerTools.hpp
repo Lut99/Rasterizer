@@ -90,10 +90,10 @@
         (VALUE) = (uint32_t) lvalue; \
     } catch (std::invalid_argument& e) { \
         (DEBUG_INFO).print_error(cerr, "Illegal character parsing an unsigned integer: " + std::string(e.what())); \
-        DRETURN nullptr; \
+        return nullptr; \
     } catch (std::out_of_range&) { \
         (DEBUG_INFO).print_error(cerr, "Value is out-of-range for a 32-bit unsigned integer (maximum: " + std::to_string(std::numeric_limits<uint32_t>::max()) + ")."); \
-        DRETURN nullptr; \
+        return nullptr; \
     }
 
 /* Helper macro for determining if the given character is a whitespce. */
@@ -114,7 +114,7 @@ namespace Rasterizer::Models {
     /* Returns a string representing the given number, padded with enough spaces to be at least N character long. */
     template <class T>
     std::string pad_spaces(T value, size_t N) {
-        DENTER("Models::pad_zeros<" + Tools::type_sname<T>() + ">");
+        
         
         // Convert to string
         std::string result = std::to_string(value);
@@ -123,7 +123,7 @@ namespace Rasterizer::Models {
         }
 
         // DOne
-        DRETURN result;
+        return result;
     }
 
     /* Splits a given string in two strings on the first slash it finds. */

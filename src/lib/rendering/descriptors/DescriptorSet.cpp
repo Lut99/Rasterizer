@@ -14,7 +14,6 @@
  *   DescriptorPool.
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "DescriptorSet.hpp"
@@ -22,13 +21,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkDescriptorBufferInfo struct. */
 static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buffer* buffer) {
-    DENTER("populate_buffer_info");
+    
 
     // Set to default
     buffer_info = {};
@@ -39,12 +37,12 @@ static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buff
     buffer_info.range = buffer->size();
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkDescriptorImageInfo struct. */
 static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImageView& image_view) {
-    DENTER("populate_image_info");
+    
 
     // Set to default
     image_info = {};
@@ -55,12 +53,12 @@ static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImage
     image_info.sampler = nullptr;
 
     // DOne
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkWriteDescriptorSet struct to write a buffer. */
 static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSet vk_descriptor_set, VkDescriptorType vk_descriptor_type, uint32_t bind_index, const Tools::Array<VkDescriptorBufferInfo>& buffer_infos) {
-    DENTER("populate_write_info(buffers)");
+    
 
     // Set to default
     write_info = {};
@@ -85,12 +83,12 @@ static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSe
     write_info.pTexelBufferView = nullptr;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkWriteDescriptorSet struct to write an image. */
 static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSet vk_descriptor_set, VkDescriptorType vk_descriptor_type, uint32_t bind_index, const Tools::Array<VkDescriptorImageInfo>& image_infos) {
-    DENTER("populate_write_info(images)");
+    
 
     // Set to default
     write_info = {};
@@ -115,7 +113,7 @@ static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSe
     write_info.pTexelBufferView = nullptr;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -136,7 +134,7 @@ DescriptorSet::~DescriptorSet() {}
 
 /* Binds this descriptor set with the contents of a given buffer to the given bind index. Must be enough buffers to actually populate all bindings of the given type. */
 void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<Buffer*>& buffers) const {
-    DENTER("Rendering::DescriptorSet::bind(Buffer)");
+    
 
     // We first create a list of buffer infos
     Tools::Array<VkDescriptorBufferInfo> buffer_infos(buffers.size());
@@ -158,12 +156,12 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
     vkUpdateDescriptorSets(gpu, 1, &write_info, 0, nullptr);
 
     // Done!
-    DRETURN;
+    return;
 }
 
 /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
 void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const {
-    DENTER("Rendering::DescriptorSet::bind(VkImageView)");
+    
 
     // We first create a list of buffer infos
     Tools::Array<VkDescriptorImageInfo> image_infos(image_views.size());
@@ -185,16 +183,16 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
     vkUpdateDescriptorSets(gpu, 1, &write_info, 0, nullptr);
 
     // Done!
-    DRETURN;
+    return;
 }
 
 /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
 void DescriptorSet::schedule(const CommandBuffer* buffer, VkPipelineLayout pipeline_layout) const {
-    DENTER("Rendering::DescriptorSet::schedule");
+    
 
     // Add the binding
     vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout, 0, 1, &this->vk_descriptor_set, 0, nullptr);
 
     // Done
-    DRETURN;
+    return;
 }

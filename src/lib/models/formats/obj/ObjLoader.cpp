@@ -27,7 +27,6 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/hash.hpp"
 
-#include "tools/CppDebugger.hpp"
 #include "tools/Common.hpp"
 #include "tools/LinkedArray.hpp"
 
@@ -45,7 +44,6 @@ using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Obj;
-using namespace CppDebugger::SeverityValues;
 
 
 
@@ -82,7 +80,7 @@ struct ParserState {
 /***** HELPER FUNCTIONS *****/
 /* Transfers the given vertex and index lists to the given Mesh component. */
 static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh& mesh, const std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>& unordered_vertices, const Tools::Array<Rendering::index_t>& cpu_indices) {
-    DENTER("transfer_to_mesh");
+    
     DINDENT;
     DLOG(info, "Arranging vertices for copy...");
     // Flatten the unordered vertices to a list
@@ -124,32 +122,32 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
 
     // Done
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Stores a given vertex/texture/normal index in the given state struct. The final (returned) index will be different to the given one, as the result indexes into our large array of unique vertices, where uniqueness is also determined by texture and normal coordinates. */
 static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t normal_index = std::numeric_limits<uint32_t>::max(), uint32_t texture_index = std::numeric_limits<uint32_t>::max()) {
-    DENTER("store_vertex");
+    
 
     // First, check if the pair already exists
     glm::uvec3 index = {vertex_index, normal_index, texture_index};
     std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>::iterator iter = state.temp_vertices.find(index);
     if (iter != state.temp_vertices.end()) {
         // Simply return the existing index
-        DRETURN (*iter).second.first;
+        return (*iter).second.first;
     } else {
         // Generate the new index
         uint32_t to_return = static_cast<uint32_t>(state.temp_vertices.size());
         // Insert the new vertex
         state.temp_vertices.insert(make_pair(index, make_pair(to_return, Rendering::Vertex(glm::vec3(state.vertices[vertex_index - 1]), state.mtl_lib.at(state.mesh.mtl)))));
         // Return the index
-        DRETURN to_return;
+        return to_return;
     }
 }
 
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
 static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path) {
-    DENTER("reduce");
+    
 
     // Prepare the iterator over the linked array
     Tools::LinkedArray<Terminal*>::iterator iter = state.symbol_stack.begin();
@@ -159,7 +157,7 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
 
 /* start */ {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the symbol for this iterator
@@ -185,7 +183,7 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
             // Looking at a decimal without a vector; stop
             term->debug_info.print_error(cerr, "Encountered stray coordinate.");
             remove_stack_bottom(state.symbol_stack, iter);;
-            DRETURN "error";
+            return "error";
         
         case TerminalType::group:
             // Start of a new group definition
@@ -201,13 +199,13 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
         
         case TerminalType::eof:
             // Nothing to be done anymore
-            DRETURN "";
+            return "";
 
         default:
             // Unexpected token
             term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "'.");
             remove_stack_bottom(state.symbol_stack, iter);;
-            DRETURN "error";
+            return "error";
 
     }
 
@@ -217,7 +215,7 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
 
 vertex_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -252,11 +250,11 @@ vertex_start: {
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few coordinates given for vector (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 4) {
                 term->debug_info.print_error(cerr, "Too many coordinates given for vector (got " + std::to_string(i - 2) + ", expected 4)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Otherwise, we can parse the vector; get the coordinates
@@ -271,7 +269,7 @@ vertex_start: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "vertex";
+            return "vertex";
 
     }
 }
@@ -280,7 +278,7 @@ vertex_start: {
 
 normal_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -315,11 +313,11 @@ normal_start: {
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few coordinates given for normal (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many coordinates given for normal (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Otherwise, we can parse the vector normal; get the coordinates
@@ -333,7 +331,7 @@ normal_start: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "normal";
+            return "normal";
 
     }
 }
@@ -342,7 +340,7 @@ normal_start: {
 
 texture_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -367,11 +365,11 @@ texture_start: {
             if (i - 2 < 1) {
                 term->debug_info.print_error(cerr, "Too few coordinates given for texture coordinate (got " + std::to_string(i - 2) + ", expected 2)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many coordinates given for texture coordinate (got " + std::to_string(i - 2) + ", expected 2)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // // Otherwise, we can parse the vector normal; get the coordinates
@@ -385,7 +383,7 @@ texture_start: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "texture";
+            return "texture";
 
     }
 }
@@ -394,7 +392,7 @@ texture_start: {
 
 face_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -409,7 +407,7 @@ face_start: {
                 // TBD
                 delete *iter;
                 state.symbol_stack.erase(iter);
-                DRETURN "not-yet-implemented";
+                return "not-yet-implemented";
             }
         
         case TerminalType::v_vt:
@@ -428,14 +426,14 @@ face_start: {
             // Definitely too small
             term->debug_info.print_error(cerr, "Too few indices given for face (got 0, expected 3)");
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "error";
+            return "error";
 
     }
 }
 
 face_v: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -450,7 +448,7 @@ face_v: {
                 // Also parse more but take relative coordinates
                 delete *iter;
                 state.symbol_stack.erase(iter);
-                DRETURN "not-yet-implemented";
+                return "not-yet-implemented";
             }
 
         case TerminalType::v_vt:
@@ -461,18 +459,18 @@ face_v: {
             (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
             delete *iter;
             state.symbol_stack.erase(iter);
-            DRETURN "error";
+            return "error";
         
         default:
             // We're done parsing the face; determine if we seen enough indices
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Otherwise, we can parse the face; get the coordinates
@@ -492,14 +490,14 @@ face_v: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "face(v)";
+            return "face(v)";
 
     }
 }
 
 face_v_vt: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -518,18 +516,18 @@ face_v_vt: {
             (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
             delete *iter;
             state.symbol_stack.erase(iter);
-            DRETURN "error";
+            return "error";
         
         default:
             // We're done parsing the face; determine if we seen enough indices
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Otherwise, we can parse the face; get the indices
@@ -549,14 +547,14 @@ face_v_vt: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "face(v_vt)";
+            return "face(v_vt)";
 
     }
 }
 
 face_v_vn: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -575,18 +573,18 @@ face_v_vn: {
             (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
             delete *iter;
             state.symbol_stack.erase(iter);
-            DRETURN "error";
+            return "error";
         
         default:
             // We're done parsing the face; determine if we seen enough indices
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Otherwise, we can parse the face; get the indices
@@ -606,14 +604,14 @@ face_v_vn: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "face(v_vn)";
+            return "face(v_vn)";
 
     }
 }
 
 face_v_vt_vn: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -632,18 +630,18 @@ face_v_vt_vn: {
             (*(iter - (i - 2)))->debug_info.print_note(cerr, "Face type determined by first argument.");
             delete *iter;
             state.symbol_stack.erase(iter);
-            DRETURN "error";
+            return "error";
 
         default:
             // We're done parsing the face; determine if we seen enough indices
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many coordinates given for face (got " + std::to_string(i - 2) + ", expected 3)");
                 remove_stack_bottom(state.symbol_stack, --iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Otherwise, we can parse the face; get the indices
@@ -663,7 +661,7 @@ face_v_vt_vn: {
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "face(v_vt_vn)";
+            return "face(v_vt_vn)";
 
     }
 }
@@ -672,7 +670,7 @@ face_v_vt_vn: {
 
 group_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -692,13 +690,13 @@ group_start: {
 
             // Remove the token, then we're done
             remove_stack_bottom(state.symbol_stack, iter);
-            DRETURN "group";
+            return "group";
         
         default:
             // Missing name
             (*(iter - 1))->debug_info.print_error(cerr, "Missing name after group definition.");
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "error";
+            return "error";
 
     }
 }
@@ -707,7 +705,7 @@ group_start: {
 
 mtllib_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -743,21 +741,21 @@ mtllib_start: {
 
             // Done with this one
             remove_stack_bottom(state.symbol_stack, iter);
-            DRETURN "mtllib";
+            return "mtllib";
         }
         
         default:
             // Missing filename
             (*(iter - 1))->debug_info.print_error(cerr, "Missing filename after material definition.");
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "error";
+            return "error";
 
     }
 }
 
 usemtl_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (++iter == state.symbol_stack.end()) { DRETURN ""; }
+    if (++iter == state.symbol_stack.end()) { return ""; }
     ++i;
 
     // Get the next symbol off the stack
@@ -770,21 +768,21 @@ usemtl_start: {
             if (mtl_iter == state.mtl_lib.end()) {
                 term->debug_info.print_error(cerr, "Unknown material name '" + material + "'.");
                 remove_stack_bottom(state.symbol_stack, iter);
-                DRETURN "error";
+                return "error";
             }
 
             // Else, set as current and return
             state.mesh.mtl     = material;
             state.mesh.mtl_col = glm::vec4((*mtl_iter).second, 1.0f);
             remove_stack_bottom(state.symbol_stack, iter);
-            DRETURN "usemtl";
+            return "usemtl";
         }
         
         default:
             // Missing filename
             (*(iter - 1))->debug_info.print_error(cerr, "Missing name after material usage.");
             remove_stack_bottom(state.symbol_stack, --iter);
-            DRETURN "error";
+            return "error";
 
     }
 }
@@ -793,7 +791,7 @@ usemtl_start: {
 
     // Nothing applied
     DLOG(fatal, "Hole in jump logic encountered.");
-    DRETURN "fatal";
+    return "fatal";
 } 
 
 
@@ -803,7 +801,7 @@ usemtl_start: {
 /***** LIBRARY FUNCTIONS *****/
 /* Loads the file at the given path as a .obj file, and populates the given list of meshes from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
 void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path) {
-    DENTER("Models::load_obj_model");
+    
 
     // Prepare the Tokenizer
     Obj::Tokenizer tokenizer(path);
@@ -896,5 +894,5 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshe
     }
 
     // Done
-    DRETURN;
+    return;
 }

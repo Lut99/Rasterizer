@@ -12,7 +12,6 @@
  *   <Todo>
 **/
 
-#include "tools/CppDebugger.hpp"
 #include "tools/Common.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 #include "../auxillary/MemoryProperties.hpp"
@@ -22,13 +21,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VKBufferCreateInfo struct. */
 static void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    DENTER("populate_buffer_info");
+    
 
     // Only set to default
     buffer_info = {};
@@ -41,12 +39,12 @@ static void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n
     buffer_info.flags = create_flags;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkImageCreateInfo struct. */
 static void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D& image_size, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    DENTER("populate_image_info");
+    
 
     // Only set to default
     image_info = {};
@@ -71,12 +69,12 @@ static void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D&
     image_info.queueFamilyIndexCount = 0;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkMemoryAllocateInfo struct. */
 static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t memory_type, VkDeviceSize n_bytes) {
-    DENTER("populate_allocate_info");
+    
 
     // Set to default & define the stryct type
     allocate_info = {};
@@ -88,7 +86,7 @@ static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t
     allocate_info.memoryTypeIndex = memory_type;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -98,7 +96,7 @@ static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t
 /***** HELPER FUNCTIONS *****/
 /* Given some memory properties and optionally Buffer/Image usage flags, returns the index of the most suitable memory on the device. */
 static uint32_t select_memory(const Rendering::GPU& gpu, VkMemoryPropertyFlags memory_properties, VkBufferUsageFlags buffer_usage, VkImageUsageFlags image_usage) {
-    DENTER("select_memory");
+    
 
     // Get the available memory in the internal device
     VkPhysicalDeviceMemoryProperties gpu_properties;
@@ -164,13 +162,13 @@ static uint32_t select_memory(const Rendering::GPU& gpu, VkMemoryPropertyFlags m
             }
 
             // Passed the checks, this memory is suitable
-            DRETURN i;
+            return i;
         }
     }
 
     // Didn't find any
     DLOG(fatal, "No suitable memory on device for given memory demands.");
-    DRETURN std::numeric_limits<uint32_t>::max();
+    return std::numeric_limits<uint32_t>::max();
 }
 
 
@@ -186,7 +184,7 @@ MemoryPool::MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemo
 
     vk_properties(memory_properties)
 {
-    DENTER("Rendering::MemoryPool::MemoryPool");
+    
     DLOG(info, "Intializing MemoryPool...");
     DINDENT;
 
@@ -219,7 +217,6 @@ MemoryPool::MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemo
 
     // Cave Johnson, we're done here
     DDEDENT;
-    DLEAVE;
 }
 
 /* Copy constructor for the MemoryPool class. */
@@ -231,7 +228,7 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
 
     vk_properties(other.vk_properties)
 {
-    DENTER("Rendering::MemoryPool::MemoryPool(copy)");
+    
 
     // We already know the memory type and size, so go directly to allocating a new pool
     VkMemoryAllocateInfo allocate_info;
@@ -242,9 +239,6 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
     if ((vk_result = vkAllocateMemory(this->gpu, &allocate_info, nullptr, &this->vk_memory)) != VK_SUCCESS) {
         DLOG(fatal, "Could not allocate memory on device: " + vk_error_map[vk_result]);
     }
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the MemoryPool class. */
@@ -265,7 +259,7 @@ MemoryPool::MemoryPool(MemoryPool&& other) :
 
 /* Destructor for the MemoryPool class. */
 MemoryPool::~MemoryPool() {
-    DENTER("Rendering::MemoryPool::~MemoryPool");
+    
     DLOG(info, "Cleaning MemoryPool...");
     DINDENT;
 
@@ -289,14 +283,13 @@ MemoryPool::~MemoryPool() {
     }
 
     DDEDENT;
-    DLEAVE;
 }
 
 
 
 /* Private helper function that does the actual memory allocation part. */
 VkDeviceSize MemoryPool::_allocate(const VkMemoryRequirements& requirements) {
-    DENTER("Rendering::MemoryPool::_allocate");
+    
 
     // Try to reserve memory in the freelist
     freelist_size_t offset = this->free_list.reserve(requirements.size, requirements.alignment);
@@ -304,14 +297,14 @@ VkDeviceSize MemoryPool::_allocate(const VkMemoryRequirements& requirements) {
     else if (offset == std::numeric_limits<freelist_size_t>::max() - 1) { DLOG(fatal, "Could not allocate new memory object: enough space but bad fragmentation"); }
 
     // Well that's it
-    DRETURN offset;
+    return offset;
 }
 
 
 
 /* Tries to allocate a new Buffer of the given size (in bytes) and with the given usage flags. Optionally, one can set the sharing mode and any create flags. */
 Buffer* MemoryPool::allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer_usage, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    DENTER("Rendering::MemoryPool::allocate(Buffer)");
+    
 
     // First, create the buffer object itself
     VkBufferCreateInfo buffer_info;
@@ -336,12 +329,12 @@ Buffer* MemoryPool::allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done
-    DRETURN to_return;
+    return to_return;
 }
 
 /* Tries to allocate a new Buffer that is a copy of the given Buffer. */
 Buffer* MemoryPool::allocate(const Buffer* other) {
-    DENTER("Rendering::MemoryPool::allocate(Buffer copy)");
+    
 
     // Create the buffer object with the properties of the old one
     VkBufferCreateInfo buffer_info;
@@ -366,14 +359,14 @@ Buffer* MemoryPool::allocate(const Buffer* other) {
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done!
-    DRETURN to_return;
+    return to_return;
 }
 
 
 
 /* Tries to allocate a new Image of the given size (in pixels), the given format, the given layout and with the given usage flags. Optionally, one can set the sharing mode and any create flags. */
 Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    DENTER("Rendering::MemoryPool::allocate(Image)");
+    
 
     // First, create the buffer object itself
     VkExtent3D vk_extent3D = { image_extent.width, image_extent.height, 1 };
@@ -399,12 +392,12 @@ Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_forma
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done
-    DRETURN to_return;
+    return to_return;
 }
 
 /* Tries to allocate a new Image that is a copy of the given Image. */
 Image* MemoryPool::allocate(const Image* other) {
-    DENTER("Rendering::MemoryPool::allocate(Image copy)");
+    
 
     // First, create the buffer object itself
     VkExtent3D vk_extent3D = { other->vk_extent.width, other->vk_extent.height, 1 };
@@ -430,14 +423,14 @@ Image* MemoryPool::allocate(const Image* other) {
     this->objects.push_back((MemoryObject*) to_return);
 
     // Done!
-    DRETURN to_return;
+    return to_return;
 }
 
 
 
 /* Deallocates the given MemoryObject. */
 void MemoryPool::free(const MemoryObject* object) {
-    DENTER("Rendering::MemoryPool::free");
+    
 
     // Try to remove the pointer from the list
     bool found = false;
@@ -466,14 +459,14 @@ void MemoryPool::free(const MemoryObject* object) {
     delete object;
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the MemoryPool class. */
 void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
-    DENTER("Rendering::swap(MemoryPool)");
+    
 
     #ifndef NDEBUG
     if (mp1.gpu != mp2.gpu) {
@@ -493,6 +486,6 @@ void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
     swap(mp1.objects, mp2.objects);
 
     // Done
-    DRETURN;
+    return;
 }
 

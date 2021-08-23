@@ -13,14 +13,11 @@
  *   component type. Can thus be used to construct arrays.
 **/
 
-#include "tools/CppDebugger.hpp"
-
 #include "IComponentList.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::ECS;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** ICOMPONENTLIST CLASS *****/

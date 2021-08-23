@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   23/08/2021, 14:52:15
+ *   23/08/2021, 16:09:16
  * Auto updated?
  *   Yes
  *
@@ -136,16 +136,16 @@ namespace Tools {
             // Done
             return;
         }
-        /* Writes a warning message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 2 (details). */
+        /* Writes a warning message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 1 (important). */
         template <class... Ts>
         inline void warning(const Ts&... message) const { this->warningc(this->get_channel(), message...); }
-        /* Writes a warning message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 2 (details). */
+        /* Writes a warning message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 1 (important). */
         template<class... Ts>
         void warningc(const std::string& channel, Ts... args) const {
             using namespace date;
 
             // Check if we should print
-            if (this->verbosity < Verbosity::details) { return; }
+            if (this->verbosity < Verbosity::important) { return; }
 
             // Otherwise, start constructing the stringstream
             this->erros << '[' << std::chrono::system_clock::now() << ']';
@@ -158,16 +158,13 @@ namespace Tools {
             // Done
             return;
         }
-        /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
+        /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's an error, its verbosity is fixed to 0 (always shown). */
         template <class... Ts>
         inline void error(const Ts&... message) const { this->errorc(this->get_channel(), message...); }
-        /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
+        /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's an error, its verbosity is fixed to 0 (always shown). */
         template<class... Ts>
         void errorc(const std::string& channel, Ts... args) const {
             using namespace date;
-
-            // Check if we should print
-            if (this->verbosity < Verbosity::important) { return; }
 
             // Otherwise, start constructing the stringstream
             this->erros << '[' << std::chrono::system_clock::now() << ']';
@@ -180,10 +177,10 @@ namespace Tools {
             // Done
             return;
         }
-        /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
+        /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's a fatal error, its verbosity is fixed to 0 (always shown). */
         template <class... Ts>
         [[ noreturn ]] inline void fatal(const Ts&... message) const { this->fatalc(this->get_channel(), message...); }
-        /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
+        /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a fatal error, its verbosity is fixed to 0 (always shown). */
         template<class... Ts>
         [[ noreturn ]] void fatalc(const std::string& channel, Ts... args) const {
             using namespace date;

@@ -14,7 +14,6 @@
 
 #include <sstream>
 
-#include "tools/CppDebugger.hpp"
 #include "TokenizerTools.hpp"
 
 using namespace std;
@@ -24,7 +23,7 @@ using namespace Rasterizer;
 // /***** LIBRARY FUNCTIONS *****/
 // /* Function that, given a file stream and the start of this line, parses an entire line. */
 // std::string Models::get_line(FILE* file, long sentence_start) {
-//     DENTER("Models::get_line");
+//     
 
 //     // Backup the current cursor and go to the start of the line
 //     long old_cursor = ftell(file);
@@ -43,7 +42,7 @@ using namespace Rasterizer;
 //         // If it's a newline, stop
 //         if (c == '\n' || c == EOF) {
 //             fseek(file, old_cursor, SEEK_SET);
-//             DRETURN sstr.str();
+//             return sstr.str();
 //         }
 
 //         // Otherwise, store and re-try
@@ -51,12 +50,12 @@ using namespace Rasterizer;
 //     }
 
 //     // We should never get here
-//     DRETURN "";
+//     return "";
 // }
 
 /* Function that, given a file stream and the start of this line, parses an entire line. */
 std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
-    DENTER("Models::get_line");
+    
 
     // // Backup the current cursor and go to the start of the line
     // std::streampos old_cursor = is->tellg();
@@ -76,7 +75,7 @@ std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
     //     if (c == '\n' || c == EOF) {
     //         is->seekg(old_cursor);
     //         is->clear();
-    //         DRETURN sstr.str();
+    //         return sstr.str();
     //     }
 
     //     // Otherwise, store and re-try
@@ -84,7 +83,7 @@ std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
     // }
 
     // We should never get here
-    DRETURN "";
+    return "";
 }
 
 
@@ -199,7 +198,7 @@ const char* Models::readable_char(char c) {
 
 /* Splits a given string in two strings on the first slash it finds. */
 void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2) {
-    DENTER("split_string(2)");
+    
 
     // Loop to find the slash, noting everything in the stringstream
     std::stringstream sstr;
@@ -218,12 +217,12 @@ void Models::split_string(const std::string& to_split, std::string& part1, std::
     part2 = sstr.str();
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Splits a given string in three strings on the first and second slash it finds. */
 void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2, std::string& part3) {
-    DENTER("split_string(3)");
+    
 
     // Loop to find the slash, noting everything in the stringstream
     std::stringstream sstr;
@@ -250,6 +249,6 @@ void Models::split_string(const std::string& to_split, std::string& part1, std::
     part3 = sstr.str();
 
     // Done
-    DRETURN;
+    return;
 }
 

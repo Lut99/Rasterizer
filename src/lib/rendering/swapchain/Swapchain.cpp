@@ -15,8 +15,6 @@
 **/
 
 #include <limits>
-#include "tools/CppDebugger.hpp"
-
 #include "../auxillary/Formats.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
@@ -25,13 +23,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkSwapchainCreateInfo struct. */
 static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, VkSurfaceKHR vk_surface, const VkSurfaceCapabilitiesKHR& surface_capabilities, const VkSurfaceFormatKHR& surface_format, const VkPresentModeKHR& surface_present_mode, const VkExtent2D surface_extent, uint32_t image_count, VkSwapchainKHR old_swapchain = VK_NULL_HANDLE) {
-    DENTER("populate_swapchain_info");
+    
 
     // Set the standard stuff
     swapchain_info = {};
@@ -64,12 +61,12 @@ static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, Vk
     swapchain_info.oldSwapchain = old_swapchain;
 
     // Done!
-    DRETURN;
+    return;
 }
 
 /* Populates a given VkImageViewCreateInfo struct. */
 static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& vk_image, const VkFormat& vk_format) {
-    DENTER("populate_view_info");
+    
 
     // Set the struct's default values
     view_info = {};
@@ -96,7 +93,7 @@ static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& 
     view_info.subresourceRange.layerCount = 1;
 
     // We're done
-    DRETURN;
+    return;
 }
 
 
@@ -106,12 +103,12 @@ static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& 
 /***** SELECTION FUNCTIONS *****/
 /* Given a list of supported formats, returns our most desireable one. */
 static VkSurfaceFormatKHR choose_swapchain_format(const Tools::Array<VkSurfaceFormatKHR>& formats) {
-    DENTER("choose_swapchain_format");
+    
 
     for (uint32_t i = 0; i < formats.size(); i++) {
         if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             DLOG(info, "Using format: " + vk_format_map[formats[i].format]);
-            DRETURN formats[i];
+            return formats[i];
         }
     }
 
@@ -120,28 +117,28 @@ static VkSurfaceFormatKHR choose_swapchain_format(const Tools::Array<VkSurfaceFo
         DLOG(fatal, "No surface formats given");
     }
     DLOG(info, "Using format: " + vk_format_map[formats[0].format]);
-    DRETURN formats[0];
+    return formats[0];
 }
 
 /* Given a list of supported presentation modes, returns our most desireable one. */
 static VkPresentModeKHR choose_swapchain_present_mode(const Tools::Array<VkPresentModeKHR>& modes) {
-    DENTER("choose_swapchain_present_mode");
+    
 
     // Since default, blocking VSYNC mode is guaranteed to exist, we'll pick that
     VkPresentModeKHR result = VK_PRESENT_MODE_FIFO_KHR;
     (void) modes;
     
     // Done, return
-    DRETURN result;
+    return result;
 }
 
 /* Given the capabilities of a given surface and given the target window, returns the best extent (size) of the swapchain. Takes higher DPI monitors into account, where one pixel != one coordinate. */
 static VkExtent2D choose_swapchain_extent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* glfw_window) {
-    DENTER("choose_swapchain_extent");
+    
 
     // If the currentExtent is already another value, then ez fix
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-        DRETURN capabilities.currentExtent;
+        return capabilities.currentExtent;
     }
 
     // Query the actual size of the frame buffer
@@ -166,7 +163,7 @@ static VkExtent2D choose_swapchain_extent(const VkSurfaceCapabilitiesKHR& capabi
     }
 
     // Now we can return in peace
-    DRETURN result;
+    return result;
 }
 
 
@@ -179,7 +176,7 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
     gpu(gpu),
     surface(surface)
 {
-    DENTER("Compute::Swapchain::Swapchain");
+    
     DLOG(info, "Initializing Swapchain...");
     DINDENT;
 
@@ -233,7 +230,6 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
 
 
     DDEDENT;
-    DLEAVE;
 }
 
 /* Copy constructor for the Swapchain class. */
@@ -246,7 +242,7 @@ Swapchain::Swapchain(const Swapchain& other) :
     vk_actual_image_count(other.vk_actual_image_count),
     vk_desired_image_count(other.vk_desired_image_count)
 {
-    DENTER("Compute::Swapchain::Swapchain(copy)");
+    
 
     // We copy the swapchain by-recreating it using the standard options
     VkSwapchainCreateInfoKHR swapchain_info;
@@ -265,10 +261,6 @@ Swapchain::Swapchain(const Swapchain& other) :
 
     // Also re-create the image views and framebuffers
     this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
-
-
-
-    DLEAVE;
 }
 
 /* Move constructor for the Swapchain class. */
@@ -291,7 +283,7 @@ Swapchain::Swapchain(Swapchain&& other) :
 
 /* Destructor for the Swapchain class. */
 Swapchain::~Swapchain() {
-    DENTER("Compute::Swapchain::~Swapchain");
+    
     DLOG(info, "Cleaning Swapchain...");
     DINDENT;
 
@@ -308,14 +300,13 @@ Swapchain::~Swapchain() {
     }
 
     DDEDENT;
-    DLEAVE;
 }
 
 
 
 /* Private helper function that re-creates image views and frame buffers from the given list of images. */
 void Swapchain::create_views(const Tools::Array<VkImage>& vk_images, const VkFormat& vk_format) {
-    DENTER("Rendering::Swapchain::create_views");
+    
 
     // Create new image views for these fellers
     DLOG(info, "Creating swapchain image views...");
@@ -332,14 +323,14 @@ void Swapchain::create_views(const Tools::Array<VkImage>& vk_images, const VkFor
         }
     }
 
-    DRETURN;
+    return;
 }
 
 
 
 /* Resizes the swapchain. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
 void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
-    DENTER("Rendering::Swapchain::resize");
+    
     DLOG(info, "Re-creating swapchain...");
     DINDENT;
 
@@ -388,12 +379,12 @@ void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
 
 
     DDEDENT;
-    DRETURN;
+    return;
 }
 
 /* Resizes the swapchain to the size of the given window. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
 void Swapchain::resize(GLFWwindow* glfw_window) {
-    DENTER("Rendering::Swapchain::resize(window)");
+    
 
     // Fetch the new size from the window
     VkExtent2D new_extent = choose_swapchain_extent(this->gpu.swapchain_info().capabilities(), glfw_window);
@@ -401,14 +392,14 @@ void Swapchain::resize(GLFWwindow* glfw_window) {
     this->resize(new_extent.width, new_extent.height);
 
     // Done
-    DRETURN;
+    return;
 }
 
 
 
 /* Swap operator for the Swapchain class. */
 void Rendering::swap(Swapchain& s1, Swapchain& s2) {
-    DENTER("Compute::swap(Swapchain)");
+    
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
@@ -434,5 +425,5 @@ void Rendering::swap(Swapchain& s1, Swapchain& s2) {
     swap(s1.vk_swapchain_views, s2.vk_swapchain_views);
 
     // Done
-    DRETURN;
+    return;
 }

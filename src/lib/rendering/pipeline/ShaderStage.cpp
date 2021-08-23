@@ -14,7 +14,6 @@
 **/
 
 #include <cstring>
-#include "tools/CppDebugger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "ShaderStage.hpp"
@@ -22,13 +21,12 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** HELPER FUNCTIONS *****/
 /* Given an unordered map of constants, populates an array of VkSpecializationMapEntry's for those constants. Returns the total size of the raw constant data combined. The array is expecited to have space for at least one entry per entry in the constant map. */
 static size_t generate_specialization_entries(const std::unordered_map<uint32_t, BinaryString>& constant_map, VkSpecializationMapEntry* map_entries) {
-    DENTER("generate_specialization_entries");
+    
 
     // Create an array of mapentries, and then a single, unified data array
     uint32_t offset = 0;
@@ -48,12 +46,12 @@ static size_t generate_specialization_entries(const std::unordered_map<uint32_t,
     }
 
     // Done, return the slightly longer version of the offset as size
-    DRETURN static_cast<size_t>(offset);
+    return static_cast<size_t>(offset);
 }
 
 /* Given an unordered map of constants, populates a data array containing all the constants's data. The array is expected to have the minimally required space (as returned by generate_specialization_entries()). */
 static void copy_specialization_data(const std::unordered_map<uint32_t, BinaryString>& constant_map, uint8_t* data) {
-    DENTER("generate_specialization_data");
+    
 
     // The offset is now also the size. Use that to populate the data array
     size_t offset = 0;
@@ -66,7 +64,7 @@ static void copy_specialization_data(const std::unordered_map<uint32_t, BinarySt
     }
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -76,7 +74,7 @@ static void copy_specialization_data(const std::unordered_map<uint32_t, BinarySt
 /***** POPULATE FUNCTIONS *****/
 /* Function that populates a VkSpecializationInfo struct based on the given map of constant_ids to values. */
 static void populate_specialization_info(VkSpecializationInfo& specialization_info, VkSpecializationMapEntry* map_entries, uint32_t n_entries, uint8_t* data, size_t data_size) {
-    DENTER("populate_specialization_info");
+    
 
     // Initialize to default
     specialization_info = {};
@@ -90,12 +88,12 @@ static void populate_specialization_info(VkSpecializationInfo& specialization_in
     specialization_info.pData = (void*) data;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkPipelineShaderStageCreateInfo struct. */
 static void populate_shader_info(VkPipelineShaderStageCreateInfo& shader_info, const Shader& shader, VkShaderStageFlagBits shader_stage, const VkSpecializationInfo& specialization_info) {
-    DENTER("populate_shader_info");
+    
 
     // Set to default
     shader_info = {};
@@ -111,7 +109,7 @@ static void populate_shader_info(VkPipelineShaderStageCreateInfo& shader_info, c
     // Finally, set the specialization info for this shader
     shader_info.pSpecializationInfo = &specialization_info;
 
-    DRETURN;
+    return;
 }
 
 
@@ -125,7 +123,7 @@ ShaderStage::ShaderStage(const Rendering::Shader& shader, VkShaderStageFlagBits 
     specialization_entries(new VkSpecializationMapEntry[specialization_constants.size()]),
     n_entries(static_cast<uint32_t>(specialization_constants.size()))
 {
-    DENTER("Rendering::ShaderStage::ShaderStage");
+    
 
     // First, populate the list of specialization entries
     this->specialization_data_size = generate_specialization_entries(specialization_constants, this->specialization_entries);
@@ -141,7 +139,6 @@ ShaderStage::ShaderStage(const Rendering::Shader& shader, VkShaderStageFlagBits 
     populate_shader_info(this->vk_shader_stage, this->shader, shader_stage, *this->vk_specialization_info);
 
     // Done with this one
-    DLEAVE;
 }
 
 /* Copy constructor for the ShaderStage. */
@@ -154,7 +151,7 @@ ShaderStage::ShaderStage(const ShaderStage& other) :
     specialization_data(new uint8_t[other.specialization_data_size]),
     specialization_data_size(other.specialization_data_size)
 {
-    DENTER("Rendering::ShaderStage::ShaderStage(copy)");
+    
 
     // First, copy the entries and constant data over
     memcpy(this->specialization_entries, other.specialization_entries, this->n_entries * sizeof(VkSpecializationMapEntry));
@@ -166,9 +163,6 @@ ShaderStage::ShaderStage(const ShaderStage& other) :
 
     // Finally, also update the shader stage info itself
     this->vk_shader_stage.pSpecializationInfo = this->vk_specialization_info;
-
-    // Done
-    DLEAVE;
 }
 
 /* Move constructor for the ShaderStage. */
@@ -189,7 +183,7 @@ ShaderStage::ShaderStage(ShaderStage&& other) :
 
 /* Destructor for the ShaderStage. */
 ShaderStage::~ShaderStage() {
-    DENTER("Rendering::ShaderStage::~ShaderStage");
+    
 
     // Deallocate the data if we need to
     if (this->vk_specialization_info != nullptr) {
@@ -201,15 +195,13 @@ ShaderStage::~ShaderStage() {
     if (this->specialization_entries != nullptr) {
         delete[] this->specialization_entries;
     }
-
-    DLEAVE;
 }
 
 
 
 /* Swap operator for the ShaderStage class. */
 void Rendering::swap(ShaderStage& ss1, ShaderStage& ss2) {
-    DENTER("Rendering::swap(ShaderStage)");
+    
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
@@ -228,6 +220,6 @@ void Rendering::swap(ShaderStage& ss1, ShaderStage& ss2) {
     swap(ss1.specialization_data_size, ss2.specialization_data_size);
 
     // Done
-    DRETURN;
+    return;
 }
 

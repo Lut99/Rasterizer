@@ -21,14 +21,11 @@
 #include <windows.h>
 #endif
 #include <sstream>
-#include "tools/CppDebugger.hpp"
-
 #include "DebugInfo.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Models;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** HELPER FUNCTIONS *****/
@@ -49,7 +46,7 @@ static bool terminal_supports_colours() {
 /* Returns a string representing the given number, padded with enough spaces to be at least N character long. */
 template <class T>
 static std::string pad_spaces(T value, size_t N) {
-    DENTER("pad_zeros");
+    
     
     // Convert to string
     std::string result = std::to_string(value);
@@ -58,7 +55,7 @@ static std::string pad_spaces(T value, size_t N) {
     }
 
     // DOne
-    DRETURN result;
+    return result;
 }
 
 
@@ -87,7 +84,7 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
 
     raw_lines((uint32_t) (this->line_end - this->line_start + 1))
 {
-    DENTER("Tools::DebugInfo::DebugInfo");
+    
 
     // First, reset the file to standard position
     long old_cursor = ftell(file);
@@ -128,7 +125,7 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
                 fseek(file, old_cursor, SEEK_SET);
 
                 // Done
-                DRETURN;
+                return;
             }
         }
 
@@ -141,7 +138,6 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
     // We reached EOF before we read all lines
     DLOG(warning, "Given lines (from " + std::to_string(this->line_start) + " to " + std::to_string(this->line_end) + ") don't exist in the given file (" + this->filename + ").");
     this->raw_lines = Tools::Array<std::string>("", (uint32_t) (this->line_end - this->line_start + 1));
-    DLEAVE;
 }
 
 /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column, an end line, an end column and lines to show during debugging. The array of lines must contain one entry for each line spanned by the symbol. By convention, we can interpret empty strings as irrelevant lines (since empty lines are usually irrelevant). */
@@ -160,11 +156,11 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
 
 /* Adds another DebugInfo, and returns a new one that spans from the start of this one to the end of the other one. Note that if the DebugInfo's aren't (line) adjacent, the unknown lines will be interpreted as empty. */
 DebugInfo DebugInfo::operator+(const DebugInfo& other) const {
-    DENTER("Models::DebugInfo::operator+");
+    
 
     // If our line start is after the other's line end or there're the same but the columns are swapped, then swap the operation
     if (this->line_start > other.line_end || (this->line_start == this->line_end && other.line_start == other.line_end && this->line_start == other.line_start && this->col_start > other.col_end)) {
-        DRETURN other + *this;
+        return other + *this;
     }
 
     // Start with our raw lines
@@ -183,12 +179,12 @@ DebugInfo DebugInfo::operator+(const DebugInfo& other) const {
     new_raw_lines += other.raw_lines;
 
     // Done, create the new DebugInfo
-    DRETURN DebugInfo(this->filename, this->line_start, this->col_start, other.line_end, other.col_end, new_raw_lines);
+    return DebugInfo(this->filename, this->line_start, this->col_start, other.line_end, other.col_end, new_raw_lines);
 }
 
 /* Adds another DebugInfo to this one s.t. we end at the given DebugInfo's end line and end column. Note that if the DebugInfo's aren't (line) adjacent, the unknown lines will be interpreted as empty. */
 DebugInfo& DebugInfo::operator+=(const DebugInfo& other) {
-    DENTER("Models::DebugInfo::operator+=");
+    
 
     // If our line start is after the other's line end or there're the same but the columns are swapped, then error since we cannot swap +=
     if (this->line_start > other.line_end || (this->line_start == this->line_end && other.line_start == other.line_end && this->line_start == other.line_start && this->col_start > other.col_end)) {
@@ -216,14 +212,14 @@ DebugInfo& DebugInfo::operator+=(const DebugInfo& other) {
     this->raw_lines = new_raw_lines;
 
     // Done
-    DRETURN *this;
+    return *this;
 }
 
 
 
 /* Private helper function that does most of the printing. */
 void DebugInfo::_print(std::ostream& os, const std::string& message, const std::string& accent_colour) {
-    DENTER("Tools::DebugInfo::_print");
+    
 
     // First, print the error message properly
     bool supports_ansi = terminal_supports_colours();
@@ -271,12 +267,12 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
 
     // We're done
     os << endl;
-    DRETURN;
+    return;
 }
 
 /* Pretty prints a given note to the CLI using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. */
 void DebugInfo::print_note(std::ostream& os, const std::string& note) {
-    DENTER("Tools::DebugInfo::print_note");
+    
 
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::note_accent) + "note: \033[0m" + note, DebugInfo::note_accent);
@@ -284,12 +280,12 @@ void DebugInfo::print_note(std::ostream& os, const std::string& note) {
         this->_print(os, "note: " + note, "");
     }
 
-    DRETURN;
+    return;
 }
 
 /* Pretty prints a given warning message to the CLI using the internal debug information about the symbol. */
 void DebugInfo::print_warning(std::ostream& os, const std::string& warning_message) {
-    DENTER("Tools::DebugInfo::print_warning");
+    
 
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::warning_accent) + "warning: \033[0m" + warning_message, DebugInfo::warning_accent);
@@ -297,12 +293,12 @@ void DebugInfo::print_warning(std::ostream& os, const std::string& warning_messa
         this->_print(os, "warning: " + warning_message, "");
     }
 
-    DRETURN;
+    return;
 }
 
 /* Pretty prints a given error message to the CLI using the internal debug information about the symbol. */
 void DebugInfo::print_error(std::ostream& os, const std::string& error_message) {
-    DENTER("Tools::DebugInfo::print_error");
+    
 
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::error_accent) + "error: \033[0m" + error_message, DebugInfo::error_accent);
@@ -310,5 +306,5 @@ void DebugInfo::print_error(std::ostream& os, const std::string& error_message) 
         this->_print(os, "error: " + error_message, "");
     }
 
-    DRETURN;
+    return;
 }

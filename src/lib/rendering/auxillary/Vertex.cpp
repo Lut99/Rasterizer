@@ -13,20 +13,17 @@
  *   Vulkan descriptions for itself.
 **/
 
-#include "tools/CppDebugger.hpp"
-
 #include "Vertex.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkVertexInputBindingDescription struct. */
 static void populate_input_binding_description(VkVertexInputBindingDescription& vk_input_binding_description) {
-    DENTER("populate_input_binding_description");
+    
 
     // Set to default
     vk_input_binding_description = {};
@@ -41,12 +38,12 @@ static void populate_input_binding_description(VkVertexInputBindingDescription& 
     vk_input_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkVertexInputAttributeDescription struct as if it was to describe 3D positions. */
 static void populate_input_attribute_description_position(VkVertexInputAttributeDescription& vk_input_attribute_description) {
-    DENTER("populate_input_attribute_description_position");
+    
 
     // Set to default
     vk_input_attribute_description = {};
@@ -62,12 +59,12 @@ static void populate_input_attribute_description_position(VkVertexInputAttribute
     vk_input_attribute_description.offset = offsetof(Vertex, pos);
 
     // Done
-    DRETURN;
+    return;
 }
 
 /* Populates the given VkVertexInputAttributeDescription struct as if it was to describe RGB colors. */
 static void populate_input_attribute_description_colour(VkVertexInputAttributeDescription& vk_input_attribute_description) {
-    DENTER("populate_input_attribute_description_colour");
+    
 
     // Set to default
     vk_input_attribute_description = {};
@@ -83,7 +80,7 @@ static void populate_input_attribute_description_colour(VkVertexInputAttributeDe
     vk_input_attribute_description.offset = offsetof(Vertex, colour);
 
     // Done
-    DRETURN;
+    return;
 }
 
 
@@ -107,19 +104,19 @@ Vertex::Vertex(const glm::vec3& pos, const glm::vec3& colour) :
 
 /* Static function that returns the binding description for the vertex. */
 VkVertexInputBindingDescription Vertex::input_binding_description() {
-    DENTER("Models::Vertex::input_binding_descriptions");
+    
 
     // Create and populate
     VkVertexInputBindingDescription result;
     populate_input_binding_description(result);
 
     // Done
-    DRETURN result;
+    return result;
 }
 
 /* Static function that returns the attribute descriptions for the vertex. */
 Tools::Array<VkVertexInputAttributeDescription> Vertex::input_attribute_descriptions() {
-    DENTER("Models::Vertex::input_attribute_descriptions");
+    
 
     // Create and populate
     Tools::Array<VkVertexInputAttributeDescription> result;
@@ -128,5 +125,5 @@ Tools::Array<VkVertexInputAttributeDescription> Vertex::input_attribute_descript
     populate_input_attribute_description_colour(result[1]);
 
     // Done
-    DRETURN result;
+    return result;
 }

@@ -16,7 +16,6 @@
 #include <cstring>
 #include <algorithm>
 
-#include "tools/CppDebugger.hpp"
 #include "tools/Typenames.hpp"
 
 #include "ComponentList.hpp"
@@ -24,7 +23,6 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::ECS;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** COMPONENTLIST CLASS *****/
@@ -78,15 +76,15 @@ ComponentList<T>::~ComponentList() {
 /* Stores a new 'entity', filling it with default values. */
 template <class T>
 void ComponentList<T>::add(entity_t entity) {
-    DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add");
+    
     this->add(entity, T());
-    DRETURN;
+    return;
 }
 
 /* Stores a new 'entity', by associating the given entity ID with the given Component data. */
 template <class T>
 void ComponentList<T>::add(entity_t entity, const T& component) {
-    DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::add(component)");
+    
 
     // Try to find if the entity already exists
     std::unordered_map<entity_t, component_list_size_t>::iterator iter = this->entity_map.find(entity);
@@ -110,13 +108,13 @@ void ComponentList<T>::add(entity_t entity, const T& component) {
 
     // Done, increment the size
     ++this->n_entities;
-    DRETURN;
+    return;
 }
 
 /* Removes an 'entity', by de-associating the given entity ID and removing the Component from the internal list. */
 template <class T>
 void ComponentList<T>::remove(entity_t entity) {
-    DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::remove");
+    
 
     // Try to find the entity in our internal mapping
     std::unordered_map<entity_t, component_list_size_t>::iterator iter = this->entity_map.find(entity);
@@ -160,7 +158,7 @@ void ComponentList<T>::remove(entity_t entity) {
 
     // Done, decrement the size
     --this->n_entities;
-    DRETURN;
+    return;
 }
 
 
@@ -168,7 +166,7 @@ void ComponentList<T>::remove(entity_t entity) {
 /* Reserves space for new entities by re-allocating the internal array. If the new capacity is lower than the current size, then entities at the end will be removed automatically. New entities will be left unitialised, since there's obviously no mapping available yet. */
 template <class T>
 void ComponentList<T>::reserve(component_list_size_t new_capacity) {
-    DENTER("ECS::ComponentList<" + Tools::type_sname<T>() + ">::reserve");
+    
 
     // First, try to allocate the new capacity
     T* new_entities = (T*) malloc(new_capacity * sizeof(T));
@@ -195,7 +193,7 @@ void ComponentList<T>::reserve(component_list_size_t new_capacity) {
     this->max_entities = new_capacity;
 
     // Done
-    DRETURN;
+    return;
 }
 
 

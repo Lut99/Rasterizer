@@ -30,13 +30,12 @@
 
 using namespace std;
 using namespace Tools;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** EXPORTED FUNCTIONS *****/
 /* Function that returns the path of the folder of the executable. */
 std::string Tools::get_executable_path() {
-    DENTER("Tools::get_executable_path");
+    
 
     #ifdef _WIN32
     /* For Windows machiens */
@@ -54,7 +53,7 @@ std::string Tools::get_executable_path() {
     }
 
     // Prepare the converting of unicode to ascii and then return the converted value
-    DRETURN path;
+    return path;
 
     #else
     /* For Linux machiens */
@@ -72,7 +71,7 @@ std::string Tools::get_executable_path() {
     }
 
     // Done, return
-    DRETURN result;
+    return result;
 
     #endif
 }
@@ -176,7 +175,7 @@ const char* Tools::readable_char(char c) {
 
 /* Splits a given string on the given character, returning an Array of strings. If the character isn't present, returns a split of one (the string itself). */
 Array<std::string> Tools::split_string(const std::string& to_split, char splitter) {
-    DENTER("Tools::split_string");
+    
 
     // Search and collect the list
     std::stringstream sstr;
@@ -196,14 +195,14 @@ Array<std::string> Tools::split_string(const std::string& to_split, char splitte
     }
 
     // Done
-    DRETURN to_return;
+    return to_return;
 }
 
 
 
 /* Function that returns a string more compactly describing the given number of bytes. */
 std::string Tools::bytes_to_string(size_t n_bytes) {
-    DENTER("Tools::bytes_to_string");
+    
 
     // Select the proper scale to write the bytes to
     std::stringstream sstr;
@@ -222,12 +221,12 @@ std::string Tools::bytes_to_string(size_t n_bytes) {
     }
     
     // Done, return
-    DRETURN sstr.str();
+    return sstr.str();
 }
 
 /* Function that parses a bytes string with format and returns the raw number of bytes meant by it. */
 size_t Tools::string_to_bytes(const std::string& text) {
-    DENTER("Tools::string_to_bytes");
+    
 
     // First, remove spaces from the text
     size_t i = 0;
@@ -332,5 +331,5 @@ size_t Tools::string_to_bytes(const std::string& text) {
     }
     
     // Otherwise, return the casted version!
-    DRETURN (size_t) round(inumbers);
+    return (size_t) round(inumbers);
 }
