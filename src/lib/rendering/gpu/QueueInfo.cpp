@@ -13,19 +13,19 @@
  *   present on the GPU and by what index.
 **/
 
-#include "tools/CppDebugger.hpp"
+#include "tools/Tracer.hpp"
 
 #include "QueueInfo.hpp"
 
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** QUEUEINFO CLASS *****/
-/* Default constructor for the QueueInfo class, which initializes the info to nothing supported. Use ::refresh() to populate it normally. */
-QueueInfo::QueueInfo() :
+/* "Default" constructor for the QueueInfo class, which initializes the info to nothing supported. Use ::refresh() to populate it normally. */
+QueueInfo::QueueInfo(const Tools::Logger::InitData& init_data) :
+    logger(init_data, "QueueInfo"),
     queue_families({
         { QueueType::graphics, std::make_pair(-1, -1) },
         { QueueType::compute, std::make_pair(-1, -1) },
@@ -34,31 +34,30 @@ QueueInfo::QueueInfo() :
     })
 {}
 
-/* Constructor for the QueueInfo class, which takes a Vulkan physical device and surface and uses that to set its own properties. */
-QueueInfo::QueueInfo(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface) :
+/* Constructor for the QueueInfo class, which takes the initial data for the internal logger, a Vulkan physical device and surface and uses that to set its own properties. */
+QueueInfo::QueueInfo(const Tools::Logger::InitData& init_data, const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface) :
     // Initialize the queue info to nothing being supported
-    QueueInfo()
+    QueueInfo(init_data)
 {
-    DENTER("Rendering::QueueInfo::QueueInfo(gpu, surface)");
+    TENTER("Rendering::QueueInfo::QueueInfo(gpu, surface)");
 
     // Simply call refresh()
     this->refresh(vk_physical_device, vk_surface);
 
-    DLEAVE;
+    TLEAVE;
 }
 
 
 
 /* Refreshes the QueueInfo, i.e., re-populates its values according to the given device and surface. */
 void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface) {
-    DENTER("Rendering::QueueInfo::refresh");
-    DLOG(info, "Refreshing QueueInfo...");
+    this->logger.log(Verbosity::details, "Refreshing QueueInfo...");
 
     // First, get a list of all the queues supported by the GPU
     uint32_t n_supported_queues;
-    vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, nullptr);
+    TCALL(vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, nullptr));
     Array<VkQueueFamilyProperties> supported_queues(n_supported_queues);
-    vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, supported_queues.wdata(n_supported_queues));
+    TCALL(vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &n_supported_queues, supported_queues.wdata(n_supported_queues)));
 
     // Prepare a list of UINT32_MAX uint32_t numbers that we'll use to determine the "speciality" of a queue
     uint32_t best_specialities[QueueInfo::n_queues];
@@ -74,7 +73,7 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
         capabilities[0] = supported_queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT;
         capabilities[1] = supported_queues[i].queueFlags & VK_QUEUE_COMPUTE_BIT;
         capabilities[2] = supported_queues[i].queueFlags & VK_QUEUE_TRANSFER_BIT;
-        vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device, i, vk_surface, &vk_can_present);
+        TCALL(vkGetPhysicalDeviceSurfaceSupportKHR(vk_physical_device, i, vk_surface, &vk_can_present));
         capabilities[3] = (bool) vk_can_present;
 
         // Use that to count how many abilities the queue has
@@ -125,10 +124,7 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
     }
 
     // We're done refreshing!
-    DINDENT;
     for (const std::pair<QueueType, std::pair<int64_t, int64_t>>& p : this->queue_families) {
-        DLOG(info, queue_type_names[(int) p.first] + " queue family has index " + std::to_string(p.second.first));
+        this->logger.log(Verbosity::details, queue_type_names[(int) p.first], " queue family has index ", p.second.first);
     }
-    DDEDENT;
-    DRETURN;
 }

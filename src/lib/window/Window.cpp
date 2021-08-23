@@ -13,19 +13,19 @@
  *   Vulkan instance, gpu, surface and swapchain together in one place.
 **/
 
-#include "tools/CppDebugger.hpp"
+#include "tools/Tracer.hpp"
 
 #include "Window.hpp"
 
 using namespace std;
 using namespace Rasterizer;
-using namespace CppDebugger::SeverityValues;
 
 
 /***** WINDOW CLASS *****/
-/* Constructor for the Window class, which takes the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
-Window::Window(const Rendering::Instance& instance, const std::string& title, uint32_t width, uint32_t height) :
+/* Constructor for the Window class, which takes the init data for its logger, the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
+Window::Window(const Tools::Logger::InitData& init_data, const Rendering::Instance& instance, const std::string& title, uint32_t width, uint32_t height) :
     instance(instance),
+    logger(init_data, "Window"),
 
     t(title),
     w(width),
@@ -34,31 +34,29 @@ Window::Window(const Rendering::Instance& instance, const std::string& title, ui
     should_resize(false),
     should_close(false)
 {
-    DENTER("Window::Window");
-    DLOG(info, "Initializing Window class...");
-    DINDENT;
+    TENTER("Window::Window");
 
-    DLOG(info, "Initializing GLFW window...");
     // Get the window
-    this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
+    this->logger.log(Verbosity::details, "Initializing GLFW window...");
+    this->glfw_window = TCALLR(glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL));
 
     // Set the mouse input mode & register the callbacks
-    this->set_input_mode(this->glfw_window);
-    this->register_callbacks(this->glfw_window);
+    TCALL(this->set_input_mode(this->glfw_window));
+    TCALL(this->register_callbacks(this->glfw_window));
 
     // Initialize the other classes
-    this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
-    this->rendering_gpu = new Rendering::GPU(this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
+    this->rendering_surface = new Rendering::Surface(this->logger, this->instance, this->glfw_window);
+    this->rendering_gpu = new Rendering::GPU(this->logger, this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
     this->rendering_swapchain = new Rendering::Swapchain(*this->rendering_gpu, this->glfw_window, *this->rendering_surface);
 
     // Done
-    DDEDENT;
-    DLEAVE;
+    TLEAVE;
 }
 
 /* Copy constructor for the Window class, which is deleted. */
 Window::Window(const Window& other) :
     instance(other.instance),
+    logger(other.logger),
 
     t(other.t),
     w(other.w),
@@ -73,26 +71,28 @@ Window::Window(const Window& other) :
     should_resize(other.should_resize),
     should_close(other.should_close)
 {
-    DENTER("Window::Window::copy");
+    TENTER("Window::Window::copy");
+    this->logger.log(Verbosity::details, "Starting copy...");
 
     // First, copy the glfw window
-    this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
+    this->glfw_window = TCALLR(glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL));
 
     // Set the mouse input mode & register the callbacks
-    this->set_input_mode(this->glfw_window);
-    this->register_callbacks(this->glfw_window);
+    TCALL(this->set_input_mode(this->glfw_window));
+    TCALL(this->register_callbacks(this->glfw_window));
 
     // Also copy the other classes
-    this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
-    this->rendering_gpu = new Rendering::GPU(this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
+    this->rendering_surface = new Rendering::Surface(this->logger, this->instance, this->glfw_window);
+    this->rendering_gpu = new Rendering::GPU(this->logger, this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
     this->rendering_swapchain = new Rendering::Swapchain(*this->rendering_gpu, this->glfw_window, *this->rendering_surface);
 
-    DLEAVE;
+    TLEAVE;
 }
 
 /* Move constructor for the Window class. */
 Window::Window(Window&& other) :
     instance(other.instance),
+    logger(other.logger),
 
     glfw_window(other.glfw_window),
     rendering_surface(other.rendering_surface),
@@ -121,9 +121,7 @@ Window::Window(Window&& other) :
 
 /* Destructor for the Window class. */
 Window::~Window() {
-    DENTER("Window::~Window");
-    DLOG(info, "Cleaning Window object...");
-    DINDENT;
+    TENTER("Window::~Window");
 
     // Destroy the three vulkan objects if needed
     if (this->rendering_swapchain != nullptr) {
@@ -138,50 +136,49 @@ Window::~Window() {
 
     // Also destroy the window
     if (this->glfw_window != nullptr) {
-        DLOG(auxillary, "Destroying GLFW window...");
+        this->logger.log(Verbosity::details, "Destroying GLFW window...");
         glfwDestroyWindow(this->glfw_window);
     }
 
-    DDEDENT;
-    DLEAVE;
+    TLEAVE;
 }
 
 
 
 /* Callback for the GLFW window resize. */
 void Window::glfw_resize_callback(GLFWwindow* glfw_window, int width, int height) {
-    DENTER("Window::glfw_resize_callback");
+    TENTER("Window::glfw_resize_callback");
 
     // First, get the window back
-    Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
+    Window* window = (Window*) TCALLR(glfwGetWindowUserPointer(glfw_window));
     // Mark that we need to resize at the new opportunity
     window->should_resize = true;
 
     // Done
     (void) width; (void) height;
-    DRETURN;
+    TLEAVE;
 }
 
 /* Callback for GLFW window focus events. */
 void Window::glfw_focus_callback(GLFWwindow* glfw_window, int focused) {
-    DENTER("Window::glfw_focus_callback");
+    TENTER("Window::glfw_focus_callback");
 
     // First, get the window back
-    Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
+    Window* window = (Window*) TCALLR(glfwGetWindowUserPointer(glfw_window));
 
     // Set the focused status
     window->focused = focused == 1;
 
     // Done
-    DRETURN;
+    TLEAVE;
 }
 
 /* Callback for GLFW window key events. */
 void Window::glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
-    DENTER("Window::glfw_key_callback");
+    TENTER("Window::glfw_key_callback");
 
     // First, get the window back
-    Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
+    Window* window = (Window*) TCALLR(glfwGetWindowUserPointer(glfw_window));
 
     // Check if escape was pressed
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -190,15 +187,15 @@ void Window::glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, i
 
     // Done
     (void) scancode; (void) mods;
-    DRETURN;
+    TLEAVE;
 }
 
 /* Callback for GLFW window cursor move events. */
 void Window::glfw_cursor_callback(GLFWwindow* glfw_window, double x, double y) {
-    DENTER("Window::glfw_cursor_callback");
+    TENTER("Window::glfw_cursor_callback");
 
     // First, get the window back
-    Window* window = (Window*) glfwGetWindowUserPointer(glfw_window);
+    Window* window = (Window*) TCALLR(glfwGetWindowUserPointer(glfw_window));
 
     // Store the new x and y position
     window->old_mouse_pos = window->new_mouse_pos;
@@ -206,50 +203,38 @@ void Window::glfw_cursor_callback(GLFWwindow* glfw_window, double x, double y) {
     window->new_mouse_pos.y = (float) y;
 
     // Done
-    DRETURN;
+    TLEAVE;
 }
 
 
 
 /* Private helper function that sets the input mode for the given window. */
 void Window::set_input_mode(GLFWwindow* glfw_window) {
-    DENTER("Window::set_input_mode");
-
-    // Do it
     glfwSetInputMode(glfw_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     if (glfwRawMouseMotionSupported()) {
         glfwSetInputMode(glfw_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     }
-
-    // Done
-    DRETURN;
 }
 
 /* Private helper function that registers all callbacks and sets this instance as the window's user pointer. */
 void Window::register_callbacks(GLFWwindow* glfw_window) {
-    DENTER("Window::register_callbacks");
-
     // Pass ourselves as data to the GLFW window s.t. we can keep track of resizes
     glfwSetWindowUserPointer(glfw_window, (void*) this);
     glfwSetFramebufferSizeCallback(glfw_window, Window::glfw_resize_callback);
     glfwSetWindowFocusCallback(glfw_window, Window::glfw_focus_callback);
     glfwSetKeyCallback(glfw_window, Window::glfw_key_callback);
     glfwSetCursorPosCallback(glfw_window, Window::glfw_cursor_callback);
-
-    DRETURN;
 }
 
 
 
 /* Resizes the window to the new size of the GLFWwindow. */
 void Window::resize() {
-    DENTER("Window::resize");
-
     // If the user minimized the application, then we shall wait until the window has a size again
     int width = 0, height = 0;
     glfwGetFramebufferSize(this->glfw_window, &width, &height);
     if (width == 0 || height == 0) {
-        DLOG(info, "Window minimized");
+        this->logger.log(Verbosity::important, "Window minimized");
         while (width == 0 || height == 0) {
             glfwGetFramebufferSize(this->glfw_window, &width, &height);
             // Use the blocking event call to let the thread sleepy sleepy
@@ -266,18 +251,15 @@ void Window::resize() {
 
     // Done as far as the window is concerned
     this->should_resize = false;
-    DRETURN;
 }
 
 /* Resizes the window to the given size. */
 void Window::resize(uint32_t new_width, uint32_t new_height) {
-    DENTER("Window::resize(width, height)");
-
     // If the user minimized the application, then we shall wait until the window has a size again
     int width = 0, height = 0;
     glfwGetFramebufferSize(this->glfw_window, &width, &height);
     if (width == 0 || height == 0) {
-        DLOG(info, "Window minimized");
+        this->logger.log(Verbosity::important, "Window minimized");
         while (width == 0 || height == 0) {
             glfwGetFramebufferSize(this->glfw_window, &width, &height);
             // Use the blocking event call to let the thread sleepy sleepy
@@ -294,32 +276,27 @@ void Window::resize(uint32_t new_width, uint32_t new_height) {
 
     // Done as far as the window is concerned
     this->should_resize = false;
-    DRETURN;
 }
 
 
 
 /* Runs window events. Returns whether or not the window can remain open (true) or should close due to user interaction (false). */
 bool Window::loop() const {
-    DENTER("Window::loop");
-
     // First, poll the GLFW events
     glfwPollEvents();
 
     // Next, return if the window should close
-    DRETURN !glfwWindowShouldClose(this->glfw_window) && !this->should_close;
+    return !glfwWindowShouldClose(this->glfw_window) && !this->should_close;
 }
 
 
 
 /* Swap operator for the Window class. */
 void Rasterizer::swap(Window& w1, Window& w2) {
-    DENTER("Rasterizer::swap(Window)");
+    TENTER("Rasterizer::swap(Window)");
 
     #ifndef NDEBUG
-    if (w1.instance != w2.instance) {
-        DLOG(fatal, "Cannot swap windows with different instances.");
-    }
+    if (w1.instance != w2.instance) { throw std::runtime_error("Cannot swap windows with different instances."); }
     #endif
 
     // Simply swap everything
@@ -343,6 +320,6 @@ void Rasterizer::swap(Window& w1, Window& w2) {
     swap(w1.should_close, w2.should_close);
 
     // Done
-    DRETURN;
+    TLEAVE;
 }
 

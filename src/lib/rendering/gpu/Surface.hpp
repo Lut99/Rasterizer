@@ -19,6 +19,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "tools/Logger.hpp"
 #include "../instance/Instance.hpp"
 
 namespace Rasterizer::Rendering {
@@ -29,12 +30,14 @@ namespace Rasterizer::Rendering {
         const Instance& instance;
     
     private:
+        /* Logger for the Surface class. */
+        Tools::Logger logger;
         /* The VkSurfaceKHR object we wrap. */
         VkSurfaceKHR vk_surface;
 
     public:
-        /* Constructor for the Surface class, which takes an instance and the GLFW window to create a surface from. */
-        Surface(const Instance& instance, GLFWwindow* glfw_window);
+        /* Constructor for the Surface class, which takes initialization infor for its logger, an instance and the GLFW window to create a surface from. */
+        Surface(const Tools::Logger::InitData& init_data, const Instance& instance, GLFWwindow* glfw_window);
         /* Copy constructor for the Surface class, which is deleted as a window only has one surface at a time. */
         Surface(const Surface& other) = delete;
         /* Move constructor for the Surface class. */

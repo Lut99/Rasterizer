@@ -21,6 +21,7 @@
 #include <GLFW/glfw3.h>
 
 #include "glm/glm.hpp"
+#include "tools/Logger.hpp"
 
 #include "rendering/instance/Instance.hpp"
 #include "rendering/gpu/Surface.hpp"
@@ -43,6 +44,9 @@ namespace Rasterizer {
             void* extra_data;
         };
 
+
+        /* Logger for the Window class. */
+        Tools::Logger logger;
 
         /* The GLFWwindow object that we handle. */
         GLFWwindow* glfw_window;
@@ -92,8 +96,8 @@ namespace Rasterizer {
         void register_callbacks(GLFWwindow* glfw_window);
     
     public:
-        /* Constructor for the Window class, which takes the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
-        Window(const Rendering::Instance& instance, const std::string& title, uint32_t width, uint32_t height);
+        /* Constructor for the Window class, which takes the init data for its logger, the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
+        Window(const Tools::Logger::InitData& init_data, const Rendering::Instance& instance, const std::string& title, uint32_t width, uint32_t height);
         /* Copy constructor for the Window class. */
         Window(const Window& other);
         /* Move constructor for the Window class. */

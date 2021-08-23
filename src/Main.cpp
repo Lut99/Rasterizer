@@ -235,7 +235,7 @@ int main(int argc, const char** argv) {
 
         // Use that to prepare the Window class
         uint32_t width = 800, height = 600;
-        Window window(instance, "Rasterizer", width, height);
+        Window window(logger ,instance, "Rasterizer", width, height);
         // Prepare the memory manager
         Rendering::MemoryManager memory_manager(window.gpu(), opts.local_memory_size, opts.visible_memory_size);
         // Initialize the WorldSystem

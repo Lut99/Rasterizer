@@ -297,6 +297,7 @@ Instance::~Instance() {
 void Rendering::swap(Instance& i1, Instance& i2) {
     using std::swap;
 
+    swap(i1.logger, i2.logger);
     swap(i1.vk_instance, i2.vk_instance);
     swap(i1.vk_debugger, i2.vk_debugger);
     swap(i1.vk_destroy_debug_utils_messenger_method, i2.vk_destroy_debug_utils_messenger_method);
