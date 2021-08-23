@@ -214,24 +214,24 @@ int main(int argc, const char** argv) {
     TSTART("main"); TENTER("main");
 
     // Declare the logger
-    Tools::Logger logger(cout, cerr, Verbosity::debug);
+    Tools::Logger logger(cout, cerr, Verbosity::debug, "main");
 
     try {
         // Parse the arguments
         Options opts;
-        TCALL(parse_args, (opts, argc, argv));
+        TCALL(parse_args(opts, argc, argv));
 
         // Indicate that we're starting
-        logger.logc(Verbosity::important, "main", "Initializing Rasterizer...");
+        logger.log(Verbosity::important, "Initializing Rasterizer...");
 
         // Initialize the GLFW library
-        logger.logc(Verbosity::important, "main", "Initializing GLFW...");
-        TCALL(glfwInit, ());
-        TCALL(glfwWindowHint, (GLFW_CLIENT_API, GLFW_NO_API));
-        TCALL(glfwWindowHint, (GLFW_RESIZABLE, GLFW_TRUE));
+        logger.log(Verbosity::important, "Initializing GLFW...");
+        TCALL(glfwInit());
+        TCALL(glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API));
+        TCALL(glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE));
 
         // Prepare the Vulkan instance first
-        Rendering::Instance instance(Rendering::instance_extensions + get_glfw_extensions());
+        Rendering::Instance instance(logger, Rendering::instance_extensions + get_glfw_extensions());
 
         // Use that to prepare the Window class
         uint32_t width = 800, height = 600;
@@ -279,7 +279,7 @@ int main(int argc, const char** argv) {
 
         // Do the render
         uint32_t fps = 0;
-        logger.logc(Verbosity::important, "main", "Done initializing, entering game loop...");
+        logger.log(Verbosity::important, "Done initializing, entering game loop...");
         chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
         bool busy = true;
         uint32_t count = 0;
@@ -329,11 +329,11 @@ int main(int argc, const char** argv) {
         }
 
         // Wait for the GPU to be idle before we stop
-        logger.logc(Verbosity::important, "main", "Cleaning up...");
-        TCALL(window.gpu().wait_for_idle, ());
+        logger.log(Verbosity::important, "Cleaning up...");
+        TCALL(window.gpu().wait_for_idle());
 
         // We're done
-        TCALL(glfwTerminate, ());
+        TCALL(glfwTerminate());
         TRETURN EXIT_SUCCESS;
 
     } catch (std::exception& e) {

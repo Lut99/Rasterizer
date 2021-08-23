@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   17/08/2021, 16:13:31
+ *   23/08/2021, 14:52:15
  * Auto updated?
  *   Yes
  *
@@ -51,6 +51,16 @@ namespace Tools {
         /* Static string that is used in case an empty sting is needed. */
         inline static const std::string empty_string = "";
 
+        /* Data that can be used to initialize the Logger instead of calling it with separate arguments. */
+        struct InitData {
+            /* The output stream to which we write. */
+            std::ostream& stdos;
+            /* The error stream to which we write. */
+            std::ostream& erros;
+            /* The verbosity level of the Logger. */
+            Verbosity verbosity;
+        };
+
         /* Exception that is thrown on fatal() calls. */
         class Fatal: public std::exception {
         public:
@@ -74,9 +84,7 @@ namespace Tools {
         /* The verbosity level of logging. */
         Verbosity verbosity;
         /* Keeps track of the thread/channel maps made. */
-        std::unordered_map<std::thread::id, std::string> thread_channel_map;
-        /* Mutex lock used to make the class thread-safe to call. */
-        std::mutex lock;
+        std::string channel;
 
 
         /* Internal helper function that populates a given stringstream with all given types, converted to strings. */
@@ -90,21 +98,25 @@ namespace Tools {
         }
   
     public:
-        /* Constructor for the Logger class, which takes an output stream to write its non-messages to, an output stream to write error messages to and a verbosity level. */
-        Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity);
+        /* Constructor for the Logger class, which takes an output stream to write its non-messages to, an output stream to write error messages to and a verbosity level. Optionally takes a default channel name. */
+        Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity, const std::string& channel = "");
+        /* Constructor for the Logger class, which takes its setup data as an InitData struct. Optionally takes a default channel name. */
+        Logger(const InitData& init_data, const std::string& channel = "");
+        /* Copy constructor for the Logger class. */
+        Logger(const Logger& other);
+        /* Move constructor for the Logger class. */
+        Logger(Logger&& other);
+        /* Destructor for the Logger class. */
+        ~Logger();
 
-        /* Defines a thread-channel mapping for the current thread. Allows log, warning, error and fatal to be called without channel parameter. Set to an empty string to remove the channel again. */
-        inline void set_thread_channel(const std::string& channel) { this->set_thread_channel(std::this_thread::get_id(), channel); }
-        /* Defines a thread-channel mapping for the given thread. Allows log, warning, error and fatal to be called without channel parameter. Set to an empty string to remove the channel again. */
-        void set_thread_channel(const std::thread::id& tid, const std::string& channel);
-        /* Returns the thread channel for the current thread. If no such channel exists, returns an empty string. */
-        inline const std::string& get_thread_channel() const { return this->get_thread_channel(std::this_thread::get_id()); }
-        /* Returns the thread channel for the given thread. If no such channel exists, returns an empty string. */
-        inline const std::string& get_thread_channel(const std::thread::id& tid) const { return this->thread_channel_map.find(tid) != this->thread_channel_map.end() ? this->thread_channel_map.at(tid) : this->empty_string; }
+        /* Defines a channel to standardly use for this thread, allowing log, warning, error and fatal to be called without channel parameter and still display a channel. Set to an empty string to remove the channel again. */
+        inline void set_channel(const std::string& channel) { this->channel = channel; }
+        /* Returns the channel set for this logger. If no such channel name is defined, returns an empty string. */
+        inline const std::string& get_channel() const { return this->channel; }
 
         /* Writes a message to the internal standard output stream. The given verbosity determines if the message is printed or not. The arguments are appended (in order) and without spaces in between. */
         template <class... Ts>
-        inline void log(Verbosity verbosity, const Ts&... message) const { this->logc(verbosity, this->get_thread_channel(), message...); }
+        inline void log(Verbosity verbosity, const Ts&... message) const { this->logc(verbosity, this->get_channel(), message...); }
         /* Writes a message to the internal standard output stream. The given verbosity determines if the message is printed or not, and the channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. */
         template<class... Ts>
         void logc(Verbosity verbosity, const std::string& channel, Ts... args) const {
@@ -126,7 +138,7 @@ namespace Tools {
         }
         /* Writes a warning message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 2 (details). */
         template <class... Ts>
-        inline void warning(const Ts&... message) const { this->warningc(this->get_thread_channel(), message...); }
+        inline void warning(const Ts&... message) const { this->warningc(this->get_channel(), message...); }
         /* Writes a warning message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 2 (details). */
         template<class... Ts>
         void warningc(const std::string& channel, Ts... args) const {
@@ -148,7 +160,7 @@ namespace Tools {
         }
         /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
         template <class... Ts>
-        inline void error(const Ts&... message) const { this->errorc(this->get_thread_channel(), message...); }
+        inline void error(const Ts&... message) const { this->errorc(this->get_channel(), message...); }
         /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
         template<class... Ts>
         void errorc(const std::string& channel, Ts... args) const {
@@ -170,7 +182,7 @@ namespace Tools {
         }
         /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
         template <class... Ts>
-        [[ noreturn ]] inline void fatal(const Ts&... message) const { this->fatalc(this->get_thread_channel(), message...); }
+        [[ noreturn ]] inline void fatal(const Ts&... message) const { this->fatalc(this->get_channel(), message...); }
         /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's an, its verbosity is fixed to 1 (important). */
         template<class... Ts>
         [[ noreturn ]] void fatalc(const std::string& channel, Ts... args) const {
@@ -195,7 +207,22 @@ namespace Tools {
         /* Returns the internal verbosity. */
         inline Verbosity get_verbosity() const { return this->verbosity; }
 
+        /* Explicitly returns an InitData struct so another Logger may be created with the same settings. */
+        inline InitData get_init_data() const { return InitData({ this->stdos, this->erros, this->verbosity }); }
+        /* Implicitly returns an InitData struct so another Logger may be created with the same settings. */
+        inline operator InitData() const { return this->get_init_data(); }
+
+        /* Copy assignment operator for the Logger class. */
+        inline Logger& operator=(const Logger& other) { return *this = Logger(other); }
+        /* Move assignment operator for the Logger class. */
+        inline Logger& operator=(Logger&& other) { if (this != &other) { swap(*this, other); } return *this; }
+        /* Swap operator for the Logger class. */
+        friend void swap(Logger& l1, Logger& l2);
+
     };
+    
+    /* Swap operator for the Logger class. */
+    void swap(Logger& l1, Logger& l2);
 
 }
 

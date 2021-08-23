@@ -4,7 +4,7 @@
  * Created:
  *   30/04/2021, 14:03:39
  * Last edited:
- *   11/06/2021, 15:52:00
+ *   23/08/2021, 14:18:12
  * Auto updated?
  *   Yes
  *
@@ -18,6 +18,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include "tools/Logger.hpp"
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Rendering {
@@ -35,6 +36,9 @@ namespace Rasterizer::Rendering {
     /* The Instance class, which wraps and manages the Vulkan instance and the Vulkan debug logger. */
     class Instance {
     private:
+        /* The Logger used to keep track of what the Instance is doing. */
+        Tools::Logger logger;
+
         /* The VkInstance that we use, among other things. */
         VkInstance vk_instance;
 
@@ -49,8 +53,8 @@ namespace Rasterizer::Rendering {
         Tools::Array<const char*> vk_layers;
     
     public:
-        /* Constructor for the Instance class, which takes a list of extensions to enable at the instance and layers to enable. */
-        Instance(const Tools::Array<const char*>& extensions = instance_extensions, const Tools::Array<const char*>& layers = debug_layers);
+        /* Constructor for the Instance class, which takes init data for its logger, a list of extensions to enable at the instance and layers to enable. */
+        Instance(const Tools::Logger::InitData& init_data, const Tools::Array<const char*>& extensions = instance_extensions, const Tools::Array<const char*>& layers = debug_layers);
         /* Copy constructor for the Instance class. */
         Instance(const Instance& other);
         /* Move constructor for the Instance class. */

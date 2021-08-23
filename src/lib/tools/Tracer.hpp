@@ -17,6 +17,7 @@
 #ifndef TOOLS_TRACER_HPP
 #define TOOLS_TRACER_HPP
 
+#include <cstddef>
 #include <limits>
 #include <unordered_map>
 #include <vector>
@@ -48,19 +49,19 @@
 /* Puts the current function onto the callstack. Since it isn't called but rather entered, line information will be missing. */
 #define TENTER(FUNC_NAME) \
     tracer.push_frame((FUNC_NAME), (__FILE__), std::numeric_limits<size_t>::max());
-/* Removes the current function from the callstack again. */
+/* Removes the current function from the callstack again. Also needed when functions are called with the TCALL macro. */
 #define TLEAVE \
     tracer.pop_frame();
-/* Removes the current function from the callstack again and returns the function. Can be used as a normal return statement. */
+/* Removes the current function from the callstack again, then calls return. The last statement is not terminated, so any return value may follow. */
 #define TRETURN \
     tracer.pop_frame(); return
 
-/* Calls the given function without a return value, putting it on the stack with its call location. */
-#define TCALL(FUNC_NAME, FUNC_ARGS) \
-    tracer.push_frame((#FUNC_NAME), (__FILE__), (__LINE__)); (FUNC_NAME)FUNC_ARGS; tracer.pop_frame();
-/* Calls the given function with a return value, putting it on the stack with its call location. Cannot returns function values, though. */
-#define TCALLR(VAR, FUNC_NAME, FUNC_ARGS) \
-    tracer.push_frame((#FUNC_NAME), (__FILE__), (__LINE__)); (VAR) = (FUNC_NAME)FUNC_ARGS; tracer.pop_frame();
+/* Calls the given function without a return value, putting it on the stack with its call location. Also pops it off when done. */
+#define TCALL(CALL) \
+    (tracer.push_frame((#CALL), (__FILE__), (__LINE__)), (CALL), tracer.pop_frame())
+/* Calls the given function WITH a return value, putting it on the stack with its call location. Also pops it off when done. */
+#define TCALLR(CALL) \
+    (tracer.push_frame((#CALL), (__FILE__), (__LINE__)), tracer.pop_frame((CALL)))
 
 
 
@@ -116,6 +117,12 @@ namespace Tools {
         void push_frame(const char* func_name, const char* file_name, size_t line);
         /* Pop the last function off the stack again. */
         void pop_frame();
+        /* Pop the last function off the stack, returning the given value directly. */
+        template <class T>
+        const T& pop_frame(const T& value) {
+            this->pop_frame();
+            return value;
+        }
 
         /* Prints the given text as fatal error to the given stream, printing all traces. */
         void throw_error(const char* message) const;
@@ -142,16 +149,16 @@ namespace Tools {
 #define TENTER(NAME)
 /* Removes the current function from the callstack again. */
 #define TLEAVE
-/* Removes the current function from the callstack again and returns the function. Can be used as a normal return statement. */
+/* Removes the current function from the callstack again, then calls return. The last statement is not terminated, so any return value may follow. */
 #define TRETURN \
     return
 
-/* Calls the given function without a return value, putting it on the stack with its call location. */
-#define TCALL(FUNC_NAME, FUNC_ARGS) \
-    (FUNC_NAME)FUNC_ARGS;
-/* Calls the given function with a return value, putting it on the stack with its call location. Cannot returns function values, though. */
-#define TCALLR(VAR, FUNC_NAME, FUNC_ARGS) \
-    (VAR) = (FUNC_NAME)FUNC_ARGS;
+/* Calls the given function without a return value, putting it on the stack with its call location. Also pops it off when done. */
+#define TCALL(CALL) \
+    (CALL)
+/* Calls the given function WITH a return value, putting it on the stack with its call location. Also pops it off when done. */
+#define TCALLR(CALL) \
+    (CALL)
 
 #endif
 

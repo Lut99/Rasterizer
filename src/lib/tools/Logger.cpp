@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:06
  * Last edited:
- *   17/08/2021, 16:13:33
+ *   23/08/2021, 14:51:41
  * Auto updated?
  *   Yes
  *
@@ -30,29 +30,54 @@ Logger::Fatal::Fatal(const std::string& message) :
 
 
 /***** LOGGER CLASS *****/
-/* Constructor for the Logger class, which takes an output stream to write its non-messages to, an output stream to write error messages to and a verbosity level. */
-Logger::Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity) :
+/* Constructor for the Logger class, which takes an output stream to write its non-messages to, an output stream to write error messages to and a verbosity level. Optionally takes a default channel name. */
+Logger::Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity, const std::string& channel) :
     stdos(stdos),
     erros(erros),
-    verbosity(verbosity)
+    verbosity(verbosity),
+    channel(channel)
 {}
 
+/* Constructor for the Logger class, which takes its setup data as an InitData struct. Optionally takes a default channel name. */
+Logger::Logger(const InitData& init_data, const std::string& channel) :
+    stdos(init_data.stdos),
+    erros(init_data.erros),
+    verbosity(init_data.verbosity),
+    channel(channel)
+{}
+
+/* Copy constructor for the Logger class. */
+Logger::Logger(const Logger& other) :
+    stdos(other.stdos),
+    erros(other.erros),
+
+    verbosity(other.verbosity),
+    channel(other.channel)
+{}
+
+/* Move constructor for the Logger class. */
+Logger::Logger(Logger&& other) :
+    stdos(std::move(other.stdos)),
+    erros(std::move(other.erros)),
+
+    verbosity(std::move(other.verbosity)),
+    channel(std::move(other.channel))
+{}
+
+/* Destructor for the Logger class. */
+Logger::~Logger() {}
 
 
-/* Defines a thread-channel mapping for the given thread. Allows log, warning, error and fatal to be called without channel parameter. Set to an empty string to remove the channel again. */
-void Logger::set_thread_channel(const std::thread::id& tid, const std::string& channel) {
-    // If the channel is empty, remove the map instead
-    if (channel.empty()) {
-        std::unordered_map<std::thread::id, std::string>::iterator iter = this->thread_channel_map.find(tid);
-        if (iter != this->thread_channel_map.end()) {
-            this->thread_channel_map.erase(iter);
-        }
-        return;
-    }
 
-    // Either create or update the value by calling operator[] in our map
-    this->thread_channel_map[tid] = channel;
+/* Swap operator for the Logger class. */
+void Tools::swap(Logger& l1, Logger& l2) {
+    using std::swap;
 
-    // DOne
-    return;
+    #ifndef NDEBUG
+    if (&l1.stdos != &l2.stdos) { throw std::runtime_error("Cannot swap loggers with different output streams."); }
+    if (&l1.erros != &l2.erros) { throw std::runtime_error("Cannot swap loggers with different error streams."); }
+    #endif
+
+    swap(l1.verbosity, l2.verbosity);
+    swap(l1.channel, l2.channel);
 }

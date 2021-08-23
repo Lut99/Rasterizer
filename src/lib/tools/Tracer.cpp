@@ -46,7 +46,7 @@ Tracer Tools::tracer;
 /* Returns whether or not the associated terminal supports ANSI color codes. */
 static bool terminal_supports_colours() {
     // First, check if the stderr is a terminal at all
-    if (!isatty(fileno(stderr))) { return false; }
+    if (!_isatty(_fileno(stderr))) { return false; }
 
     #ifdef _WIN32
     // For Windows, we check
@@ -65,7 +65,6 @@ static size_t terminal_width() {
     #ifdef _WIN32
     /* Code from: https://stackoverflow.com/a/23370070/5270125. */
     CONSOLE_SCREEN_BUFFER_INFO csbi;
-    int columns;
     GetConsoleScreenBufferInfo(GetStdHandle(STD_ERROR_HANDLE), &csbi);
     return csbi.srWindow.Right - csbi.srWindow.Left + 1;
 
@@ -174,7 +173,7 @@ void Tracer::pop_frame() {
 /* Prints the given text as fatal error to the given stream, printing all traces. */
 void Tracer::throw_error(const char* message) const {
     // Define the terminal width
-    size_t termw = isatty(fileno(stderr)) ? terminal_width() : std::numeric_limits<size_t>::max();
+    size_t termw = _isatty(_fileno(stderr)) ? terminal_width() : std::numeric_limits<size_t>::max();
 
     // Print the main message first
     size_t x = 0;
@@ -190,12 +189,12 @@ void Tracer::throw_error(const char* message) const {
         std::stringstream sstr;
         std::string prefix = std::string(Tracer::prefix_width, ' ');
         cerr << prefix << this->sbold << "Stacktrace:" << this->sreset << std::endl;
-        for (size_t i = 0; i < (*iter).second.size(); i++) {
+        for (size_t i = (*iter).second.size(); i-- > 0 ;) {
             // Get the frame
             const Frame& f = (*iter).second[i];
 
             // Construct the string to print
-            sstr << prefix << (i == 0 ? "in" : "from") << " function '" << this->sbold << f.name << this->sreset << '\'';
+            sstr << prefix << (i == (*iter).second.size() - 1 ? "in" : "from") << " function '" << this->sbold << f.name << this->sreset << '\'';
             if (f.line != std::numeric_limits<size_t>::max()) {
                 sstr << ", called from " << this->sbold << f.file << ':' << f.line << this->sreset;
             } else {
@@ -205,14 +204,15 @@ void Tracer::throw_error(const char* message) const {
             // Print the string to print
             x = 0;
             print_linewrapped(cerr, x, width, sstr.str());
+            cerr << std::endl;
 
             // Reset the stringstream
             sstr.str("");
         }
-        sstr << prefix << "from thread" << this->sbold << this_thread::get_id() << this->sreset;
+        sstr << prefix << "from thread " << this->sbold << this_thread::get_id() << this->sreset;
         std::unordered_map<thread::id, const char*>::const_iterator name_iter = this->thread_names.find(this_thread::get_id());
         if (name_iter != this->thread_names.end()) {
-            sstr << '(' << this->sbold << ')';
+            sstr << " (" << this->sbold << (*name_iter).second << this->sreset << ')';
         }
         x = 0;
         print_linewrapped(cerr, x, width, sstr.str());
