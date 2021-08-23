@@ -60,45 +60,32 @@ struct Options {
 /***** HELPER FUNCTIONS *****/
 /* Returns a Tools::Array with the required extensions for GLFW. */
 static Tools::Array<const char*> get_glfw_extensions() {
-    DENTER("get_glfw_extensions");
-
     // We first collect a list of GLFW extensions
     uint32_t n_extensions = 0;
-    const char** raw_extensions = glfwGetRequiredInstanceExtensions(&n_extensions);
+    const char** raw_extensions = TCALLR(glfwGetRequiredInstanceExtensions(&n_extensions));
 
     // Return them as an array
-    DRETURN Tools::Array<const char*>(raw_extensions, n_extensions);
+    return Tools::Array<const char*>(raw_extensions, n_extensions);
 }
 
 /* Prints the usage string. */
 static void print_usage(std::ostream& os, const std::string& filename) {
-    DENTER("print_usage");
-
     os << "Usage: " << filename << " [options]" << endl;
-
-    DRETURN;
 }
 
 /* Prints the help string. */
 static void print_help(std::ostream& os, const std::string& filename) {
-    DENTER("print_help");
-
-    print_usage(os, filename);
+    TCALL(print_usage(os, filename));
 
     os << endl;
     os << "Options:" << endl;
     os << "     --local <bytes> : The number of bytes we reserve in local device memory." << endl;
     os << "     --visible <bytes> : The number of bytes we reserve in host visible device memory." << endl;
     os << endl;
-
-    // Done
-    DRETURN;
 }
 
 /* Parses the given arguments, populating the given Settings struct. */
 static void parse_args(Options& opts, int argc, const char** argv) {
-    DENTER("parse_args");
-
     // Start parsin'
     bool accept_options = true;
     for (int i = 1; i < argc; i++) {
@@ -169,7 +156,7 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                     
                 } else if (option == "help") {
                     // Print the help string!
-                    print_help(cout, argv[0]);
+                    TCALL(print_help(cout, argv[0]));
                     exit(EXIT_SUCCESS);
 
                 } else {
@@ -184,7 +171,7 @@ static void parse_args(Options& opts, int argc, const char** argv) {
                 switch(arg[2]) {
                     case 'h':
                         // Print the help string!
-                        print_help(cout, argv[0]);
+                        TCALL(print_help(cout, argv[0]));
                         exit(EXIT_SUCCESS);
                     
                     default:
@@ -200,9 +187,6 @@ static void parse_args(Options& opts, int argc, const char** argv) {
 
         }
     }
-
-    // Done
-    DRETURN;
 }
 
 
