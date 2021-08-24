@@ -14,9 +14,9 @@
 **/
 
 #include <limits>
-#include "Common.hpp"
-#include "CppDebugger.hpp"
 
+#include "Logger.hpp"
+#include "Common.hpp"
 #include "Freelist.hpp"
 
 using namespace std;
@@ -29,8 +29,6 @@ Freelist::Freelist(freelist_size_t target_size) :
     current_size(0),
     max_size(target_size)
 {
-    
-
     // Add the free block for the entire list
     this->blocks.push_back(MemoryBlock({ false, 0, this->max_size }));
 }
@@ -39,8 +37,6 @@ Freelist::Freelist(freelist_size_t target_size) :
 
 /* Reserves a bit of space in the freelist. If no such space is available, returns an offset of std::numeric_limits<freelist_size_t>::max(). If an offset of std::numeric_limits<freelist_size_t>::max() - 1 is returned, then there is enough space in the freelist but not continously. Note that the size may slightly differ due to the offset; use Freelist::align_size() to get the proper one. */
 freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
-    
-
     // If the size is too much by definition, return the other error code
     if (size > this->max_size - this->current_size) {
         return std::numeric_limits<freelist_size_t>::max();
@@ -81,14 +77,12 @@ freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
 
 /* Releases memory at the given location. Throws errors if that memory is not in use. */
 void Freelist::release(freelist_size_t offset) {
-    
-
     // Find the block where the offset belongs in
     for (array_size_t i = 0; i < this->blocks.size(); i++) {
         if (offset >= this->blocks[i].offset && offset <= this->blocks[i].offset + this->blocks[i].size) {
             // If it's a free block, fail
             freelist_size_t block_size = this->blocks[i].size;
-            if (!this->blocks[i].used) { DLOG(fatal, "Cannot free block with offset " + std::to_string(offset) + " as it's already a free block (" + bytes_to_string(block_size) + ", starting at " + std::to_string(this->blocks[i].offset) + ")"); }
+            if (!this->blocks[i].used) { logger.fatalc(Freelist::channel, "Cannot free block with offset ", offset, " as it's already a free block (", bytes_to_string(block_size), ", starting at ", this->blocks[i].offset, ")"); }
 
             // Otherwise, match on the applicable condition of the block's neighbour
             if (this->blocks.size() == 1) {
@@ -127,24 +121,19 @@ void Freelist::release(freelist_size_t offset) {
     }
 
     // If we reached here, the offset is out of bounds
-    DLOG(fatal, "Offset " + std::to_string(offset) + " is out of bounds for freelist of " + std::to_string(this->max_size) + " elements.");
+    logger.fatalc(Freelist::channel, "Offset ", offset, " is out of bounds for freelist of ", this->max_size, " elements.");
 }
 
 
 
 /* Clears the freelist, resetting it to empty. */
 void Freelist::clear() {
-    
-
     // Clear the list
     this->blocks.clear();
     this->blocks.push_back(MemoryBlock({ false, 0, this->max_size }));
 
     // Also reset the used size
     this->current_size = 0;
-
-    // Done
-    return;
 }
 
 

@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 14:39:16
  * Last edited:
- *   16/08/2021, 17:57:45
+ *   24/08/2021, 22:31:36
  * Auto updated?
  *   Yes
  *
@@ -32,6 +32,9 @@ namespace Rasterizer::Rendering {
     /* The DescriptorPool class, which is used to generate and manage descriptor(sets) for describing buffers. */
     class DescriptorPool {
     public:
+        /* Channel name for the DescriptorPool class. */
+        static constexpr const char* channel = "DescriptorPool";
+
         /* Constant reference to the GPU we allocate this pool on. */
         const Rendering::GPU& gpu;
 

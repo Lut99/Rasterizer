@@ -16,6 +16,7 @@
 #include <chrono>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <iostream>
 #include <GLFW/glfw3.h>
 
 #include "tools/Logger.hpp"
@@ -193,29 +194,29 @@ static void parse_args(Options& opts, int argc, const char** argv) {
 
 /***** ENTRY POINT *****/
 int main(int argc, const char** argv) {
-    // Declare the logger
-    Tools::Logger logger(cout, cerr, Verbosity::debug, "main");
-
     try {
         // Parse the arguments
         Options opts;
         parse_args(opts, argc, argv);
+        
+        // Update the logger with the correct verbosity
+        logger.set_verbosity(Verbosity::debug);
 
         // Indicate that we're starting
-        logger.log(Verbosity::important, "Initializing Rasterizer...");
+        logger.logc(Verbosity::important, "main", "Initializing Rasterizer...");
 
         // Initialize the GLFW library
-        logger.log(Verbosity::important, "Initializing GLFW...");
+        logger.logc(Verbosity::important, "main", "Initializing GLFW...");
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         // Prepare the Vulkan instance first
-        Rendering::Instance instance(logger, Rendering::instance_extensions + get_glfw_extensions());
+        Rendering::Instance instance(Rendering::instance_extensions + get_glfw_extensions());
 
         // Use that to prepare the Window class
         uint32_t width = 800, height = 600;
-        Window window(logger, instance, "Rasterizer", width, height);
+        Window window(instance, "Rasterizer", width, height);
         // Prepare the memory manager
         Rendering::MemoryManager memory_manager(window.gpu(), opts.local_memory_size, opts.visible_memory_size);
         // Initialize the WorldSystem
@@ -259,7 +260,7 @@ int main(int argc, const char** argv) {
 
         // Do the render
         uint32_t fps = 0;
-        logger.log(Verbosity::important, "Done initializing, entering game loop...");
+        logger.log(Verbosity::important, "main", "Done initializing, entering game loop...");
         chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
         bool busy = true;
         uint32_t count = 0;
@@ -309,7 +310,7 @@ int main(int argc, const char** argv) {
         }
 
         // Wait for the GPU to be idle before we stop
-        logger.log(Verbosity::important, "Cleaning up...");
+        logger.log(Verbosity::important, "main", "Cleaning up...");
         window.gpu().wait_for_idle();
 
         // We're done

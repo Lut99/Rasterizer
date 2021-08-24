@@ -27,8 +27,6 @@ namespace Rasterizer::Models {
     /* Deletes symbols from the top of the stack until (and including) the given iterator. Also safely deletes the pointers themselves. */
     template <class T>
     void remove_stack_bottom(Tools::LinkedArray<T*>& symbol_stack, typename Tools::LinkedArray<T*>::iterator& iter) {
-        
-
         // First, delete the tokens
         for (Tools::LinkedArray<Terminal*>::iterator i = symbol_stack.begin(); i != iter; ++i) {
             delete *i;

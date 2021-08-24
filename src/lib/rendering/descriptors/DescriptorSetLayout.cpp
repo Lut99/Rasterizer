@@ -13,6 +13,7 @@
  *   a single type of buffer.
 **/
 
+#include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "DescriptorSetLayout.hpp"
@@ -25,8 +26,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates given VkDescriptorSetLayoutBinding struct. */
 static void populate_descriptor_set_binding(VkDescriptorSetLayoutBinding& descriptor_set_binding, uint32_t bind_index, VkDescriptorType descriptor_type, uint32_t n_descriptors, VkShaderStageFlags shader_stage) {
-    
-
     // Set to default
     descriptor_set_binding = {};
 
@@ -44,15 +43,10 @@ static void populate_descriptor_set_binding(VkDescriptorSetLayoutBinding& descri
     
     // For now, we won't use the next field, as this is for multi-sampling and we don't use that yet
     descriptor_set_binding.pImmutableSamplers = nullptr;
-
-    // Done
-    return;
 }
 
 /* Populates a given VkDescriptorSetLayoutCreateInfo struct. */
 static void populate_descriptor_set_layout_info(VkDescriptorSetLayoutCreateInfo& descriptor_set_layout_info, const Tools::Array<VkDescriptorSetLayoutBinding>& vk_bindings) {
-    
-
     // Initialize to default
     descriptor_set_layout_info = {};
     descriptor_set_layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -60,9 +54,6 @@ static void populate_descriptor_set_layout_info(VkDescriptorSetLayoutCreateInfo&
     // Set the bindings to use
     descriptor_set_layout_info.bindingCount = static_cast<uint32_t>(vk_bindings.size());
     descriptor_set_layout_info.pBindings = vk_bindings.rdata();
-
-    // Done!
-    return;
 }
 
 
@@ -82,8 +73,6 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayout& other) :
     vk_descriptor_set_layout(other.vk_descriptor_set_layout),
     vk_bindings(other.vk_bindings)
 {
-    
-
     // If the descriptor set layout is not a nullptr, re-create it manually
     if (this->vk_descriptor_set_layout != nullptr) {
         this->vk_descriptor_set_layout = nullptr;
@@ -103,8 +92,6 @@ DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) :
 
 /* Destructor for the DescriptorSetLayout class. */
 DescriptorSetLayout::~DescriptorSetLayout() {
-    
-
     if (this->vk_descriptor_set_layout != nullptr) {
         vkDestroyDescriptorSetLayout(this->gpu, this->vk_descriptor_set_layout, nullptr);
     }
@@ -114,11 +101,9 @@ DescriptorSetLayout::~DescriptorSetLayout() {
 
 /* Adds a binding to the DescriptorSetLayout; i.e., one type of resource that a single descriptorset will bind. Returns the binding index of this binding. */
 uint32_t DescriptorSetLayout::add_binding(VkDescriptorType vk_descriptor_type, uint32_t n_descriptors, VkShaderStageFlags vk_shader_stage) {
-    
-
     // If the layout has already been created, then crash
     if (this->vk_descriptor_set_layout != nullptr) {
-        DLOG(fatal, "Cannot add binding to DescriptorSetLayout after finalize() has been called.");
+        logger.fatalc(DescriptorSetLayout::channel, "Cannot add binding to DescriptorSetLayout after finalize() has been called.");
     }
 
     // Get the binding index for this binding
@@ -137,11 +122,9 @@ uint32_t DescriptorSetLayout::add_binding(VkDescriptorType vk_descriptor_type, u
 
 /* Finalizes the descriptor layout. Note that no more bindings can be added after this point. */
 void DescriptorSetLayout::finalize() {
-    
-
     // If the layout has already been created, then warning that nothing happens
     if (this->vk_descriptor_set_layout != nullptr) {
-        DLOG(warning, "Calling finalize() more than once is useless.");
+        logger.fatalc(DescriptorSetLayout::channel, "Calling finalize() more than once is useless.");
         return;
     }
 
@@ -152,13 +135,10 @@ void DescriptorSetLayout::finalize() {
     // Create the layout
     VkResult vk_result;
     if ((vk_result = vkCreateDescriptorSetLayout(this->gpu, &descriptor_set_layout_info, nullptr, &this->vk_descriptor_set_layout)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create descriptor set layout: " + vk_error_map[vk_result]);
+        logger.fatalc(DescriptorSetLayout::channel, "Could not create descriptor set layout: ", vk_error_map[vk_result]);
     }
 
     // Do not clear the bindings, to keep the class copyable
-
-    // Done!
-    return;
 }
 
 
@@ -171,21 +151,14 @@ DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& other)
 
 /* Swap operator for the DescriptorSetLayout class. */
 void Rendering::swap(DescriptorSetLayout& dsl1, DescriptorSetLayout& dsl2) {
-    
-
-    using std::swap;
-
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (dsl1.gpu != dsl2.gpu) {
-        DLOG(fatal, "Cannot swap descriptor set layouts with different GPUs");
-    }
+    if (dsl1.gpu != dsl2.gpu) { logger.fatalc(DescriptorSetLayout::channel, "Cannot swap descriptor set layouts with different GPUs"); }
     #endif
+
+    using std::swap;
 
     // Swap all fields
     swap(dsl1.vk_descriptor_set_layout, dsl2.vk_descriptor_set_layout);
     swap(dsl1.vk_bindings, dsl2.vk_bindings);
-
-    // Done
-    return;
 }

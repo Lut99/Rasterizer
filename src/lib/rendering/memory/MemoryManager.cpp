@@ -12,6 +12,8 @@
  *   <Todo>
 **/
 
+#include "tools/Logger.hpp"
+
 #include "MemoryManager.hpp"
 
 using namespace std;
@@ -70,8 +72,6 @@ MemoryManager::MemoryManager(MemoryManager&& other) :
 
 /* Destructor for the MemoryManager class. */
 MemoryManager::~MemoryManager() {
-    
-
     if (this->copy_cmd != nullptr) {
         this->mem_cmd_pool.free(this->copy_cmd);
     }
@@ -81,12 +81,8 @@ MemoryManager::~MemoryManager() {
 
 /* Swap operator for the MemoryManager class. */
 void Rendering::swap(MemoryManager& mm1, MemoryManager& mm2) {
-    
-
     #ifndef NDEBUG
-    if (mm1.gpu != mm2.gpu) {
-        DLOG(fatal, "Cannot swap memory managers with different GPUs");
-    }
+    if (mm1.gpu != mm2.gpu) { logger.fatalc(MemoryManager::channel, "Cannot swap memory managers with different GPUs"); }
     #endif
 
     // Swap 'em all
@@ -101,7 +97,4 @@ void Rendering::swap(MemoryManager& mm1, MemoryManager& mm2) {
     swap(mm1.descr_pool, mm2.descr_pool);
 
     swap(mm1.copy_cmd, mm2.copy_cmd);
-
-    // Done
-    return;
 }

@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:06
  * Last edited:
- *   23/08/2021, 14:51:41
+ *   24/08/2021, 21:47:22
  * Auto updated?
  *   Yes
  *
@@ -13,10 +13,20 @@
  *   severity level.
 **/
 
+#include <iostream>
+
 #include "Logger.hpp"
 
 using namespace std;
 using namespace Tools;
+
+
+/***** GLOBALS *****/
+/* Global instance of the Logger everyone uses. */
+Logger logger(std::cout, std::cerr, Verbosity::none);
+
+
+
 
 
 /***** LOGGER::FATAL CLASS *****/
@@ -30,20 +40,11 @@ Logger::Fatal::Fatal(const std::string& message) :
 
 
 /***** LOGGER CLASS *****/
-/* Constructor for the Logger class, which takes an output stream to write its non-messages to, an output stream to write error messages to and a verbosity level. Optionally takes a default channel name. */
-Logger::Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity, const std::string& channel) :
-    stdos(stdos),
-    erros(erros),
-    verbosity(verbosity),
-    channel(channel)
-{}
-
-/* Constructor for the Logger class, which takes its setup data as an InitData struct. Optionally takes a default channel name. */
-Logger::Logger(const InitData& init_data, const std::string& channel) :
-    stdos(init_data.stdos),
-    erros(init_data.erros),
-    verbosity(init_data.verbosity),
-    channel(channel)
+/* Constructor for the Logger class, which takes an output stream to write its non-messages to, an output stream to write error messages to and a verbosity level. */
+Logger::Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity) :
+    stdos(&stdos),
+    erros(&erros),
+    verbosity(verbosity)
 {}
 
 /* Copy constructor for the Logger class. */
@@ -51,8 +52,7 @@ Logger::Logger(const Logger& other) :
     stdos(other.stdos),
     erros(other.erros),
 
-    verbosity(other.verbosity),
-    channel(other.channel)
+    verbosity(other.verbosity)
 {}
 
 /* Move constructor for the Logger class. */
@@ -60,8 +60,7 @@ Logger::Logger(Logger&& other) :
     stdos(std::move(other.stdos)),
     erros(std::move(other.erros)),
 
-    verbosity(std::move(other.verbosity)),
-    channel(std::move(other.channel))
+    verbosity(std::move(other.verbosity))
 {}
 
 /* Destructor for the Logger class. */
@@ -69,15 +68,40 @@ Logger::~Logger() {}
 
 
 
+/* Sets the output stream for this Logger. */
+void Logger::set_output_stream(std::ostream& new_os) {
+    // Get the lock for this Logger
+    std::unique_lock<std::mutex> local_lock(this->lock);
+
+    // Set the output stream
+    this->stdos = &new_os;
+}
+
+/* Sets the error stream for this Logger. */
+void Logger::set_error_stream(std::ostream& new_os) {
+    // Get the lock for this Logger
+    std::unique_lock<std::mutex> local_lock(this->lock);
+
+    // Set the error stream
+    this->erros = &new_os;
+}
+
+/* Sets the internal verbosity to the given value. */
+void Logger::set_verbosity(Verbosity new_value) {
+    // Get the lock for this Logger
+    std::unique_lock<std::mutex> local_lock(this->lock);
+
+    // Set the error stream
+    this->verbosity = new_value;
+}
+
+
+
 /* Swap operator for the Logger class. */
 void Tools::swap(Logger& l1, Logger& l2) {
     using std::swap;
 
-    #ifndef NDEBUG
-    if (&l1.stdos != &l2.stdos) { throw std::runtime_error("Cannot swap loggers with different output streams."); }
-    if (&l1.erros != &l2.erros) { throw std::runtime_error("Cannot swap loggers with different error streams."); }
-    #endif
-
+    swap(l1.stdos, l2.stdos);
+    swap(l1.erros, l2.erros);
     swap(l1.verbosity, l2.verbosity);
-    swap(l1.channel, l2.channel);
 }

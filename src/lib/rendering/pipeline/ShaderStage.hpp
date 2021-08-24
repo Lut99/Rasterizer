@@ -25,6 +25,10 @@
 namespace Rasterizer::Rendering {
     /* The ShaderStage class, which manages memory for a single shader and its affiliated data in the Pipeline. */
     class ShaderStage {
+    public:
+        /* Channel name for the ShaderStage class. */
+        static constexpr const char* channel = "ShaderStage";
+
     private:
         /* The VkPipelineShaderStageCreateInfo that we in effect wrap. */
         VkPipelineShaderStageCreateInfo vk_shader_stage;

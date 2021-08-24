@@ -13,6 +13,7 @@
  *   RenderPass class, since its associated with its attachments.
 **/
 
+#include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Framebuffer.hpp"
@@ -25,8 +26,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkFramebufferCreateInfo struct. */
 static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info, const VkRenderPass& vk_render_pass, const Tools::Array<VkImageView>& attachments, const VkExtent2D& vk_extent) {
-    
-
     // Set to default
     framebuffer_info = {};
     framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -42,9 +41,6 @@ static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info,
     framebuffer_info.width = vk_extent.width;
     framebuffer_info.height = vk_extent.height;
     framebuffer_info.layers = 1;
-
-    // Done
-    return;
 }
 
 
@@ -59,8 +55,6 @@ Framebuffer::Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_rende
     vk_color_view(vk_color_view),
     vk_depth_view(vk_depth_view)
 {
-    
-
     // Populate the create info
     Tools::Array<VkImageView> attachments = { this->vk_color_view, this->vk_depth_view };
     populate_framebuffer_info(this->vk_framebuffer_info, vk_render_pass, attachments, this->vk_extent);
@@ -68,11 +62,8 @@ Framebuffer::Framebuffer(const Rendering::GPU& gpu, const VkRenderPass& vk_rende
     // Use that to create the internal framebuffer
     VkResult vk_result;
     if ((vk_result = vkCreateFramebuffer(this->gpu, &this->vk_framebuffer_info, nullptr, &this->vk_framebuffer)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create framebuffer: " + vk_error_map[vk_result]);
+        logger.fatalc(Framebuffer::channel, "Could not create framebuffer: ", vk_error_map[vk_result]);
     }
-
-    // Done
-    return;
 }
 
 /* Copy constructor for the Framebuffer class. */
@@ -83,15 +74,11 @@ Framebuffer::Framebuffer(const Framebuffer& other) :
     vk_depth_view(other.vk_depth_view),
     vk_framebuffer_info(other.vk_framebuffer_info)
 {
-    
-
     // Re-create the internal framebuffer
     VkResult vk_result;
     if ((vk_result = vkCreateFramebuffer(this->gpu, &this->vk_framebuffer_info, nullptr, &this->vk_framebuffer)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not re-create framebuffer: " + vk_error_map[vk_result]);
+        logger.fatalc(Framebuffer::channel, "Could not re-create framebuffer: ", vk_error_map[vk_result]);
     }
-
-    return;
 }
 
 /* Move constructor for the Framebuffer class. */
@@ -109,26 +96,18 @@ Framebuffer::Framebuffer(Framebuffer&& other) :
 
 /* Destructor for the Framebuffer class. */
 Framebuffer::~Framebuffer() {
-    
-
     if (this->vk_framebuffer != nullptr) {
         vkDestroyFramebuffer(this->gpu, this->vk_framebuffer, nullptr);
     }
-
-    return;
 }
 
 
 
 /* Swap operator for the Framebuffer class. */
 void Rendering::swap(Rendering::Framebuffer& fb1, Rendering::Framebuffer& fb2) {
-    
-
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (fb1.gpu != fb2.gpu) {
-        DLOG(fatal, "Cannot swap framebuffers with different GPUs");
-    }
+    if (fb1.gpu != fb2.gpu) { logger.fatalc(Framebuffer::channel, "Cannot swap framebuffers with different GPUs"); }
     #endif
 
     // Swap EVERYTHING but the GPU
@@ -138,7 +117,4 @@ void Rendering::swap(Rendering::Framebuffer& fb1, Rendering::Framebuffer& fb2) {
     swap(fb1.vk_color_view, fb2.vk_color_view);
     swap(fb1.vk_depth_view, fb2.vk_depth_view);
     swap(fb1.vk_framebuffer_info, fb2.vk_framebuffer_info);
-
-    // Done
-    return;
 }

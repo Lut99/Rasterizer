@@ -41,8 +41,6 @@ static inline glm::vec3 compute_direction_vector(float yaw, float pitch) {
 
 /* Computes the translation matrix for one entity based on the given position, rotation and scale. */
 static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale) {
-    
-
     glm::mat4 result(1.0f);
     result = glm::translate(result, position);
     result = glm::rotate(result, rotation[0], glm::vec3(1.0, 0.0, 0.0));
@@ -56,8 +54,6 @@ static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm
 
 /* Computes the camera matrix given a position, a yaw and pitch (in degrees), a field of view and an aspect ratio. */
 static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, float pitch, float fov, float aspect_ratio) {
-    
-
     // Compute the direction vector from the yaw and the pitch
     glm::vec3 direction = compute_direction_vector(yaw, pitch);
 
@@ -81,7 +77,13 @@ WorldSystem::WorldSystem(float time_ratio) :
 
     last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
-{}
+{
+    logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
+
+    // Nothing as of yet
+
+    logger.logc(Verbosity::important, WorldSystem::channel, "Init success.");
+}
 
 /* Constructor for the WorldSystem, which takes an entity manager and generates an empty world (but with a floor). */
 WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
@@ -90,9 +92,12 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
     last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
 {
-    
+    logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
 
-    DLOG(fatal, "Not yet implemented.");
+    // Nothing as of yet
+    logger.fatalc(WorldSystem::channel, "Second constructor not yet implemented.");
+
+    logger.logc(Verbosity::important, WorldSystem::channel, "Init success.");
 }
 
 /* Constructor for the WorldSystem, which takes an entity manager to spawn entities with an the path to a scene JSON. */
@@ -102,32 +107,28 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manager, const std::string& 
     last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
 {
-    
+    logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
 
-    DLOG(fatal, "Not yet implemented.");
+    // Nothing as of yet
+    logger.fatalc(WorldSystem::channel, "Third constructor not yet implemented.");
+
+    logger.logc(Verbosity::important, WorldSystem::channel, "Init success.");
 }
 
 
 
 /* Sets the movement speeds of a given Controllable. */
 void WorldSystem::set_controllable(ECS::EntityManager& entity_manager, entity_t entity, float movement_speed, float rotation_speed) const {
-    
-
     // Get the controllable component
     Controllable& controllable = entity_manager.get_component<Controllable>(entity);
 
     // Set the properties
     controllable.mov_speed = movement_speed;
-    controllable.rot_speed = rotation_speed;
-
-    // We're done here
-    return;    
+    controllable.rot_speed = rotation_speed;  
 }
 
 /* Sets the position of a camera in the WorldSystem, recomputing the necessary camera matrices in addition to its transform matrices. */
 void WorldSystem::set_cam(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& position, const glm::vec3& rotation, float fov, float aspect_ratio) const {
-    
-
     // Get the entity's transform & camera components
     Transform& transform = entity_manager.get_component<Transform>(entity);
     Camera& camera = entity_manager.get_component<Camera>(entity);
@@ -142,17 +143,12 @@ void WorldSystem::set_cam(ECS::EntityManager& entity_manager, entity_t entity, c
     // Compute the transform translation matrix and the camera matrices
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
     camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
-
-    // Done!
-    return;
 }
 
 
 
 /* Sets an entity's position within the world, at the given location, with the given rotation and given scale. */
 void WorldSystem::set(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& position, const glm::vec3& rotation, const glm::vec3& scale) const {
-    
-
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
 
@@ -163,15 +159,10 @@ void WorldSystem::set(ECS::EntityManager& entity_manager, entity_t entity, const
 
     // Compute the translation matrix
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
-
-    // Done
-    return;
 }
 
 /* Moves given entity to a new position. */
 void WorldSystem::move(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& new_position) const {
-    
-
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
 
@@ -180,15 +171,10 @@ void WorldSystem::move(ECS::EntityManager& entity_manager, entity_t entity, cons
 
     // Compute the translation matrix
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
-
-    // Done
-    return;
 }
 
 /* Rotates given entity to a new angle. */
 void WorldSystem::rotate(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& new_rotation) const {
-    
-
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
 
@@ -197,15 +183,10 @@ void WorldSystem::rotate(ECS::EntityManager& entity_manager, entity_t entity, co
 
     // Compute the translation matrix
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
-
-    // Done
-    return;
 }
 
 /* Re-scales given entity to a new scale. */
 void WorldSystem::scale(ECS::EntityManager& entity_manager, entity_t entity, const glm::vec3& new_scale) const {
-    
-
     // Get the entity's transform
     Transform& transform = entity_manager.get_component<Transform>(entity);
 
@@ -214,17 +195,12 @@ void WorldSystem::scale(ECS::EntityManager& entity_manager, entity_t entity, con
 
     // Compute the translation matrix
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
-
-    // Done
-    return;
 }
 
 
 
 /* Updates all relevant objects, either by physics or by window input. */
 void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& window) {
-    
-
     // Compute the number of seconds passed since last update
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
     float passed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(this->last_update - now).count());

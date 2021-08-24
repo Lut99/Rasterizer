@@ -13,6 +13,7 @@
  *   be used by the pipeline to perform depth testing.
 **/
 
+#include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "DepthStencil.hpp"
@@ -25,8 +26,6 @@ using namespace Rasterizer::Rendering;
 /***** HELPER FUNCTIONS *****/
 /* Finds a suitable format for our depth image. */
 static VkFormat find_depth_format(const Rendering::GPU& gpu) {
-    
-
     // Go through the list of suggested formats
     Tools::Array<VkFormat> candidates = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
     for (uint32_t i = 0; i < candidates.size(); i++) {
@@ -41,7 +40,7 @@ static VkFormat find_depth_format(const Rendering::GPU& gpu) {
     }
 
     // Otherwise, no format we like
-    DLOG(fatal, "Could not find a supported format.");
+    logger.fatalc(DepthStencil::channel, "Could not find a supported format.");
     return VK_FORMAT_MAX_ENUM;
 }
 
@@ -52,8 +51,6 @@ static VkFormat find_depth_format(const Rendering::GPU& gpu) {
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkImageViewCreateInfo struct. */
 static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& vk_image, const VkFormat& vk_format) {
-    
-
     // Set the struct's default values
     view_info = {};
     view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -77,9 +74,6 @@ static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& 
     view_info.subresourceRange.levelCount = 1;
     view_info.subresourceRange.baseArrayLayer = 0;
     view_info.subresourceRange.layerCount = 1;
-
-    // We're done
-    return;
 }
 
 
@@ -92,33 +86,31 @@ DepthStencil::DepthStencil(const Rendering::GPU& gpu, Rendering::MemoryPool& dra
     gpu(gpu),
     draw_pool(draw_pool)
 {
-    
-    DLOG(info, "Initializing depth stencil...");
-    DINDENT;
+    logger.logc(Verbosity::details, DepthStencil::channel, "Initializing...");
 
 
 
     // Allocate the image - both the memory and the Vulkan memory
-    DLOG(info, "Allocating internal image...");
+    logger.logc(Verbosity::details, DepthStencil::channel, "Allocating internal image...");
     this->rendering_image = this->draw_pool.allocate(image_extent, find_depth_format(this->gpu), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
 
     // Initialize the create info for the VkImageView
-    DLOG(info, "Initializing internal image view...");
+    logger.logc(Verbosity::details, DepthStencil::channel, "Initializing internal image view...");
     VkImageViewCreateInfo view_info;
     populate_view_info(view_info, this->rendering_image->image(), this->rendering_image->format());
 
     // Actually create the view info
     VkResult vk_result;
     if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &this->vk_image_view)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create image view: " + vk_error_map[vk_result]);
+        logger.fatalc(DepthStencil::channel, "Could not create image view: ", vk_error_map[vk_result]);
     }
 
 
 
     // Done
-    DDEDENT;
+    logger.logc(Verbosity::details, DepthStencil::channel, "Init success.");
 }
 
 /* Copy constructor for the DepthStencil class. */
@@ -126,14 +118,10 @@ DepthStencil::DepthStencil(const DepthStencil& other) :
     gpu(other.gpu),
     draw_pool(other.draw_pool)
 {
-    
-
-
+    logger.logc(Verbosity::debug, DepthStencil::channel, "Copying...");
 
     // Copy the image object
     this->rendering_image = this->draw_pool.allocate(other.rendering_image);
-
-
 
     // Initialize the create info for the VkImageView
     VkImageViewCreateInfo view_info;
@@ -142,8 +130,11 @@ DepthStencil::DepthStencil(const DepthStencil& other) :
     // Actually create the view info
     VkResult vk_result;
     if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &this->vk_image_view)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create image view: " + vk_error_map[vk_result]);
+        logger.fatalc(DepthStencil::channel, "Could not create image view: " + vk_error_map[vk_result]);
     }
+
+    // Done
+    logger.logc(Verbosity::debug, DepthStencil::channel, "Copy success.");
 }
 
 /* Move constructor for the DepthStencil class. */
@@ -160,7 +151,7 @@ DepthStencil::DepthStencil(DepthStencil&& other) :
 
 /* Destructor for the DepthStencil class. */
 DepthStencil::~DepthStencil() {
-    
+    logger.logc(Verbosity::details, DepthStencil::channel, "Cleaning...");
 
     // Deallocate the image view if we need to
     if (this->vk_image_view != nullptr) {
@@ -170,14 +161,14 @@ DepthStencil::~DepthStencil() {
     if (this->rendering_image != nullptr) {
         this->draw_pool.free(this->rendering_image);
     }
+    
+    logger.logc(Verbosity::details, DepthStencil::channel, "Cleaned.");
 }
 
 
 
 /* Resizes the depth stencil to the given size. */
 void DepthStencil::resize(const VkExtent2D& new_extent) {
-    
-
     // Deallocate the old image view
     vkDestroyImageView(this->gpu, this->vk_image_view, nullptr);
     // Deallocate the old image
@@ -191,27 +182,18 @@ void DepthStencil::resize(const VkExtent2D& new_extent) {
     populate_view_info(view_info, this->rendering_image->image(), this->rendering_image->format());
     VkResult vk_result;
     if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &this->vk_image_view)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not resize image view: " + vk_error_map[vk_result]);
+        logger.fatalc(DepthStencil::channel, "Could not resize image view: ", vk_error_map[vk_result]);
     }
-
-    // Done
-    return;
 }
 
 
 
 /* Swap operator for the DepthStencil class. */
 void Rendering::swap(DepthStencil& ds1, DepthStencil& ds2) {
-    
-
     #ifndef NDEBUG
     // Make sure the GPU and the pool match
-    if (ds1.gpu != ds2.gpu) {
-        DLOG(fatal, "Cannot swap depth stencils with different GPUs.");
-    }
-    if (&ds1.draw_pool != &ds2.draw_pool) {
-        DLOG(fatal, "Cannot swap depth stencils with different draw pools.");
-    }
+    if (ds1.gpu != ds2.gpu) { logger.fatalc(DepthStencil::channel, "Cannot swap depth stencils with different GPUs."); }
+    if (&ds1.draw_pool != &ds2.draw_pool) { logger.fatalc(DepthStencil::channel, "Cannot swap depth stencils with different draw pools."); }
     #endif
 
     // Swap all fields
@@ -219,8 +201,5 @@ void Rendering::swap(DepthStencil& ds1, DepthStencil& ds2) {
 
     swap(ds1.rendering_image, ds2.rendering_image);
     swap(ds1.vk_image_view, ds2.vk_image_view);
-
-    // Done
-    return;
 }
 

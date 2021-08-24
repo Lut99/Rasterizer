@@ -29,6 +29,10 @@
 namespace Rasterizer::World {
     /* The WorldSystem class, which is in charge of placing objects in a scene and letting them do non-physics animations and junk. */
     class WorldSystem {
+    public:
+        /* Channel name for the WorldSystem class. */
+        static constexpr const char* channel = "WorldSystem";
+
     private:
         /* The update speed of the world system, i.e., how many faster or slower time should run in the simulation. */
         float time_ratio;

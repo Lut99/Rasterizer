@@ -13,6 +13,8 @@
  *   MemoryPool.
 **/
 
+#include "tools/Logger.hpp"
+
 #include "MemoryPool.hpp"
 #include "Image.hpp"
 
@@ -24,8 +26,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkImageMemoryBarrier struct. */
 static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage vk_image, VkImageLayout old_layout, VkImageLayout new_layout) {
-    
-
     // Initialize to default first
     image_barrier = {};
     image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -49,9 +49,6 @@ static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage 
     // Define what operations to wait for before the pipeline can continue
     image_barrier.srcAccessMask = 0; /* TODO */
     image_barrier.dstAccessMask = 0; /* TODO */
-
-    // Done
-    return;
 }
 
 
@@ -77,8 +74,6 @@ Image::~Image() {}
 
 /* Schedules a layout transition on the given command buffer using a pipeline barrier. The layout is updated immediately internally. */
 void Image::schedule_transition(const Rendering::CommandBuffer* command_buffer, VkImageLayout new_layout) {
-    
-
     // Prepare the image barrier
     VkImageMemoryBarrier image_barrier;
     populate_image_barrier(image_barrier, this->vk_image, this->vk_layout, new_layout);
@@ -100,5 +95,4 @@ void Image::schedule_transition(const Rendering::CommandBuffer* command_buffer, 
 
     // Update the internal layout, then done
     this->vk_layout = new_layout;
-    return;
 }

@@ -30,6 +30,8 @@ namespace Rasterizer::ECS {
     /* The EntityManager class, which allows the user to spawn and manage entities. Also manages their models and textures using a ModelManager and TextureManager, respectively. */
     class EntityManager {
     public:
+        /* The channel name used for the Logger. */
+        static constexpr const char* channel = "EntityManager";
         /* The maximum number of entities supported by the EntityManager. */
         static constexpr const entity_t max_entities = 1024;
         /* The maximum number of components supported by the EntityManager. */

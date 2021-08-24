@@ -25,6 +25,10 @@
 namespace Rasterizer::Models::Obj {
     /* The Tokenizer for .obj model files. */
     class Tokenizer {
+    public:
+        /* Channel name for the Tokenizer class. */
+        static constexpr const char* channel = "ObjTokenizer";
+
     private:
         /* File handle to the inputstream. */
         std::istream* file;
@@ -55,7 +59,7 @@ namespace Rasterizer::Models::Obj {
         /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
         Terminal* get();
         /* Puts a token back on the internal list of tokens, so it can be returned next get call. Note that the Tokenizer will deallocate these if it gets deallocated. */
-        void unget(Terminal* term);
+        inline void unget(Terminal* term) { this->terminal_buffer.push_back(term); }
         /* Returns whether or not the Tokenizer is done parsing. */
         inline bool eof() const { return this->file->eof(); }
 

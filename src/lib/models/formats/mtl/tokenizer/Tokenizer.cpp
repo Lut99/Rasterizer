@@ -23,6 +23,7 @@
 
 
 /***** INCLUDES *****/
+#include <iostream>
 #include <fstream>
 #include <sstream>
 #include "../../auxillary/TokenizerTools.hpp"
@@ -58,7 +59,7 @@ Tokenizer::Tokenizer(const std::string& path) :
         #else
         std::string err = strerror(errno);
         #endif
-        DLOG(fatal, "Could not open file handle: " + err)
+        logger.fatalc(Tokenizer::channel, "Could not open file handle: ", err);
     }
     this->file = static_cast<std::istream*>(is);
 
@@ -88,8 +89,6 @@ Tokenizer::Tokenizer(Tokenizer&& other) :
 
 /* Destructor for the Tokenizer class. */
 Tokenizer::~Tokenizer() {
-    
-
     for (uint32_t i = 0; i < this->terminal_buffer.size(); i++) {
         delete this->terminal_buffer[i];
     }
@@ -102,8 +101,6 @@ Tokenizer::~Tokenizer() {
 
 /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
 Terminal* Tokenizer::get() {
-    
-
     // If there's something in the buffer, pop that off first
     if (this->terminal_buffer.size() > 0) {
         Terminal* result = this->terminal_buffer.last();
@@ -701,7 +698,7 @@ unknown_token: {
 
 
     // We should never get here
-    DLOG(fatal, "Hole in jump logic encountered; reached point we should never reach");
+    logger.fatalc(channel, "Hole in jump logic encountered; reached point we should never reach");
     return nullptr;
 }
 

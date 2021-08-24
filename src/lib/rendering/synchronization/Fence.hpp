@@ -23,6 +23,9 @@ namespace Rasterizer::Rendering {
     /* The Fence class, which wraps a VkFence object and manages its memory. */
     class Fence {
     public:
+        /* Channel name for the Fence class. */
+        static constexpr const char* channel = "Fence";
+
         /* The GPU where the semaphore lives. */
         const Rendering::GPU& gpu;
 

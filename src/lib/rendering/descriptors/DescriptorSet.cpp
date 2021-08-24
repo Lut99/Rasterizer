@@ -26,8 +26,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkDescriptorBufferInfo struct. */
 static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buffer* buffer) {
-    
-
     // Set to default
     buffer_info = {};
     
@@ -35,15 +33,10 @@ static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buff
     buffer_info.buffer = buffer->buffer();
     buffer_info.offset = 0; // Note that this offset is (probably) relative to the buffer itself, not the vk_memory object it was allocated with
     buffer_info.range = buffer->size();
-
-    // Done
-    return;
 }
 
 /* Populates a given VkDescriptorImageInfo struct. */
 static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImageView& image_view) {
-    
-
     // Set to default
     image_info = {};
     
@@ -51,15 +44,10 @@ static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImage
     image_info.imageView = image_view;
     image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
     image_info.sampler = nullptr;
-
-    // DOne
-    return;
 }
 
 /* Populates a given VkWriteDescriptorSet struct to write a buffer. */
 static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSet vk_descriptor_set, VkDescriptorType vk_descriptor_type, uint32_t bind_index, const Tools::Array<VkDescriptorBufferInfo>& buffer_infos) {
-    
-
     // Set to default
     write_info = {};
     write_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -81,15 +69,10 @@ static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSe
     write_info.pBufferInfo = buffer_infos.rdata();
     write_info.pImageInfo = nullptr;
     write_info.pTexelBufferView = nullptr;
-
-    // Done
-    return;
 }
 
 /* Populates a given VkWriteDescriptorSet struct to write an image. */
 static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSet vk_descriptor_set, VkDescriptorType vk_descriptor_type, uint32_t bind_index, const Tools::Array<VkDescriptorImageInfo>& image_infos) {
-    
-
     // Set to default
     write_info = {};
     write_info.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -111,9 +94,6 @@ static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSe
     write_info.pBufferInfo = nullptr;
     write_info.pImageInfo = image_infos.rdata();
     write_info.pTexelBufferView = nullptr;
-
-    // Done
-    return;
 }
 
 
@@ -134,8 +114,6 @@ DescriptorSet::~DescriptorSet() {}
 
 /* Binds this descriptor set with the contents of a given buffer to the given bind index. Must be enough buffers to actually populate all bindings of the given type. */
 void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<Buffer*>& buffers) const {
-    
-
     // We first create a list of buffer infos
     Tools::Array<VkDescriptorBufferInfo> buffer_infos(buffers.size());
     for (uint32_t i = 0; i < buffers.size(); i++) {
@@ -154,15 +132,10 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 
     // With the write info populated, update this set. Note that this can be used to perform multiple descriptor write & copies simultaneously
     vkUpdateDescriptorSets(gpu, 1, &write_info, 0, nullptr);
-
-    // Done!
-    return;
 }
 
 /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
 void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const {
-    
-
     // We first create a list of buffer infos
     Tools::Array<VkDescriptorImageInfo> image_infos(image_views.size());
     for (uint32_t i = 0; i < image_views.size(); i++) {
@@ -181,18 +154,10 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 
     // With the write info populated, update this set. Note that this can be used to perform multiple descriptor write & copies simultaneously
     vkUpdateDescriptorSets(gpu, 1, &write_info, 0, nullptr);
-
-    // Done!
-    return;
 }
 
 /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
 void DescriptorSet::schedule(const CommandBuffer* buffer, VkPipelineLayout pipeline_layout) const {
-    
-
     // Add the binding
     vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout, 0, 1, &this->vk_descriptor_set, 0, nullptr);
-
-    // Done
-    return;
 }

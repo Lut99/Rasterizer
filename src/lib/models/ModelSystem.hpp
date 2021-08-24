@@ -30,6 +30,9 @@ namespace Rasterizer::Models {
     /* The ModelSystem class, which is in charge of handling all models in the rasterizer. */
     class ModelSystem {
     public:
+        /* Channel name for the ModelSystem class. */
+        static constexpr const char* channel = "ModelSystem";
+
         /* Reference to the memory manager that contains the pools we need. */
         Rendering::MemoryManager& memory_manager;
 

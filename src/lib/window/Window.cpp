@@ -13,6 +13,7 @@
  *   Vulkan instance, gpu, surface and swapchain together in one place.
 **/
 
+#include "tools/Logger.hpp"
 #include "Window.hpp"
 
 using namespace std;
@@ -20,10 +21,9 @@ using namespace Rasterizer;
 
 
 /***** WINDOW CLASS *****/
-/* Constructor for the Window class, which takes the init data for its logger, the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
-Window::Window(const Tools::Logger::InitData& init_data, const Rendering::Instance& instance, const std::string& title, uint32_t width, uint32_t height) :
+/* Constructor for the Window class, which takes the Vulkan instance to create the surface, GPU and swapchain with, the title and the size for the window. */
+Window::Window(const Rendering::Instance& instance, const std::string& title, uint32_t width, uint32_t height) :
     instance(instance),
-    logger(init_data, "Window"),
 
     t(title),
     w(width),
@@ -32,8 +32,9 @@ Window::Window(const Tools::Logger::InitData& init_data, const Rendering::Instan
     should_resize(false),
     should_close(false)
 {
+    logger.logc(Verbosity::important, Window::channel, "Initializing...");
+
     // Get the window
-    this->logger.log(Verbosity::details, "Initializing GLFW window...");
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
 
     // Set the mouse input mode & register the callbacks
@@ -41,15 +42,16 @@ Window::Window(const Tools::Logger::InitData& init_data, const Rendering::Instan
     this->register_callbacks(this->glfw_window);
 
     // Initialize the other classes
-    this->rendering_surface = new Rendering::Surface(this->logger, this->instance, this->glfw_window);
-    this->rendering_gpu = new Rendering::GPU(this->logger, this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
+    this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
+    this->rendering_gpu = new Rendering::GPU(this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
     this->rendering_swapchain = new Rendering::Swapchain(*this->rendering_gpu, this->glfw_window, *this->rendering_surface);
+
+    logger.logc(Verbosity::important, Window::channel, "Init success.");
 }
 
 /* Copy constructor for the Window class, which is deleted. */
 Window::Window(const Window& other) :
     instance(other.instance),
-    logger(other.logger),
 
     t(other.t),
     w(other.w),
@@ -64,7 +66,7 @@ Window::Window(const Window& other) :
     should_resize(other.should_resize),
     should_close(other.should_close)
 {
-    this->logger.log(Verbosity::details, "Starting copy...");
+    logger.logc(Verbosity::debug, Window::channel, "Copying...");
 
     // First, copy the glfw window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
@@ -74,15 +76,16 @@ Window::Window(const Window& other) :
     this->register_callbacks(this->glfw_window);
 
     // Also copy the other classes
-    this->rendering_surface = new Rendering::Surface(this->logger, this->instance, this->glfw_window);
-    this->rendering_gpu = new Rendering::GPU(this->logger, this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
+    this->rendering_surface = new Rendering::Surface(this->instance, this->glfw_window);
+    this->rendering_gpu = new Rendering::GPU(this->instance, *this->rendering_surface, { 1, 1, 1, 1 }, Rendering::device_extensions);
     this->rendering_swapchain = new Rendering::Swapchain(*this->rendering_gpu, this->glfw_window, *this->rendering_surface);
+
+    logger.logc(Verbosity::debug, Window::channel, "Copy success.");
 }
 
 /* Move constructor for the Window class. */
 Window::Window(Window&& other) :
     instance(other.instance),
-    logger(other.logger),
 
     glfw_window(other.glfw_window),
     rendering_surface(other.rendering_surface),
@@ -111,6 +114,8 @@ Window::Window(Window&& other) :
 
 /* Destructor for the Window class. */
 Window::~Window() {
+    logger.logc(Verbosity::important, Window::channel, "Cleaning...");
+
     // Destroy the three vulkan objects if needed
     if (this->rendering_swapchain != nullptr) {
         delete this->rendering_swapchain;
@@ -124,9 +129,11 @@ Window::~Window() {
 
     // Also destroy the window
     if (this->glfw_window != nullptr) {
-        this->logger.log(Verbosity::details, "Destroying GLFW window...");
+        logger.logc(Verbosity::details, Window::channel, "Destroying GLFW window...");
         glfwDestroyWindow(this->glfw_window);
     }
+
+    logger.logc(Verbosity::important, Window::channel, "Cleaned.");
 }
 
 
@@ -204,7 +211,7 @@ void Window::resize() {
     int width = 0, height = 0;
     glfwGetFramebufferSize(this->glfw_window, &width, &height);
     if (width == 0 || height == 0) {
-        this->logger.log(Verbosity::important, "Window minimized");
+        logger.logc(Verbosity::important, Window::channel, "Window minimized");
         while (width == 0 || height == 0) {
             glfwGetFramebufferSize(this->glfw_window, &width, &height);
             // Use the blocking event call to let the thread sleepy sleepy
@@ -229,7 +236,7 @@ void Window::resize(uint32_t new_width, uint32_t new_height) {
     int width = 0, height = 0;
     glfwGetFramebufferSize(this->glfw_window, &width, &height);
     if (width == 0 || height == 0) {
-        this->logger.log(Verbosity::important, "Window minimized");
+        logger.logc(Verbosity::important, Window::channel, "Window minimized");
         while (width == 0 || height == 0) {
             glfwGetFramebufferSize(this->glfw_window, &width, &height);
             // Use the blocking event call to let the thread sleepy sleepy
@@ -264,12 +271,11 @@ bool Window::loop() const {
 /* Swap operator for the Window class. */
 void Rasterizer::swap(Window& w1, Window& w2) {
     #ifndef NDEBUG
-    if (w1.instance != w2.instance) { throw std::runtime_error("Cannot swap windows with different instances."); }
+    if (w1.instance != w2.instance) { logger.fatalc(Window::channel, "Cannot swap windows with different instances."); }
     #endif
 
     // Simply swap everything
     using std::swap;
-    swap(w1.logger, w2.logger);
     swap(w1.glfw_window, w2.glfw_window);
     swap(w1.rendering_surface, w2.rendering_surface);
     swap(w1.rendering_gpu, w2.rendering_gpu);
@@ -288,4 +294,3 @@ void Rasterizer::swap(Window& w1, Window& w2) {
     swap(w1.should_resize, w2.should_resize);
     swap(w1.should_close, w2.should_close);
 }
-

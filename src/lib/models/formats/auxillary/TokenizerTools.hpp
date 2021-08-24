@@ -20,6 +20,8 @@
 #include <cerrno>
 #include <istream>
 #include <string>
+
+#include "tools/Logger.hpp"
 #include "tools/Typenames.hpp"
 
 /* If defined, enables extra debug prints tracing the tokenizer's steps. */
@@ -54,7 +56,7 @@
             char buffer[BUFSIZ]; \
             strerror_s(buffer, errno); \
             std::string err = buffer; \
-            DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
+            logger.fatalc(Tokenizer::channel, "Something went wrong while reading from the stream: ", err); \
         } \
     } \
     ++(COL); \
@@ -69,7 +71,7 @@
             (C) = EOF; \
         } else { \
             std::string err = strerror(errno); \
-            DLOG(CppDebugger::Severity::fatal, "Something went wrong while reading from the stream: " + err); \
+            logger.fatalc(Tokenizer::channel, "Something went wrong while reading from the stream: ", err); \
         } \
     } \
     ++(COL); \

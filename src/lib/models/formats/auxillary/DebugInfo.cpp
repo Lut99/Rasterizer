@@ -21,6 +21,8 @@
 #include <windows.h>
 #endif
 #include <sstream>
+
+#include "tools/Logger.hpp"
 #include "DebugInfo.hpp"
 
 using namespace std;
@@ -46,8 +48,6 @@ static bool terminal_supports_colours() {
 /* Returns a string representing the given number, padded with enough spaces to be at least N character long. */
 template <class T>
 static std::string pad_spaces(T value, size_t N) {
-    
-    
     // Convert to string
     std::string result = std::to_string(value);
     while (result.size() < N) {
@@ -84,8 +84,6 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
 
     raw_lines((uint32_t) (this->line_end - this->line_start + 1))
 {
-    
-
     // First, reset the file to standard position
     long old_cursor = ftell(file);
     fseek(file, 0, SEEK_SET);
@@ -105,7 +103,7 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
             #else
             std::string err = strerror(errno);
             #endif
-            DLOG(fatal, "Something went wrong while reading from the stream: " + err);
+            logger.fatalc(DebugInfo::channel, "Something went wrong while reading from the stream: ", err);
         }
 
         // If it's a newline, move to the next line
@@ -136,7 +134,7 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
     }
 
     // We reached EOF before we read all lines
-    DLOG(warning, "Given lines (from " + std::to_string(this->line_start) + " to " + std::to_string(this->line_end) + ") don't exist in the given file (" + this->filename + ").");
+    logger.warningc(DebugInfo::channel, "Given lines (from ", this->line_start, " to ", this->line_end, ") don't exist in the given file (", this->filename, ").");
     this->raw_lines = Tools::Array<std::string>("", (uint32_t) (this->line_end - this->line_start + 1));
 }
 
@@ -156,8 +154,6 @@ DebugInfo::DebugInfo(const std::string& filename, size_t line1, size_t col1, siz
 
 /* Adds another DebugInfo, and returns a new one that spans from the start of this one to the end of the other one. Note that if the DebugInfo's aren't (line) adjacent, the unknown lines will be interpreted as empty. */
 DebugInfo DebugInfo::operator+(const DebugInfo& other) const {
-    
-
     // If our line start is after the other's line end or there're the same but the columns are swapped, then swap the operation
     if (this->line_start > other.line_end || (this->line_start == this->line_end && other.line_start == other.line_end && this->line_start == other.line_start && this->col_start > other.col_end)) {
         return other + *this;
@@ -184,11 +180,9 @@ DebugInfo DebugInfo::operator+(const DebugInfo& other) const {
 
 /* Adds another DebugInfo to this one s.t. we end at the given DebugInfo's end line and end column. Note that if the DebugInfo's aren't (line) adjacent, the unknown lines will be interpreted as empty. */
 DebugInfo& DebugInfo::operator+=(const DebugInfo& other) {
-    
-
     // If our line start is after the other's line end or there're the same but the columns are swapped, then error since we cannot swap +=
     if (this->line_start > other.line_end || (this->line_start == this->line_end && other.line_start == other.line_end && this->line_start == other.line_start && this->col_start > other.col_end)) {
-        DLOG(fatal, "Cannot add two DebugInfo's where the second is before the first");
+        logger.fatalc(DebugInfo::channel, "Cannot add two DebugInfo's where the second is before the first");
     }
 
     // Start with our raw lines
@@ -219,8 +213,6 @@ DebugInfo& DebugInfo::operator+=(const DebugInfo& other) {
 
 /* Private helper function that does most of the printing. */
 void DebugInfo::_print(std::ostream& os, const std::string& message, const std::string& accent_colour) {
-    
-
     // First, print the error message properly
     bool supports_ansi = terminal_supports_colours();
     if (supports_ansi) {
@@ -272,8 +264,6 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
 
 /* Pretty prints a given note to the CLI using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. */
 void DebugInfo::print_note(std::ostream& os, const std::string& note) {
-    
-
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::note_accent) + "note: \033[0m" + note, DebugInfo::note_accent);
     } else {
@@ -285,8 +275,6 @@ void DebugInfo::print_note(std::ostream& os, const std::string& note) {
 
 /* Pretty prints a given warning message to the CLI using the internal debug information about the symbol. */
 void DebugInfo::print_warning(std::ostream& os, const std::string& warning_message) {
-    
-
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::warning_accent) + "warning: \033[0m" + warning_message, DebugInfo::warning_accent);
     } else {
@@ -298,8 +286,6 @@ void DebugInfo::print_warning(std::ostream& os, const std::string& warning_messa
 
 /* Pretty prints a given error message to the CLI using the internal debug information about the symbol. */
 void DebugInfo::print_error(std::ostream& os, const std::string& error_message) {
-    
-
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::error_accent) + "error: \033[0m" + error_message, DebugInfo::error_accent);
     } else {

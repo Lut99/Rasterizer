@@ -20,7 +20,6 @@
 #include <unordered_map>
 #include <vulkan/vulkan.h>
 
-#include "tools/Logger.hpp"
 #include "tools/Array.hpp"
 
 namespace Rasterizer::Rendering {
@@ -46,13 +45,12 @@ namespace Rasterizer::Rendering {
     /* The DeviceQueueInfo class, which describes the queues that a GPU supports. */
     class QueueInfo {
     public:
+        /* Channel name for the QueueInfo class. */
+        static constexpr const char* channel = "QueueInfo";
         /* Static constant that lists the number of queue families listed in the QueueInfo. */
         static const constexpr uint32_t n_queues = 4;
 
     private:
-        /* Logger for the QueueInfo class. */
-        Tools::Logger logger;
-
         /* Maps the queue families to their respective queue type. */
         std::unordered_map<QueueType, std::pair<int64_t, int64_t>> queue_families;
 
@@ -62,10 +60,10 @@ namespace Rasterizer::Rendering {
         Tools::Array<uint32_t> uqueues_indices;
 
     public:
-        /* "Default" constructor for the QueueInfo class, which initializes the info to nothing supported. Use ::refresh() to populate it normally. */
-        QueueInfo(const Tools::Logger::InitData& init_data);
-        /* Constructor for the QueueInfo class, which takes the initial data for the internal logger, a Vulkan physical device and surface and uses that to set its own properties. */
-        QueueInfo(const Tools::Logger::InitData& init_data, const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface);
+        /* Default constructor for the QueueInfo class, which initializes the info to nothing supported. Use ::refresh() to populate it normally. */
+        QueueInfo();
+        /* Constructor for the QueueInfo class, which takes a Vulkan physical device and surface and uses that to set its own properties. */
+        QueueInfo(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface);
 
         /* Refreshes the QueueInfo, i.e., re-populates its values according to the given device and surface. */
         void refresh(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface);

@@ -22,22 +22,21 @@ using namespace Rasterizer::Rendering;
 
 
 /***** SWAPCHAININFO CLASS *****/
-/* "Default" constructor for the SwapchainInfo class, which initializes this to "nothing supported". */
-SwapchainInfo::SwapchainInfo(const Tools::Logger::InitData& init_data) :
-    logger(init_data, "SwapchainInfo"),
+/* Default constructor for the SwapchainInfo class, which initializes this to "nothing supported". */
+SwapchainInfo::SwapchainInfo() :
     vk_capabilities({})
 {}
 
-/* Constructor for the SwapchainInfo class, which takes init data for its logger, a VkPhysicalDevice and a VkSurfaceKHR to populate itself appropriately. */
-SwapchainInfo::SwapchainInfo(const Tools::Logger::InitData& init_data, VkPhysicalDevice vk_physical_device, VkSurfaceKHR vk_surface) :
-    SwapchainInfo(init_data)
+/* Constructor for the SwapchainInfo class, which takes a VkPhysicalDevice and a VkSurfaceKHR to populate itself appropriately. */
+SwapchainInfo::SwapchainInfo(VkPhysicalDevice vk_physical_device, VkSurfaceKHR vk_surface) :
+    SwapchainInfo()
 {
-    this->logger.log(Verbosity::debug, "Fetching swapchain information...");
+    logger.logc(Verbosity::debug, SwapchainInfo::channel, "Fetching swapchain information...");
 
     // First, getch the capabilities of the device/surface pair
     VkResult vk_result;
     if ((vk_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device, vk_surface, &this->vk_capabilities)) != VK_SUCCESS) {
-        this->logger.fatal("Could not get physical device surface capabilities: " + vk_error_map[vk_result]);
+        logger.fatalc(SwapchainInfo::channel, "Could not get physical device surface capabilities: ", vk_error_map[vk_result]);
     }
 
     // Next, get the list of formats

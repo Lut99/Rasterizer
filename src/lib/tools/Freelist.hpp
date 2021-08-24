@@ -27,6 +27,10 @@ namespace Tools {
 
     /* The FreeList class, which allows one to keep track of free space in a fragmented array of elements. */
     class Freelist {
+    public:
+        /* Channel for the Freelist. */
+        static constexpr const char* channel = "Freelist";
+
     private:
         /* Small struct that describes a block of data. */
         struct MemoryBlock {

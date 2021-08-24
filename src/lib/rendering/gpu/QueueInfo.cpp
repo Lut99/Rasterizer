@@ -21,9 +21,8 @@ using namespace Rasterizer::Rendering;
 
 
 /***** QUEUEINFO CLASS *****/
-/* "Default" constructor for the QueueInfo class, which initializes the info to nothing supported. Use ::refresh() to populate it normally. */
-QueueInfo::QueueInfo(const Tools::Logger::InitData& init_data) :
-    logger(init_data, "QueueInfo"),
+/* Default constructor for the QueueInfo class, which initializes the info to nothing supported. Use ::refresh() to populate it normally. */
+QueueInfo::QueueInfo() :
     queue_families({
         { QueueType::graphics, std::make_pair(-1, -1) },
         { QueueType::compute, std::make_pair(-1, -1) },
@@ -32,13 +31,11 @@ QueueInfo::QueueInfo(const Tools::Logger::InitData& init_data) :
     })
 {}
 
-/* Constructor for the QueueInfo class, which takes the initial data for the internal logger, a Vulkan physical device and surface and uses that to set its own properties. */
-QueueInfo::QueueInfo(const Tools::Logger::InitData& init_data, const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface) :
+/* Constructor for the QueueInfo class, which takes a Vulkan physical device and surface and uses that to set its own properties. */
+QueueInfo::QueueInfo(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface) :
     // Initialize the queue info to nothing being supported
-    QueueInfo(init_data)
+    QueueInfo()
 {
-    
-
     // Simply call refresh()
     this->refresh(vk_physical_device, vk_surface);
 }
@@ -47,7 +44,7 @@ QueueInfo::QueueInfo(const Tools::Logger::InitData& init_data, const VkPhysicalD
 
 /* Refreshes the QueueInfo, i.e., re-populates its values according to the given device and surface. */
 void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurfaceKHR& vk_surface) {
-    this->logger.log(Verbosity::details, "Refreshing QueueInfo...");
+    logger.logc(Verbosity::details, QueueInfo::channel, "Refreshing QueueInfo...");
 
     // First, get a list of all the queues supported by the GPU
     uint32_t n_supported_queues;
@@ -121,6 +118,6 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
 
     // We're done refreshing!
     for (const std::pair<QueueType, std::pair<int64_t, int64_t>>& p : this->queue_families) {
-        this->logger.log(Verbosity::details, queue_type_names[(int) p.first], " queue family has index ", p.second.first);
+        logger.logc(Verbosity::details, QueueInfo::channel, queue_type_names[(int) p.first], " queue family has index ", p.second.first);
     }
 }

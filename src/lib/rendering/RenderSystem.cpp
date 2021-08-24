@@ -39,8 +39,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSubmitInfo struct. */
 static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer* cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
-    
-
     // Set to default
     submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -57,15 +55,10 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer*
     // Attach the semaphores which we signal when done
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = &signal_after_semaphore.semaphore();
-
-    // Done
-    return;
 }
 
 /* Populates the given VkPresentInfo struct. */
 static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchain& swapchain, const uint32_t& swapchain_index, const Semaphore& wait_for_semaphore) {
-    
-
     // Set to default
     present_info = {};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -81,9 +74,6 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
     // Also set the results validation handlers to not needed, since we only have one swapchain
     present_info.pResults = nullptr;
-
-    // Done
-    return;
 }
 
 
@@ -115,8 +105,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     current_frame(0)
 {
-    
-
     // Initialize the render pass
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     uint32_t dep_index = this->render_pass.add_attachment(this->depth_stencil.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -143,7 +131,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     pipeline.finalize(this->render_pass, 0);
 
     // Done initializing
-    DLOG(info, "Intialized the RenderSystem.");
+    logger.logc(Verbosity::important, RenderSystem::channel, "Init success.");
 }
 
 /* Copy constructor for the RenderSystem class. */
@@ -170,9 +158,11 @@ RenderSystem::RenderSystem(const RenderSystem& other) :
 
     current_frame(other.current_frame)
 {
-    
+    logger.logc(Verbosity::debug, RenderSystem::channel, "Copying...");
 
     // Nothing as of yet
+
+    logger.logc(Verbosity::debug, RenderSystem::channel, "Copy success.");
 }
 
 /* Move constructor for the RenderSystem class. */
@@ -202,17 +192,17 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
 
 /* Destructor for the RenderSystem class. */
 RenderSystem::~RenderSystem() {
-    
+    logger.logc(Verbosity::important, RenderSystem::channel, "Cleaning...");
 
     // Nothing as of yet
+
+    logger.logc(Verbosity::important, RenderSystem::channel, "Cleaned.");
 }
 
 
 
 /* Private helper function that resizes all required structures for a new window size. */
 void RenderSystem::_resize() {
-    
-
     // First, wait until the device is idle
     this->window.gpu().wait_for_idle();
 
@@ -228,17 +218,12 @@ void RenderSystem::_resize() {
     for (uint32_t i = 0; i < this->window.swapchain().size(); i++) {
         this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass, this->depth_stencil));
     }
-
-    // Done
-    return;
 }
 
 
 
 /* Runs a single iteration of the game loop. Returns whether or not the RenderSystem is asked to close the window (false) or not (true). */
 bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
-    
-
     /* PREPARATION */
     // First, do the window
     bool can_continue = this->window.loop();
@@ -259,7 +244,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         // Next, we early quit, to make sure that the proper images are acquired
         return true;
     } else if (vk_result != VK_SUCCESS) {
-        DLOG(fatal, "Could not get image from swapchain: " + vk_error_map[vk_result]);
+        logger.fatalc(RenderSystem::channel, "Could not get image from swapchain: ", vk_error_map[vk_result]);
     }
 
     // If another frame is already using this image, then wait for it to become available
@@ -314,7 +299,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     vkResetFences(this->window.gpu(), 1, &frame_in_flight_fences[this->current_frame].fence());
     Tools::Array<VkQueue> graphics_queues = this->window.gpu().queues(QueueType::graphics);
     if ((vk_result = vkQueueSubmit(graphics_queues[0], 1, &submit_info, this->frame_in_flight_fences[this->current_frame])) != VK_SUCCESS) {
-        DLOG(fatal, "Could not submit to queue: " + vk_error_map[vk_result]);
+        logger.fatalc(RenderSystem::channel, "Could not submit to queue: ", vk_error_map[vk_result]);
     }
 
 
@@ -331,7 +316,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         // The swapchain is outdated or suboptimal (probably a resize); we resize to fit again
         this->_resize();
     } else if (vk_result != VK_SUCCESS) {
-        DLOG(fatal, "Could not present result: " + vk_error_map[vk_result]);
+        logger.fatalc(RenderSystem::channel, "Could not present result: ", vk_error_map[vk_result]);
     }
 
 
@@ -345,18 +330,10 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
 /* Swap operator for the RenderSystem class. */
 void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
-    
-
     #ifndef NDEBUG
-    if (&rs1.window != &rs2.window) {
-        DLOG(fatal, "Cannot swap render systems with different windows");
-    }
-    if (&rs1.memory_manager != &rs2.memory_manager) {
-        DLOG(fatal, "Cannot swap render systems with different memory managers");
-    }
-    if (&rs1.model_system != &rs2.model_system) {
-        DLOG(fatal, "Cannot swap render systems with different model systems");
-    }
+    if (&rs1.window != &rs2.window) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different windows"); }
+    if (&rs1.memory_manager != &rs2.memory_manager) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different memory managers"); }
+    if (&rs1.model_system != &rs2.model_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different model systems"); }
     #endif
 
     // Simply swap everything
@@ -379,7 +356,4 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
     swap(rs1.image_in_flight_fences, rs2.image_in_flight_fences);
 
     swap(rs1.current_frame, rs2.current_frame);
-
-    // Done
-    return;
 }

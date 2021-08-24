@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 15:33:48
  * Last edited:
- *   27/07/2021, 16:25:31
+ *   24/08/2021, 22:38:45
  * Auto updated?
  *   Yes
  *
@@ -25,6 +25,9 @@ namespace Rasterizer::Rendering {
     /* The DescriptorSetLayout class, which describes the layout for a single type of buffer. */
     class DescriptorSetLayout {
     private:
+        /* Channel name for the DescriptorSetLayout class. */
+        static constexpr const char* channel = "DescriptorSetLayout";
+
         /* Constant reference to the device for which we defined this DescriptorSetLayout. */
         const Rendering::GPU& gpu;
 

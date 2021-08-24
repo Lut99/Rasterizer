@@ -198,8 +198,6 @@ const char* Models::readable_char(char c) {
 
 /* Splits a given string in two strings on the first slash it finds. */
 void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2) {
-    
-
     // Loop to find the slash, noting everything in the stringstream
     std::stringstream sstr;
     size_t i = 0;
@@ -222,8 +220,6 @@ void Models::split_string(const std::string& to_split, std::string& part1, std::
 
 /* Splits a given string in three strings on the first and second slash it finds. */
 void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2, std::string& part3) {
-    
-
     // Loop to find the slash, noting everything in the stringstream
     std::stringstream sstr;
     size_t i = 0;

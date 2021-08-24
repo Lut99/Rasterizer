@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   27/07/2021, 16:20:26
+ *   24/08/2021, 23:49:29
  * Auto updated?
  *   Yes
  *
@@ -30,6 +30,9 @@ namespace Rasterizer::Rendering {
     /* The Swapchain class, which wraps and manages the swapchain and all images related to it. */
     class Swapchain {
     public:
+        /* Channel name for the Swapchain class. */
+        static constexpr const char* channel = "Swapchain";
+
         /* Immutable reference to the GPU where we got the swapchain from. */
         const GPU& gpu;
 

@@ -23,6 +23,10 @@
 namespace Rasterizer::Rendering {
     /* The CommandBuffer class, which acts as a reference to an allocated CommandBuffer in the CommandPool. Can thus be comfortably deallocated and then later re-acquired by its matching handle. */
     class CommandBuffer {
+    public:
+        /* Channel name for the CommandBuffer class. */
+        static constexpr const char* channel = "CommandBuffer";
+
     private:
         /* The VkCommandBuffer object that we wrap. */
         VkCommandBuffer vk_command_buffer;

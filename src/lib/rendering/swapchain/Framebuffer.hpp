@@ -25,6 +25,9 @@ namespace Rasterizer::Rendering {
     /* The Framebuffer class, which wraps the VkFramebuffer one. */
     class Framebuffer {
     public:
+        /* Channel name for the Framebuffer class. */
+        static constexpr const char* channel = "Framebuffer";
+
         /* The GPU where the framebuffer lives. */
         const Rendering::GPU& gpu;
     

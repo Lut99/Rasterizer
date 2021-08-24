@@ -22,11 +22,13 @@
 
 
 /***** INCLUDES *****/
+#include <iostream>
 #include <sstream>
 #include <unordered_map>
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/hash.hpp"
 
+#include "tools/Logger.hpp"
 #include "tools/Common.hpp"
 #include "tools/LinkedArray.hpp"
 
@@ -44,6 +46,11 @@ using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Obj;
+
+
+/***** CONSTANTS *****/
+/* Channel for the ObjLoader. */
+static constexpr const char* channel = "ObjLoader";
 
 
 
@@ -80,9 +87,8 @@ struct ParserState {
 /***** HELPER FUNCTIONS *****/
 /* Transfers the given vertex and index lists to the given Mesh component. */
 static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh& mesh, const std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>& unordered_vertices, const Tools::Array<Rendering::index_t>& cpu_indices) {
-    
-    DINDENT;
-    DLOG(info, "Arranging vertices for copy...");
+    logger.logc(Verbosity::debug, channel, "Arranging vertices for copy...");
+
     // Flatten the unordered vertices to a list
     Tools::Array<Rendering::Vertex> cpu_vertices;
     cpu_vertices.resize(static_cast<uint32_t>(unordered_vertices.size()));
@@ -92,7 +98,7 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
 
 
 
-    DLOG(info, "Transferring mesh '" + mesh.name + "' (" + std::to_string(cpu_vertices.size()) + " vertices & " + std::to_string(cpu_indices.size()) + " indices) to GPU (" + Tools::bytes_to_string(cpu_vertices.size() * sizeof(Rendering::Vertex) + cpu_indices.size() * sizeof(Rendering::index_t) + sizeof(Rendering::MeshData)) + ")...");
+    logger.logc(Verbosity::debug, channel, "Transferring mesh '", mesh.name, "' (", cpu_vertices.size(), " vertices & ", cpu_indices.size(), " indices) to GPU (", Tools::bytes_to_string(cpu_vertices.size() * sizeof(Rendering::Vertex) + cpu_indices.size() * sizeof(Rendering::index_t) + sizeof(Rendering::MeshData)), ")...");
 
     // Allocate memory in the mesh
     VkDeviceSize vertices_size = cpu_vertices.size() * sizeof(Rendering::Vertex);
@@ -119,16 +125,10 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
     // We're done, deallocate the stage buffer
     stage->unmap();
     memory_manager.stage_pool.free(stage);
-
-    // Done
-    DDEDENT;
-    return;
 }
 
 /* Stores a given vertex/texture/normal index in the given state struct. The final (returned) index will be different to the given one, as the result indexes into our large array of unique vertices, where uniqueness is also determined by texture and normal coordinates. */
 static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t normal_index = std::numeric_limits<uint32_t>::max(), uint32_t texture_index = std::numeric_limits<uint32_t>::max()) {
-    
-
     // First, check if the pair already exists
     glm::uvec3 index = {vertex_index, normal_index, texture_index};
     std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>::iterator iter = state.temp_vertices.find(index);
@@ -147,8 +147,6 @@ static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t
 
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
 static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path) {
-    
-
     // Prepare the iterator over the linked array
     Tools::LinkedArray<Terminal*>::iterator iter = state.symbol_stack.begin();
     Tools::linked_array_size_t i = 0;
@@ -726,8 +724,7 @@ mtllib_start: {
             filepath += ((ValueTerminal<std::string>*) term)->value;
 
             // Parse the material file
-            DINDENT;
-            DLOG(info, "Loading '" + filepath + "' as .mtl file...");
+            logger.logc(Verbosity::details, channel, "Loading '", filepath, "' as .mtl file...");
             load_mtl_lib(state.mtl_lib, filepath);
             stringstream sstr;
             bool first = true;
@@ -736,8 +733,7 @@ mtllib_start: {
                 else { sstr << ", "; }
                 sstr << '\'' << p.first << '\'';
             }
-            DLOG(info, "Loaded materials: " + sstr.str());
-            DDEDENT;
+            logger.logc(Verbosity::debug, channel, "Loaded materials: ", sstr.str());
 
             // Done with this one
             remove_stack_bottom(state.symbol_stack, iter);
@@ -790,7 +786,7 @@ usemtl_start: {
 
 
     // Nothing applied
-    DLOG(fatal, "Hole in jump logic encountered.");
+    logger.fatal(channel, "Hole in jump logic encountered.");
     return "fatal";
 } 
 
@@ -801,8 +797,6 @@ usemtl_start: {
 /***** LIBRARY FUNCTIONS *****/
 /* Loads the file at the given path as a .obj file, and populates the given list of meshes from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
 void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path) {
-    
-
     // Prepare the Tokenizer
     Obj::Tokenizer tokenizer(path);
 
@@ -881,7 +875,7 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshe
 
     // When done, delete everything left on the symbol stack (we assume all errors have been processed)
     if (state.symbol_stack.size() > 1 || (state.symbol_stack.size() == 1 && state.symbol_stack.first()->type != TerminalType::eof)) {
-        DLOG(warning, "Symbol stack hasn't been completely emptied by parser");
+        logger.warningc(channel, "Symbol stack hasn't been completely emptied by parser");
         std::stringstream sstr;
         bool first = true;
         for (Terminal* term : state.symbol_stack) {
@@ -890,7 +884,7 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshe
             sstr << terminal_type_names[(int) term->type];
             delete term;
         }
-        DLOG(warning, "Current stack: [" + sstr.str() + "]");
+        logger.warningc(channel, "Current stack: [" + sstr.str() + "]");
     }
 
     // Done

@@ -23,6 +23,9 @@
 
 
 /***** INCLUDES *****/
+#include <iostream>
+
+#include "tools/Logger.hpp"
 #include "tools/LinkedArray.hpp"
 
 #include "tokenizer/ValueTerminal.hpp"
@@ -37,14 +40,17 @@ using namespace Rasterizer::Models;
 using namespace Rasterizer::Models::Mtl;
 
 
+/***** CONSTANTS *****/
+/* Channel for the ObjLoader. */
+static constexpr const char* channel = "MtlLoader";
+
+
 
 
 
 /***** HELPER FUNCTIONS *****/
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
 static std::string reduce(std::string& current_mtl, std::unordered_map<std::string, glm::vec3>& new_materials, Tools::LinkedArray<Terminal*>& symbol_stack) {
-    
-
     // Prepare the iterator over the linked array
     Tools::LinkedArray<Terminal*>::iterator iter = symbol_stack.begin();
     size_t i = 0;
@@ -163,7 +169,7 @@ newmtl_start: {
 
 
     // Nothing applied
-    DLOG(fatal, "Hole in jump logic encountered.");
+    logger.fatalc(channel, "Hole in jump logic encountered.");
     return "fatal";
 }
 
@@ -173,8 +179,6 @@ newmtl_start: {
 /***** LIBRARY FUNCTIONS *****/
 /* Loads the file at the given path as a .mtl file, and returns a map of material name: color schemes for it. */
 void Models::load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materials, const std::string& path) {
-    
-
     // Prepare the Tokenizer
     Tokenizer tokenizer(path);
     // Prepare the 'symbol stack'

@@ -18,6 +18,8 @@
 #include <cstring>
 #include <cerrno>
 
+#include "tools/Logger.hpp"
+#include "tools/Common.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "Shader.hpp"
@@ -30,8 +32,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Function that populates the given VkShaderModuleCreateInfo struct with the given values. */
 static void populate_shader_module_info(VkShaderModuleCreateInfo& shader_module_info, const std::vector<char>& raw_shader) {
-    
-
     // Set to default
     shader_module_info = {};
     shader_module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -39,9 +39,6 @@ static void populate_shader_module_info(VkShaderModuleCreateInfo& shader_module_
     // Set the data of the code
     shader_module_info.codeSize = raw_shader.size();
     shader_module_info.pCode = reinterpret_cast<const uint32_t*>(raw_shader.data());
-
-    // Done
-    return;
 }
 
 
@@ -55,14 +52,12 @@ Shader::Shader(const GPU& gpu, const std::string& path, const std::string& entry
     path(path),
     entry(entry_function)
 {
-    
-    DLOG(info, "Initializing shader '" + path.substr(path.find_last_of("/") != string::npos ? path.find_last_of("/") + 1 : 0) + "'");
-    DINDENT;
+    logger.logc(Verbosity::important, Shader::channel, "Initializing shader '", path.substr(path.find_last_of("/") != string::npos ? path.find_last_of("/") + 1 : 0), '\'');
 
     // Simply call reload to do the work
     this->reload();
 
-    DDEDENT;
+    logger.logc(Verbosity::important, Shader::channel, "Init success.");
 }
 
 /* Copy constructor for the Shader class. */
@@ -71,12 +66,12 @@ Shader::Shader(const Shader& other) :
     path(other.path),
     entry(other.entry)
 {
-    
+    logger.logc(Verbosity::important, Shader::channel, "Copying...");
     
     // Once again we rely on reload
-    DMUTE("Rendering::Shader::reload");
     this->reload();
-    DUNMUTE("Rendering::Shader::reload");
+
+    logger.logc(Verbosity::important, Shader::channel, "Copy success.");
 }
 
 /* Move constructor for the Shader class. */
@@ -92,21 +87,21 @@ Shader::Shader(Shader&& other) :
 
 /* Destructor for the Shader class. */
 Shader::~Shader() {
-    
+    logger.logc(Verbosity::important, Shader::channel, "Cleaning...");
     
     if (this->vk_shader_module != nullptr) {
         vkDestroyShaderModule(this->gpu, this->vk_shader_module, nullptr);
     }
+
+    logger.logc(Verbosity::important, Shader::channel, "Cleaned.");
 }
 
 
 
 /* Reloads the shader from disk, and recompiles it. */
 void Shader::reload() {
-    
-
     // Start by loading the file
-    DLOG(info, "Loading file '" + this->path + "'...");
+    logger.logc(Verbosity::details, Shader::channel, "Loading file '", this->path, "'...");
 
     // Open a file handle, if at all possible
     std::ifstream h(this->path, std::ios::ate | std::ios::binary);
@@ -118,7 +113,7 @@ void Shader::reload() {
         #else
         char* buffer = strerror(errno);
         #endif
-        DLOG(fatal, "Could not open shader file: " + std::string(buffer));
+        logger.fatalc(Shader::channel, "Could not open shader file: ", buffer);
     }
 
     // Since we're at the end of the file, read the position to know the size of our file buffer
@@ -136,7 +131,7 @@ void Shader::reload() {
     
 
     // With the bytes read, create the shader module from it
-    DLOG(info, "Compiling " + std::to_string(file_size) + " bytes of shader code...");
+    logger.logc(Verbosity::details, Shader::channel, "Compiling ", Tools::bytes_to_string(file_size), " of shader code...");
 
     // Populate the create info
     VkShaderModuleCreateInfo shader_module_info;
@@ -145,7 +140,7 @@ void Shader::reload() {
     // With the struct populated, create the actual module
     VkResult vk_result;
     if ((vk_result = vkCreateShaderModule(this->gpu, &shader_module_info, nullptr, &this->vk_shader_module)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not compile shader: " + vk_error_map[vk_result]);
+        logger.fatalc(Shader::channel, "Could not compile shader: ", vk_error_map[vk_result]);
     }
 
     // Done!
@@ -156,22 +151,15 @@ void Shader::reload() {
 
 /* Swap operator for the Shader class. */
 void Rendering::swap(Shader& s1, Shader& s2) {
-    
-
-    using std::swap;
-
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (s1.gpu != s2.gpu) {
-        DLOG(fatal, "Cannot swap shaders with different GPUs");
-    }
+    if (s1.gpu != s2.gpu) { logger.fatalc(Shader::channel, "Cannot swap shaders with different GPUs"); }
     #endif
+    
+    using std::swap;
 
     // Swap all fields
     swap(s1.vk_shader_module, s2.vk_shader_module);
     swap(s1.path, s2.path);
     swap(s1.entry, s2.entry);
-
-    // Done
-    return;
 }

@@ -23,6 +23,9 @@ namespace Rasterizer::Rendering {
     /* The DepthStencil class, which wraps around an image to provide a memory buffer for depth testing. */
     class DepthStencil {
     public:
+        /* Channel name for the DepthStencil class. */
+        static constexpr const char* channel = "DepthStencil";
+
         /* The GPU where the DepthStencil lives. */
         const Rendering::GPU& gpu;
         /* The MemoryPool used to manage the internal image. */

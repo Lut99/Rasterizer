@@ -14,6 +14,7 @@
  *   framebuffer.
 **/
 
+#include "tools/Logger.hpp"
 #include "../auxillary/Formats.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
@@ -27,8 +28,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkAttachmentDescription struct. */
 static void populate_attachment(VkAttachmentDescription& attachment, VkFormat vk_format, VkAttachmentLoadOp vk_load_op, VkAttachmentStoreOp vk_store_op, VkImageLayout vk_initial_layout, VkImageLayout vk_final_layout) {
-    
-
     // Set to default
     attachment = {};
 
@@ -49,15 +48,10 @@ static void populate_attachment(VkAttachmentDescription& attachment, VkFormat vk
     // Finally, set the initial and final layout of the framebuffer
     attachment.initialLayout = vk_initial_layout;
     attachment.finalLayout = vk_final_layout;
-
-    // done
-    return;
 }
 
 /* Populates the given VkSubpassDependency struct. */
 static void populate_dependency(VkSubpassDependency& dependency, uint32_t src_subpass, uint32_t dst_subpass, VkPipelineStageFlags src_stage, VkAccessFlags src_access, VkPipelineStageFlags dst_stage, VkAccessFlags dst_access) {
-    
-
     // Set to default
     dependency = {};
     
@@ -72,15 +66,10 @@ static void populate_dependency(VkSubpassDependency& dependency, uint32_t src_su
     // Set the destination subpass's requirements
     dependency.dstStageMask = dst_stage;
     dependency.dstAccessMask = dst_access;
-
-    // Done
-    return;
 }
 
 /* Populates the given VkRenderPassCreateInfo struct. */
 static void populate_render_pass_info(VkRenderPassCreateInfo& render_pass_info, const Tools::Array<VkAttachmentDescription>& vk_attachments, const Tools::Array<VkSubpassDescription>& vk_subpasses, const Tools::Array<VkSubpassDependency>& vk_dependencies) {
-    
-
     // Set to default
     render_pass_info = {};
     render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -96,15 +85,10 @@ static void populate_render_pass_info(VkRenderPassCreateInfo& render_pass_info, 
     // Add dependencies, if any
     render_pass_info.dependencyCount = vk_dependencies.size();
     render_pass_info.pDependencies = vk_dependencies.rdata();
-
-    // Done!
-    return;
 }
 
 /* Populates a given VkRenderPassBeginInfo struct. */
 static void populate_begin_info(VkRenderPassBeginInfo& begin_info, const VkRenderPass& vk_render_pass, const VkFramebuffer& vk_framebuffer, const VkRect2D& vk_render_area, const Tools::Array<VkClearValue>& clear_values) {
-    
-
     // Set to default
     begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -121,9 +105,6 @@ static void populate_begin_info(VkRenderPassBeginInfo& begin_info, const VkRende
     // Set the colour for the background
     begin_info.clearValueCount = clear_values.size();
     begin_info.pClearValues = clear_values.rdata();
-
-    // Done
-    return;
 }
 
 
@@ -136,8 +117,7 @@ RenderPass::RenderPass(const Rendering::GPU& gpu) :
     gpu(gpu),
     vk_render_pass(nullptr)
 {
-    
-    DLOG(info, "Started RenderPass initialization.");
+    logger.logc(Verbosity::important, RenderPass::channel, "Initializing...");
 }
 
 /* Copy constructor for the RenderPass class. */
@@ -146,7 +126,7 @@ RenderPass::RenderPass(const RenderPass& other) :
     vk_attachments(other.vk_attachments),
     vk_dependencies(other.vk_dependencies)
 {
-    
+    logger.logc(Verbosity::debug, RenderPass::channel, "Copying...");    
 
     // Re-create the render pass, if needed
     if (this->vk_render_pass != nullptr) {
@@ -162,9 +142,11 @@ RenderPass::RenderPass(const RenderPass& other) :
 
         VkResult vk_result;
         if ((vk_result = vkCreateRenderPass(this->gpu, &render_pass_info, nullptr, &this->vk_render_pass)) != VK_SUCCESS) {
-            DLOG(fatal, "Could not re-create render pass: " + vk_error_map[vk_result]);
+            logger.fatalc(RenderPass::channel, "Could not re-create render pass: ", vk_error_map[vk_result]);
         }
     }
+
+    logger.logc(Verbosity::debug, RenderPass::channel, "Copy success.");   
 }
 
 /* Move constructor for the RenderPass class. */
@@ -181,24 +163,20 @@ RenderPass::RenderPass(RenderPass&& other) :
 
 /* Destructor for the RenderPass class. */
 RenderPass::~RenderPass() {
-    
-    DLOG(info, "Cleaning RenderPass...");
-    DINDENT;
+    logger.logc(Verbosity::important, RenderPass::channel, "Cleaning...");
 
     if (this->vk_render_pass != nullptr) {
-        DLOG(info, "Destroying internal render pass object...");
+        logger.logc(Verbosity::details, RenderPass::channel, "Destroying internal render pass object...");
         vkDestroyRenderPass(this->gpu, this->vk_render_pass, nullptr);
     }
 
-    DDEDENT;
+    logger.logc(Verbosity::important, RenderPass::channel, "Clean success.");
 }
 
 
 
 /* Adds a new attachment to the RenderPass. Note that the ordering matters w.r.t. indexing, but just to be sure, this function returns the index of the attachment. Takes the swapchain's image format, the load operation for the buffer, the store operation, the initial layout and the final layout after the subpass. */
 uint32_t RenderPass::add_attachment(VkFormat vk_swapchain_format, VkAttachmentLoadOp load_op, VkAttachmentStoreOp store_op, VkImageLayout initial_layout, VkImageLayout final_layout) {
-    
-
     // First, populate the attachmentdescription
     VkAttachmentDescription attachment;
     populate_attachment(attachment, vk_swapchain_format, load_op, store_op, initial_layout, final_layout);
@@ -208,9 +186,7 @@ uint32_t RenderPass::add_attachment(VkFormat vk_swapchain_format, VkAttachmentLo
     this->vk_attachments.push_back(attachment);
 
     // Return the index
-    DINDENT;
-    DLOG(info, "Added attachment with format " + vk_format_map[vk_swapchain_format] + " to the RenderPass.");
-    DDEDENT;
+    logger.logc(Verbosity::details, RenderPass::channel, "Added attachment with format ", vk_format_map[vk_swapchain_format], " to the RenderPass.");
     return index;
 }
 
@@ -222,10 +198,7 @@ void RenderPass::add_subpass(const Tools::Array<std::pair<uint32_t, VkImageLayou
     this->subpasses.push_back(Subpass(color_attachment_refs, depth_attachment_ref, bind_point));
 
     // Done
-    DINDENT;
-    DLOG(info, "Added subpass to the RenderPass.");
-    DDEDENT;
-    return;
+    logger.logc(Verbosity::details, RenderPass::channel, "Added subpass to the RenderPass.");
 }
 
 /* Adds a new dependency to the RenderPass. Needs the subpass before the barrier, the subpass after it, the stage of the subpass before it, the access mask of the stage before it, the stage of the subpass after it and the access mask of that stage. */
@@ -239,16 +212,12 @@ void RenderPass::add_dependency(uint32_t src_subpass, uint32_t dst_subpass, VkPi
     // Store internally
     this->vk_dependencies.push_back(dependency);
 
-    DINDENT;
-    DLOG(info, "Added dependency to the RenderPass.");
-    DDEDENT;
-    return;
+    // D0ne
+    logger.logc(Verbosity::details, RenderPass::channel, "Added dependency to the RenderPass.");
 }
 
 /* Finalizes the RenderPass. After this, no new subpasses can be defined without calling finalize() again. */
 void RenderPass::finalize() {
-    
-
     // Convert the list of subpasses to their vulkan counterpart
     Tools::Array<VkSubpassDescription> vk_subpasses(this->subpasses.size());
     for (uint32_t i = 0; i < this->subpasses.size(); i++) {
@@ -261,22 +230,17 @@ void RenderPass::finalize() {
 
     VkResult vk_result;
     if ((vk_result = vkCreateRenderPass(this->gpu, &render_pass_info, nullptr, &this->vk_render_pass)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create render pass: " + vk_error_map[vk_result]);
+        logger.fatalc(RenderPass::channel, "Could not create render pass: " + vk_error_map[vk_result]);
     }
 
     // Done
-    DINDENT;
-    DLOG(info, "Initialized RenderPass.");
-    DDEDENT;
-    return;
+    logger.logc(Verbosity::details, RenderPass::channel, "Init success.");
 }
 
 
 
 /* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and a background colour for the image. */
 void RenderPass::start_scheduling(const Rendering::CommandBuffer* cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour, const VkClearValue& vk_clear_depth) {
-    
-
     // First, create the rect that we shall render to
     VkRect2D render_area = {};
     render_area.offset.x = 0;
@@ -292,32 +256,21 @@ void RenderPass::start_scheduling(const Rendering::CommandBuffer* cmd, const Ren
 
     // Schedule it in the command buffer (and tell it to schedule everything in the primary command buffers instead of secondary ones)
     vkCmdBeginRenderPass(cmd->command_buffer(), &begin_info, VK_SUBPASS_CONTENTS_INLINE);
-
-    // Done
-    return;
 }
 
 /* Finishes scheduling the RenderPass. */
 void RenderPass::stop_scheduling(const Rendering::CommandBuffer* cmd) {
-    
-
     // Simply call the stop
     vkCmdEndRenderPass(cmd->command_buffer());
-
-    return;
 }
 
 
 
 /* Swap operator for the RenderPass class. */
 void Rendering::swap(RenderPass& rp1, RenderPass& rp2) {
-    
-
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (rp1.gpu != rp2.gpu) {
-        DLOG(fatal, "Cannot swap render passes with different GPUs");
-    }
+    if (rp1.gpu != rp2.gpu) { logger.fatalc(RenderPass::channel, "Cannot swap render passes with different GPUs"); }
     #endif
 
     // Swap EVERYTHING but the GPU
@@ -326,7 +279,4 @@ void Rendering::swap(RenderPass& rp1, RenderPass& rp2) {
     swap(rp1.subpasses, rp2.subpasses);
     swap(rp1.vk_attachments, rp2.vk_attachments);
     swap(rp1.vk_dependencies, rp2.vk_dependencies);
-
-    // Done
-    return;
 }

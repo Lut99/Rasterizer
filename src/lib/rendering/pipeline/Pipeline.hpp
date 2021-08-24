@@ -33,6 +33,9 @@ namespace Rasterizer::Rendering {
     /* The Pipeline class, which functions a as a more convenient wrapper for the internal VkPipeline object. */
     class Pipeline {
     public:
+        /* Channel name of the Pipeline class. */
+        static constexpr const char* channel = "Pipeline";
+
         /* The GPU on which the Pipeline lives. */
         const Rendering::GPU& gpu;
     

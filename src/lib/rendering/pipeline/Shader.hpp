@@ -4,7 +4,7 @@
  * Created:
  *   27/04/2021, 14:56:30
  * Last edited:
- *   29/07/2021, 16:35:08
+ *   24/08/2021, 23:38:07
  * Auto updated?
  *   Yes
  *
@@ -25,6 +25,9 @@ namespace Rasterizer::Rendering {
     /* The Shader class, which loads, compiles and manages .spv files. */
     class Shader {
     public:
+        /* Channel name for the Shader class. */
+        static constexpr const char* channel = "Shader";
+
         /* Immutable reference to the device where we will compile the shader for. */
         const Rendering::GPU& gpu;
 

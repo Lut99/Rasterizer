@@ -16,6 +16,7 @@
 #include <cstring>
 #include <algorithm>
 
+#include "tools/Logger.hpp"
 #include "tools/Typenames.hpp"
 
 #include "ComponentList.hpp"
@@ -76,7 +77,6 @@ ComponentList<T>::~ComponentList() {
 /* Stores a new 'entity', filling it with default values. */
 template <class T>
 void ComponentList<T>::add(entity_t entity) {
-    
     this->add(entity, T());
     return;
 }
@@ -84,12 +84,10 @@ void ComponentList<T>::add(entity_t entity) {
 /* Stores a new 'entity', by associating the given entity ID with the given Component data. */
 template <class T>
 void ComponentList<T>::add(entity_t entity, const T& component) {
-    
-
     // Try to find if the entity already exists
     std::unordered_map<entity_t, component_list_size_t>::iterator iter = this->entity_map.find(entity);
     if (iter != this->entity_map.end()) {
-        DLOG(warning, "Entity with ID " + std::to_string(entity) + " already exists in the ComponentList; will be overwritten.");
+        logger.fatalc(ComponentList<T>::channel, "Entity with ID ", entity, " already exists in the ComponentList; will be overwritten.");
         this->entity_map.erase(iter);
     }
 
@@ -114,12 +112,10 @@ void ComponentList<T>::add(entity_t entity, const T& component) {
 /* Removes an 'entity', by de-associating the given entity ID and removing the Component from the internal list. */
 template <class T>
 void ComponentList<T>::remove(entity_t entity) {
-    
-
     // Try to find the entity in our internal mapping
     std::unordered_map<entity_t, component_list_size_t>::iterator iter = this->entity_map.find(entity);
     if (iter == this->entity_map.end()) {
-        DLOG(fatal, "Cannot remove non-mapped entity with ID " + std::to_string(entity));
+        logger.fatalc(ComponentList<T>::channel, "Cannot remove non-mapped entity with ID ", entity);
     }
     component_list_size_t index = (*iter).second;
 
@@ -166,12 +162,10 @@ void ComponentList<T>::remove(entity_t entity) {
 /* Reserves space for new entities by re-allocating the internal array. If the new capacity is lower than the current size, then entities at the end will be removed automatically. New entities will be left unitialised, since there's obviously no mapping available yet. */
 template <class T>
 void ComponentList<T>::reserve(component_list_size_t new_capacity) {
-    
-
     // First, try to allocate the new capacity
     T* new_entities = (T*) malloc(new_capacity * sizeof(T));
     if (new_entities == nullptr) {
-        DLOG(fatal, "Could not allocate new array of size " + std::to_string(new_capacity) + ".");
+        logger.fatalc(ComponentList<T>::channel, "Could not allocate new array of size ", new_capacity, '.');
     }
 
     // Copy the elements from the old to the new array

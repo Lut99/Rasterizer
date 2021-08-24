@@ -26,8 +26,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSubpassDescription struct. */
 static void populate_subpass(VkSubpassDescription& subpass, VkAttachmentReference* color_attachment_refs, uint32_t n_attachments, VkAttachmentReference* depth_attachment_ref, VkPipelineBindPoint bind_point) {
-    
-
     // Set to default
     subpass = {};
 
@@ -44,9 +42,6 @@ static void populate_subpass(VkSubpassDescription& subpass, VkAttachmentReferenc
     // In the future, more types of attachments may be given here
     subpass.inputAttachmentCount = 0;
     subpass.preserveAttachmentCount = 0;
-
-    // Done
-    return;
 }
 
 
@@ -60,8 +55,6 @@ Subpass::Subpass(const Tools::Array<std::pair<uint32_t, VkImageLayout>>& color_a
     n_color_attachments(color_attachment_refs.size()),
     depth_attachment_ref(new VkAttachmentReference)
 {
-    
-
     // Populate the attachment reference list
     for (uint32_t i = 0; i < this->n_color_attachments; i++) {
         this->color_attachment_refs[i] = {};
@@ -85,8 +78,6 @@ Subpass::Subpass(const Subpass& other) :
     n_color_attachments(other.n_color_attachments),
     depth_attachment_ref(new VkAttachmentReference(*other.depth_attachment_ref))
 {
-    
-
     // Copy the elements over from the old to the new list of attachment references
     memcpy(this->color_attachment_refs, other.color_attachment_refs, this->n_color_attachments * sizeof(VkAttachmentReference));
 
@@ -109,8 +100,6 @@ Subpass::Subpass(Subpass&& other) :
 
 /* Destructor for the Subpass class. */
 Subpass::~Subpass() {
-    
-
     // If needed, deallocate the attachment references
     if (this->depth_attachment_ref != nullptr) {
         delete this->depth_attachment_ref;

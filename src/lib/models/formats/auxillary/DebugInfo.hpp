@@ -28,6 +28,8 @@ namespace Rasterizer::Models {
     /* The DebugInfo class, which keeps track of relevant origin information of the symbol we're looking at. */
     class DebugInfo {
     public:
+        /* Channel name for the DebugInfo class. */
+        static constexpr const char* channel = "DebugInfo";
         /* Accent colour for notes. */
         static constexpr const char* note_accent = "\033[36;1m";
         /* Accent colour for warning messages. */

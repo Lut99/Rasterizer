@@ -26,6 +26,9 @@ namespace Rasterizer::ECS {
         /* The type of the Component. */
         using type = T;
 
+        /* The channel used for all ComponentList-related log messages. */
+        static constexpr const char* channel = "ComponentList";
+
     private:
         /* The array of components that we wrap. */
         T* entities;

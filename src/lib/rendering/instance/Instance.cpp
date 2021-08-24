@@ -22,6 +22,14 @@ using namespace Rasterizer;
 using namespace Rasterizer::Rendering;
 
 
+/***** CONSTANTS *****/
+/* Channel name for Vulkan messages. */
+static constexpr const char* vulkan_channel = "Vulkan";
+
+
+
+
+
 /***** DEBUG CALLBACK *****/
 static VKAPI_ATTR VkBool32 VKAPI_CALL vk_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                                                   VkDebugUtilsMessageTypeFlagsEXT message_type,
@@ -47,9 +55,28 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_callback(VkDebugUtilsMessageSeverityFla
     // Do not use the message type for now
     (void) message_type;
 
-    // Log the message with the correct severity
+    // Log the message with the correct severity and message type
     Tools::Logger* logger = (Tools::Logger*) user_data;
-    logger->log(verbosity, pCallbackData->pMessage);
+    switch(message_severity) {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            logger->logc(Verbosity::details, vulkan_channel, pCallbackData->pMessage);
+            break;
+        
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            logger->warningc(vulkan_channel, pCallbackData->pMessage);
+            break;
+        
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            logger->errorc(vulkan_channel, pCallbackData->pMessage);
+            break;
+        
+        default:
+            // Throw meta error
+            logger->fatalc(Instance::channel, "Unknown Vulkan message severity.");
+            break;
+
+    }
     return VK_FALSE;
 }
 
@@ -95,7 +122,7 @@ static void populate_instance_info(VkInstanceCreateInfo& instance_info, const Vk
 }
 
 /* Populates a VkDebugUtilsMessengerCreateInfoEXT struct with the hardcoded settings. */
-static void populate_debug_info(VkDebugUtilsMessengerCreateInfoEXT& debug_info, Tools::Logger* logger) {
+static void populate_debug_info(VkDebugUtilsMessengerCreateInfoEXT& debug_info) {
     // Set the struct to 0 and set its type
     debug_info = {};
     debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -106,7 +133,7 @@ static void populate_debug_info(VkDebugUtilsMessengerCreateInfoEXT& debug_info, 
 
     // Define the callback with an optional data struct (the Logger itself)
     debug_info.pfnUserCallback = vk_callback;
-    debug_info.pUserData = (void*) logger;
+    debug_info.pUserData = (void*) &logger;
 }
 
 
@@ -115,15 +142,15 @@ static void populate_debug_info(VkDebugUtilsMessengerCreateInfoEXT& debug_info, 
 
 /***** DYNAMIC LOADER FUNCTIONS *****/
 /* Loads a given method ('s address) from the given instance. */
-static PFN_vkVoidFunction load_instance_method(Tools::Logger& logger, VkInstance vk_instance, const char* method_name) {
+static PFN_vkVoidFunction load_instance_method(VkInstance vk_instance, const char* method_name) {
     // Fetch the function pointer
     PFN_vkVoidFunction to_return = vkGetInstanceProcAddr(vk_instance, method_name);
     if (to_return == nullptr) {
-        logger.fatal("Could not load function '", method_name, "'.");
+        logger.fatalc(Instance::channel, "Could not load function '", method_name, "'.");
     }
 
     // Otherwise, log success and return
-    logger.log(Tools::Verbosity::debug, "Loaded function '", method_name, "'.");
+    logger.logc(Tools::Verbosity::debug, Instance::channel, "Loaded function '", method_name, "'.");
     return to_return;
 }
 
@@ -132,21 +159,19 @@ static PFN_vkVoidFunction load_instance_method(Tools::Logger& logger, VkInstance
 
 
 /***** INSTANCE CLASS *****/
-/* Constructor for the Instance class, which takes init data for its logger, a list of extensions to enable at the instance and layers to enable. */
-Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<const char*>& extensions, const Tools::Array<const char*>& layers) :
-    logger(init_data, "Instance"),
-
+/* Constructor for the Instance class, which takes a list of extensions to enable at the instance and layers to enable. */
+Instance::Instance(const Tools::Array<const char*>& extensions, const Tools::Array<const char*>& layers) :
     vk_debugger(nullptr),
     vk_destroy_debug_utils_messenger_method(nullptr),
     vk_extensions(extensions),
     vk_layers(layers)
 {
-    
+    logger.logc(Verbosity::important, "Initializing...");
 
 
 
     /* First, setup the instance. */
-    this->logger.log(Verbosity::details, "Creating VkInstance...");
+    logger.logc(Verbosity::details, Instance::channel, "Creating VkInstance...");
 
     // Start by defining meta stuff
     VkApplicationInfo app_info;
@@ -159,16 +184,16 @@ Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<
     // Now, setup the instance
     VkResult vk_result;
     if ((vk_result = vkCreateInstance(&instance_info, nullptr, &this->vk_instance)) != VK_SUCCESS) {
-        this->logger.fatal("Could not create the Vulkan instance: ", vk_error_map[vk_result]);
+        logger.fatalc("Could not create the Vulkan instance: ", Instance::channel, vk_error_map[vk_result]);
     }
 
     // If we were successfull, print which extensions & layers
-    if (this->logger.get_verbosity() >= Verbosity::debug) {
+    if (logger.get_verbosity() >= Verbosity::debug) {
         for (uint32_t i = 0; i < instance_extensions.size(); i++) {
-            this->logger.log(Verbosity::debug, "Enabled extension '", this->vk_extensions[i], '\'');
+            logger.logc(Verbosity::debug, Instance::channel, "Enabled extension '", this->vk_extensions[i], '\'');
         }
         for (uint32_t i = 0; i < instance_extensions.size(); i++) {
-            this->logger.log(Verbosity::debug, "Enabled layer '", this->vk_layers[i], '\'');
+            logger.logc(Verbosity::debug, Instance::channel, "Enabled layer '", this->vk_layers[i], '\'');
         }
     }
 
@@ -178,19 +203,19 @@ Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<
     #ifndef NDEBUG
     for (uint32_t i = 0; i < this->vk_layers.size(); i++) {
         if (this->vk_layers[i] == std::string("VK_LAYER_KHRONOS_validation")) {
-            this->logger.log(Verbosity::details, "Initializing debug logger...");
+            logger.logc(Verbosity::details, "Initializing debug logger...");
 
             // First, we load the two extension functions needed using the dynamic loader
-            PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) load_instance_method(this->logger, this->vk_instance, "vkCreateDebugUtilsMessengerEXT");
-            this->vk_destroy_debug_utils_messenger_method = (PFN_vkDestroyDebugUtilsMessengerEXT) load_instance_method(this->logger, this->vk_instance, "vkDestroyDebugUtilsMessengerEXT");
+            PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) load_instance_method(this->vk_instance, "vkCreateDebugUtilsMessengerEXT");
+            this->vk_destroy_debug_utils_messenger_method = (PFN_vkDestroyDebugUtilsMessengerEXT) load_instance_method(this->vk_instance, "vkDestroyDebugUtilsMessengerEXT");
 
             // Next, define the messenger
             VkDebugUtilsMessengerCreateInfoEXT debug_info;
-            populate_debug_info(debug_info, &this->logger);
+            populate_debug_info(debug_info);
 
             // And with that, create it
             if ((vk_result = vk_create_debug_utils_messenger_method(this->vk_instance, &debug_info, nullptr, &this->vk_debugger)) != VK_SUCCESS) {
-                this->logger.fatal("Could not create the logger: ", vk_error_map[vk_result]);
+                logger.fatalc(Instance::channel, "Could not create the logger: ", vk_error_map[vk_result]);
             }
 
             // We're done searching
@@ -198,18 +223,21 @@ Instance::Instance(const Tools::Logger::InitData& init_data, const Tools::Array<
         }
     }
     #endif
+
+
+
+    // D0ne
+    logger.logc(Verbosity::important, "Init success.");
 }
 
 /* Copy constructor for the Instance class. */
 Instance::Instance(const Instance& other) :
-    logger(other.logger),
-
     vk_debugger(other.vk_debugger),
     vk_destroy_debug_utils_messenger_method(other.vk_destroy_debug_utils_messenger_method),
     vk_extensions(other.vk_extensions),
     vk_layers(other.vk_layers)
 {
-    this->logger.log(Verbosity::details, "Starting copy...");
+    logger.logc(Verbosity::debug, Instance::channel, "Copying...");
 
 
 
@@ -224,7 +252,7 @@ Instance::Instance(const Instance& other) :
     // Now, setup the instance
     VkResult vk_result;
     if ((vk_result = vkCreateInstance(&instance_info, nullptr, &this->vk_instance)) != VK_SUCCESS) {
-        this->logger.fatal("Could not create the Vulkan instance: ", vk_error_map[vk_result]);
+        logger.fatalc(Instance::channel, "Could not create the Vulkan instance: ", vk_error_map[vk_result]);
     }
 
 
@@ -233,23 +261,27 @@ Instance::Instance(const Instance& other) :
     // Next, initialize the debugger, but only if the copied object had so as well
     if (this->vk_debugger != nullptr) {
         // First, we load the create extension function. The destroy is assumed to be copied from the other Instance.
-        PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) load_instance_method(this->logger, this->vk_instance, "vkCreateDebugUtilsMessengerEXT");
+        PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) load_instance_method(this->vk_instance, "vkCreateDebugUtilsMessengerEXT");
 
         // Next, define the messenger
         VkDebugUtilsMessengerCreateInfoEXT debug_info;
-        populate_debug_info(debug_info, &this->logger);
+        populate_debug_info(debug_info);
 
         // And with that, create it
         if ((vk_result = vk_create_debug_utils_messenger_method(this->vk_instance, &debug_info, nullptr, &this->vk_debugger)) != VK_SUCCESS) {
-            this->logger.fatal("Could not create the logger: ", vk_error_map[vk_result]);
+            logger.fatalc(Instance::channel, "Could not create the logger: ", vk_error_map[vk_result]);
         }
     }
     #endif
+
+
+
+    // D0ne
+    logger.logc(Verbosity::debug, Instance::channel, "Copy success.");
 }
 
 /* Move constructor for the Instance class. */
 Instance::Instance(Instance&& other) :
-    logger(other.logger),
     vk_instance(other.vk_instance),
     vk_debugger(other.vk_debugger),
     vk_destroy_debug_utils_messenger_method(other.vk_destroy_debug_utils_messenger_method),
@@ -263,19 +295,21 @@ Instance::Instance(Instance&& other) :
 
 /* Destructor for the Instance class. */
 Instance::~Instance() {
-    
+    logger.logc(Verbosity::important, Instance::channel, "Cleaning...");
 
     // Destroy the debugger
     if (this->vk_debugger != nullptr) {
-        this->logger.log(Verbosity::details, "Cleaning Vulkan debugger...");
+        logger.logc(Verbosity::details, Instance::channel, "Cleaning Vulkan debugger...");
         this->vk_destroy_debug_utils_messenger_method(this->vk_instance, this->vk_debugger, nullptr);
     }
 
     // Finally, destroy the instance
     if (this->vk_instance != nullptr) {
-        this->logger.log(Verbosity::details, "Cleaning VkInstance...");
+        logger.logc(Verbosity::details, Instance::channel, "Cleaning VkInstance...");
         vkDestroyInstance(this->vk_instance, nullptr);
     }
+    
+    logger.logc(Verbosity::important, Instance::channel, "Cleaned.");
 }
 
 
@@ -284,7 +318,6 @@ Instance::~Instance() {
 void Rendering::swap(Instance& i1, Instance& i2) {
     using std::swap;
 
-    swap(i1.logger, i2.logger);
     swap(i1.vk_instance, i2.vk_instance);
     swap(i1.vk_debugger, i2.vk_debugger);
     swap(i1.vk_destroy_debug_utils_messenger_method, i2.vk_destroy_debug_utils_messenger_method);

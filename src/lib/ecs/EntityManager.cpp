@@ -12,6 +12,8 @@
  *   <Todo>
 **/
 
+#include "tools/Logger.hpp"
+
 #include "components/Transform.hpp"
 #include "components/Meshes.hpp"
 #include "components/Camera.hpp"
@@ -96,7 +98,7 @@ entity_t EntityManager::add(ComponentFlags components) {
 void EntityManager::remove(entity_t entity) {
     // Check if the entity exists
     if (this->entities.find(entity) == this->entities.end()) {
-        DLOG(fatal, "Cannot remove entity with ID " + std::to_string(entity) + " because it doesn't exist.");
+        logger.fatalc(EntityManager::channel, "Cannot remove entity with ID ", entity, " because it doesn't exist.");
     }
 
     // If it does, then remove its components

@@ -15,8 +15,10 @@
 **/
 
 #include <limits>
-#include "../auxillary/Formats.hpp"
+
+#include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
+#include "../auxillary/Formats.hpp"
 
 #include "Swapchain.hpp"
 
@@ -28,8 +30,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkSwapchainCreateInfo struct. */
 static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, VkSurfaceKHR vk_surface, const VkSurfaceCapabilitiesKHR& surface_capabilities, const VkSurfaceFormatKHR& surface_format, const VkPresentModeKHR& surface_present_mode, const VkExtent2D surface_extent, uint32_t image_count, VkSwapchainKHR old_swapchain = VK_NULL_HANDLE) {
-    
-
     // Set the standard stuff
     swapchain_info = {};
     swapchain_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -59,15 +59,10 @@ static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, Vk
 
     // FInally, set no old swapchain (for now, at least)
     swapchain_info.oldSwapchain = old_swapchain;
-
-    // Done!
-    return;
 }
 
 /* Populates a given VkImageViewCreateInfo struct. */
 static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& vk_image, const VkFormat& vk_format) {
-    
-
     // Set the struct's default values
     view_info = {};
     view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -91,9 +86,6 @@ static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& 
     view_info.subresourceRange.levelCount = 1;
     view_info.subresourceRange.baseArrayLayer = 0;
     view_info.subresourceRange.layerCount = 1;
-
-    // We're done
-    return;
 }
 
 
@@ -103,27 +95,23 @@ static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& 
 /***** SELECTION FUNCTIONS *****/
 /* Given a list of supported formats, returns our most desireable one. */
 static VkSurfaceFormatKHR choose_swapchain_format(const Tools::Array<VkSurfaceFormatKHR>& formats) {
-    
-
     for (uint32_t i = 0; i < formats.size(); i++) {
         if (formats[i].format == VK_FORMAT_B8G8R8A8_SRGB && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            DLOG(info, "Using format: " + vk_format_map[formats[i].format]);
+            logger.logc(Verbosity::debug, Swapchain::channel, "Using format: ", vk_format_map[formats[i].format]);
             return formats[i];
         }
     }
 
     // Otherwise, return the first one - assuming there is one
     if (formats.size() == 0) {
-        DLOG(fatal, "No surface formats given");
+        logger.fatalc(Swapchain::channel, "No surface formats given");
     }
-    DLOG(info, "Using format: " + vk_format_map[formats[0].format]);
+    logger.logc(Verbosity::debug, Swapchain::channel, "Using format: ", vk_format_map[formats[0].format]);
     return formats[0];
 }
 
 /* Given a list of supported presentation modes, returns our most desireable one. */
 static VkPresentModeKHR choose_swapchain_present_mode(const Tools::Array<VkPresentModeKHR>& modes) {
-    
-
     // Since default, blocking VSYNC mode is guaranteed to exist, we'll pick that
     VkPresentModeKHR result = VK_PRESENT_MODE_FIFO_KHR;
     (void) modes;
@@ -134,8 +122,6 @@ static VkPresentModeKHR choose_swapchain_present_mode(const Tools::Array<VkPrese
 
 /* Given the capabilities of a given surface and given the target window, returns the best extent (size) of the swapchain. Takes higher DPI monitors into account, where one pixel != one coordinate. */
 static VkExtent2D choose_swapchain_extent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* glfw_window) {
-    
-
     // If the currentExtent is already another value, then ez fix
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
@@ -176,14 +162,12 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
     gpu(gpu),
     surface(surface)
 {
-    
-    DLOG(info, "Initializing Swapchain...");
-    DINDENT;
+    logger.logc(Verbosity::important, Swapchain::channel, "Initializing...");
 
     
 
     // We begin by selecting appropriate formats
-    DLOG(info, "Preparing Swapchain creation...");
+    logger.logc(Verbosity::details, Swapchain::channel, "Preparing Swapchain creation...");
     // Choose the options
     this->vk_surface_format = choose_swapchain_format(this->gpu.swapchain_info().formats());
     this->vk_surface_present_mode = choose_swapchain_present_mode(this->gpu.swapchain_info().present_modes());
@@ -196,11 +180,9 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
 
 
     // Next, we can move to construction of the swapchain
-    DLOG(info, "Constructing swapchain...");
-    DINDENT;
-    DLOG(info, "Swapchain image size  : " + std::to_string(this->vk_surface_extent.width) + "x" + std::to_string(this->vk_surface_extent.height));
-    DLOG(info, "Swapchain image count : " + std::to_string(this->vk_desired_image_count));
-    DDEDENT;
+    logger.logc(Verbosity::details, Swapchain::channel, "Constructing swapchain...");
+    logger.logc(Verbosity::debug, Swapchain::channel, "Swapchain image size  : ", this->vk_surface_extent.width, 'x', this->vk_surface_extent.height);
+    logger.logc(Verbosity::debug, Swapchain::channel, "Swapchain image count : ", this->vk_desired_image_count);
 
     // Populate the create info
     VkSwapchainCreateInfoKHR swapchain_info;
@@ -209,27 +191,25 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
     // Use that to actually create the swapchain
     VkResult vk_result;
     if ((vk_result = vkCreateSwapchainKHR(this->gpu, &swapchain_info, nullptr, &this->vk_swapchain)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create swapchain: " + vk_error_map[vk_result]);
+        logger.fatalc(Swapchain::channel, "Could not create swapchain: " + vk_error_map[vk_result]);
     }
 
 
 
     // Retrieve the images that are part of the swapchain
-    DLOG(info, "Retrieving images...");
+    logger.logc(Verbosity::details, Swapchain::channel, "Retrieving images...");
 
     vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, nullptr);
     this->vk_swapchain_images.reserve(this->vk_actual_image_count);
     vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, this->vk_swapchain_images.wdata(this->vk_actual_image_count));
-    DINDENT;
-    DLOG(info, "Retrieved " + std::to_string(this->vk_actual_image_count) + " images");
-    DDEDENT;
+    logger.logc(Verbosity::debug, Swapchain::channel, "Retrieved ", this->vk_actual_image_count, " images");
 
     // Also re-create the image views and framebuffers
     this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
 
 
 
-    DDEDENT;
+    logger.logc(Verbosity::important, Swapchain::channel, "Init success.");
 }
 
 /* Copy constructor for the Swapchain class. */
@@ -242,7 +222,7 @@ Swapchain::Swapchain(const Swapchain& other) :
     vk_actual_image_count(other.vk_actual_image_count),
     vk_desired_image_count(other.vk_desired_image_count)
 {
-    
+    logger.logc(Verbosity::debug, Swapchain::channel, "Copying...");
 
     // We copy the swapchain by-recreating it using the standard options
     VkSwapchainCreateInfoKHR swapchain_info;
@@ -251,7 +231,7 @@ Swapchain::Swapchain(const Swapchain& other) :
     // Use that to actually create the swapchain
     VkResult vk_result;
     if ((vk_result = vkCreateSwapchainKHR(this->gpu, &swapchain_info, nullptr, &this->vk_swapchain)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create swapchain: " + vk_error_map[vk_result]);
+        logger.fatalc(Swapchain::channel, "Could not create swapchain: ", vk_error_map[vk_result]);
     }
 
     // Fetch new images
@@ -261,6 +241,8 @@ Swapchain::Swapchain(const Swapchain& other) :
 
     // Also re-create the image views and framebuffers
     this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
+    
+    logger.logc(Verbosity::debug, Swapchain::channel, "Copy success.");
 }
 
 /* Move constructor for the Swapchain class. */
@@ -283,33 +265,29 @@ Swapchain::Swapchain(Swapchain&& other) :
 
 /* Destructor for the Swapchain class. */
 Swapchain::~Swapchain() {
-    
-    DLOG(info, "Cleaning Swapchain...");
-    DINDENT;
+    logger.logc(Verbosity::important, Swapchain::channel, "Cleaning...");
 
     if (this->vk_swapchain_views.size() > 0) {
-        DLOG(info, "Destroying image views...");
+        logger.logc(Verbosity::details, Swapchain::channel, "Destroying image views...");
         for (uint32_t i = 0; i < this->vk_swapchain_views.size(); i++) {
             vkDestroyImageView(this->gpu, this->vk_swapchain_views[i], nullptr);
         }
     }
 
     if (this->vk_swapchain != nullptr) {
-        DLOG(info, "Destroying internal swapchain object...");
+        logger.logc(Verbosity::details, Swapchain::channel, "Destroying internal swapchain object...");
         vkDestroySwapchainKHR(this->gpu, this->vk_swapchain, nullptr);
     }
 
-    DDEDENT;
+    logger.logc(Verbosity::important, Swapchain::channel, "Cleaned.");
 }
 
 
 
 /* Private helper function that re-creates image views and frame buffers from the given list of images. */
 void Swapchain::create_views(const Tools::Array<VkImage>& vk_images, const VkFormat& vk_format) {
-    
-
     // Create new image views for these fellers
-    DLOG(info, "Creating swapchain image views...");
+    logger.logc(Verbosity::details, Swapchain::channel, "Creating swapchain image views...");
     this->vk_swapchain_views.resize(vk_images.size());
     for (uint32_t i = 0; i < vk_images.size(); i++) {
         // First, create the create info
@@ -319,25 +297,21 @@ void Swapchain::create_views(const Tools::Array<VkImage>& vk_images, const VkFor
         // Create 'em
         VkResult vk_result;
         if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &this->vk_swapchain_views[i])) != VK_SUCCESS) {
-            DLOG(fatal, "Could not create image view for image " + std::to_string(i) + ": " + vk_error_map[vk_result]);
+            logger.fatalc(Swapchain::channel, "Could not create image view for image ", i, ": ", vk_error_map[vk_result]);
         }
     }
-
-    return;
 }
 
 
 
 /* Resizes the swapchain. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
 void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
-    
-    DLOG(info, "Re-creating swapchain...");
-    DINDENT;
+    logger.logc(Verbosity::important, Swapchain::channel, "Re-creating swapchain...");
 
 
 
     // First, delete old stuff
-    DLOG(info, "Deallocating old swapchain...");
+    logger.logc(Verbosity::details, Swapchain::channel, "Deallocating old swapchain...");
     for (uint32_t i = 0; i < this->vk_swapchain_views.size(); i++) {
         vkDestroyImageView(this->gpu, this->vk_swapchain_views[i], nullptr);
     }
@@ -348,8 +322,8 @@ void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
 
 
     // We set the new extent
-    DLOG(info, "Re-creating new swapchain...");
-    DINDENT; DLOG(info, "New swapchain size: " + std::to_string(new_width) + "x" + std::to_string(new_height)); DDEDENT;
+    logger.logc(Verbosity::details, Swapchain::channel, "Re-creating new swapchain...");
+    logger.logc(Verbosity::debug, Swapchain::channel, "New swapchain size: ", new_width, 'x', new_height);
     this->vk_surface_extent = VkExtent2D({ new_width, new_height });
 
     // Populate the create info
@@ -359,57 +333,43 @@ void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
     // Use that to actually create the swapchain
     VkResult vk_result;
     if ((vk_result = vkCreateSwapchainKHR(this->gpu, &swapchain_info, nullptr, &this->vk_swapchain)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not re-create swapchain: " + vk_error_map[vk_result]);
+        logger.fatalc(Swapchain::channel, "Could not re-create swapchain: " + vk_error_map[vk_result]);
     }
 
 
 
     // Retrieve the images that are part of the swapchain
-    DLOG(info, "Retrieving new images...");
+    logger.logc(Verbosity::details, Swapchain::channel, "Retrieving new images...");
     vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, nullptr);
     this->vk_swapchain_images.reserve(this->vk_actual_image_count);
     vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, this->vk_swapchain_images.wdata(this->vk_actual_image_count));
-    DINDENT;
-    DLOG(info, "Retrieved " + std::to_string(this->vk_actual_image_count) + " images");
-    DDEDENT;
+    logger.logc(Verbosity::debug, Swapchain::channel, "Retrieved ", this->vk_actual_image_count, " images");
 
     // Also re-create the image views and framebuffers
     this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
 
 
 
-    DDEDENT;
-    return;
+    logger.logc(Verbosity::important, Swapchain::channel, "Re-creation success.");
 }
 
 /* Resizes the swapchain to the size of the given window. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
 void Swapchain::resize(GLFWwindow* glfw_window) {
-    
-
     // Fetch the new size from the window
     VkExtent2D new_extent = choose_swapchain_extent(this->gpu.swapchain_info().capabilities(), glfw_window);
     // Call the other resize to do the actual work
     this->resize(new_extent.width, new_extent.height);
-
-    // Done
-    return;
 }
 
 
 
 /* Swap operator for the Swapchain class. */
 void Rendering::swap(Swapchain& s1, Swapchain& s2) {
-    
-
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (s1.gpu != s2.gpu) {
-        DLOG(fatal, "Cannot swap swapchains with different GPUs");
-    }
+    if (s1.gpu != s2.gpu) { logger.fatalc(Swapchain::channel, "Cannot swap swapchains with different GPUs"); }
     // If the surface is not the same...
-    if (s1.surface != s2.surface) {
-        DLOG(fatal, "Cannot swap swapchains with different surfaces");
-    }
+    if (s1.surface != s2.surface) { logger.fatalc(Swapchain::channel, "Cannot swap swapchains with different surfaces"); }
     #endif
 
     // Swap all fields
@@ -423,7 +383,4 @@ void Rendering::swap(Swapchain& s1, Swapchain& s2) {
     swap(s1.vk_desired_image_count, s2.vk_desired_image_count);
     swap(s1.vk_swapchain_images, s2.vk_swapchain_images);
     swap(s1.vk_swapchain_views, s2.vk_swapchain_views);
-
-    // Done
-    return;
 }

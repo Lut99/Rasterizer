@@ -26,6 +26,10 @@
 namespace Rasterizer::Rendering {
     /* The Buffer class, which wraps a VkBuffer object and who's memory is managerd by the MemoryPool class. */
     class Buffer: public MemoryObject {
+    public:
+        /* Channel name for the Buffer class. */
+        static constexpr const char* channel = "Buffer";
+
     private:
         /* The InitData struct, which is used to group everything needed for copying buffers. */
         struct InitData {
@@ -73,7 +77,7 @@ namespace Rasterizer::Rendering {
         /* Flushes all unflushed memory operations done on mapped memory. If the memory of this buffer has VK_MEMORY_PROPERTY_HOST_COHERENT_BIT set, then nothing is done as the memory is already automatically flushed. */
         void flush(VkDeviceSize n_bytes = VK_WHOLE_SIZE) const;
         /* Unmaps buffer's memory. */
-        void unmap() const;
+        inline void unmap() const { vkUnmapMemory(this->gpu, this->pool.memory()); }
 
         /* Schedules a copy to the given buffer on the given command buffer. */
         inline void schedule_copyto(const Buffer* destination, const Rendering::CommandBuffer* command_buffer) const { return this->schedule_copyto(destination, VK_WHOLE_SIZE, 0, 0, command_buffer); }

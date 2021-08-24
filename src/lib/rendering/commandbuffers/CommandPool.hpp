@@ -4,7 +4,7 @@
  * Created:
  *   27/04/2021, 13:03:55
  * Last edited:
- *   16/08/2021, 17:40:41
+ *   24/08/2021, 22:21:27
  * Auto updated?
  *   Yes
  *
@@ -28,6 +28,9 @@ namespace Rasterizer::Rendering {
     /* The CommandPool class, which manages CommandBuffers for a single device queue. */
     class CommandPool {
     public:
+        /* Channel name for the CommandPool class. */
+        static constexpr const char* channel = "CommandPool";
+
         /* Constant reference to the device that we're managing the pool for. */
         const Rendering::GPU& gpu;
 

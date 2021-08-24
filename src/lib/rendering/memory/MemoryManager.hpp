@@ -24,11 +24,16 @@
 #include "../descriptors/DescriptorPool.hpp"
 
 namespace Rasterizer::Rendering {
-    /* The MemoryManager struct, which bundles different kind of pools into one place. */
-    struct MemoryManager {
+    /* The MemoryManager class, which bundles different kind of pools into one place. */
+    class MemoryManager {
+    public:
+        /* Channel name for the MemoryManager class. */
+        static constexpr const char* channel = "MemoryManager";
+
         /* The GPU on which the MemoryManager is based. */
         const Rendering::GPU& gpu;
 
+    public:
         /* The command pool for the draw calls. */
         Rendering::CommandPool draw_cmd_pool;
         /* The command pool for memory calls. */
@@ -45,7 +50,7 @@ namespace Rasterizer::Rendering {
         /* A command buffer for memory transfer operations. */
         Rendering::CommandBuffer* copy_cmd;
 
-
+    public:
         /* Constructor for the MemoryManager class, which takes the GPU where it is defined for and the sizes of the two memory pools. */
         MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_size, VkDeviceSize stage_pool_size);
         /* Copy constructor for the MemoryManager class. */

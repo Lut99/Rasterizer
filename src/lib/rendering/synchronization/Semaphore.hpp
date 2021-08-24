@@ -23,6 +23,9 @@ namespace Rasterizer::Rendering {
     /* The Semaphore class, which wraps a VkSemaphore object and manages its memory. */
     class Semaphore {
     public:
+        /* Channel name for the Semaphore class. */
+        static constexpr const char* channel = "Semaphore";
+
         /* The GPU where the semaphore lives. */
         const Rendering::GPU& gpu;
 

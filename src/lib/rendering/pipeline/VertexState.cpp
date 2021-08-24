@@ -25,8 +25,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkPipelineVertexInputStateCreateInfo struct. */
 static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& vertex_state_info, VkVertexInputBindingDescription* vk_binding_description, const Tools::Array<VkVertexInputAttributeDescription>& vk_attribute_descriptions) {
-    
-
     // Set to default
     vertex_state_info = {};
     vertex_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -38,9 +36,6 @@ static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& ver
     // Set the attributes
     vertex_state_info.vertexAttributeDescriptionCount = vk_attribute_descriptions.size();
     vertex_state_info.pVertexAttributeDescriptions = vk_attribute_descriptions.rdata();
-
-    // We're done
-    return;
 }
 
 
@@ -50,22 +45,16 @@ static void populate_vertex_state_info(VkPipelineVertexInputStateCreateInfo& ver
 /***** VERTEXSTATE CLASS *****/
 /* Constructor for the VertexState class, which takes a VkVertexInputBindingDescription and a list of VkVertexInputAttributeDescriptions. */
 VertexState::VertexState(const VkVertexInputBindingDescription& vk_vertex_binding, const Tools::Array<VkVertexInputAttributeDescription>& vk_vertex_attributes) {
-    
-
     // Store the vertex binding & attributes safely
     this->vk_vertex_binding = new VkVertexInputBindingDescription(vk_vertex_binding);
     this->vk_vertex_attributes = Tools::Array<VkVertexInputAttributeDescription>(vk_vertex_attributes);
 
     // Populate the state info
     populate_vertex_state_info(this->vk_vertex_state_info, this->vk_vertex_binding, this->vk_vertex_attributes);
-
-    // DOne
 }
 
 /* Copy constructor for the VertexState class. */
 VertexState::VertexState(const VertexState& other) {
-    
-
     // Copy the binding & attributes
     this->vk_vertex_binding = new VkVertexInputBindingDescription(*other.vk_vertex_binding);
     this->vk_vertex_attributes = Tools::Array<VkVertexInputAttributeDescription>(other.vk_vertex_attributes);
@@ -85,8 +74,6 @@ VertexState::VertexState(VertexState&& other) :
 
 /* Destructor for the VertexState class. */
 VertexState::~VertexState() {
-    
-
     // Only delete the vertex binding if needed
     if (this->vk_vertex_binding != nullptr) {
         delete this->vk_vertex_binding;

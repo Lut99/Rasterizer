@@ -24,17 +24,12 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkFenceCreateInfo struct. */
 static void populate_fence_info(VkFenceCreateInfo& fence_info, VkFenceCreateFlags create_flags) {
-    
-
     // Set to default
     fence_info = {};
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
     // Set the flags
     fence_info.flags = create_flags;
-
-    // And done!
-    return;
 }
 
 
@@ -47,8 +42,6 @@ Fence::Fence(const Rendering::GPU& gpu, VkFenceCreateFlags create_flags) :
     gpu(gpu),
     vk_create_flags(create_flags)
 {
-    
-
     // Populate the create info
     VkFenceCreateInfo fence_info;
     populate_fence_info(fence_info, this->vk_create_flags);
@@ -56,7 +49,7 @@ Fence::Fence(const Rendering::GPU& gpu, VkFenceCreateFlags create_flags) :
     // Create the semaphore
     VkResult vk_result;
     if ((vk_result = vkCreateFence(this->gpu, &fence_info, nullptr, &this->vk_fence)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create fence: " + vk_error_map[vk_result]);
+        logger.fatalc(Fence::channel, "Could not create fence: ", vk_error_map[vk_result]);
     }
 }
 
@@ -65,8 +58,6 @@ Fence::Fence(const Fence& other) :
     gpu(other.gpu),
     vk_create_flags(other.vk_create_flags)
 {
-    
-
     // Populate the create info
     VkFenceCreateInfo fence_info;
     populate_fence_info(fence_info, this->vk_create_flags);
@@ -74,7 +65,7 @@ Fence::Fence(const Fence& other) :
     // Create the semaphore
     VkResult vk_result;
     if ((vk_result = vkCreateFence(this->gpu, &fence_info, nullptr, &this->vk_fence)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not re-create fence: " + vk_error_map[vk_result]);
+        logger.fatalc(Fence::channel, "Could not re-create fence: ", vk_error_map[vk_result]);
     }
 }
 
@@ -90,33 +81,22 @@ Fence::Fence(Fence&& other) :
 
 /* Destructor for the Fence class. */
 Fence::~Fence() {
-    
-
     if (this->vk_fence != nullptr) {
         vkDestroyFence(this->gpu, this->vk_fence, nullptr);
     }
-
-    return;
 }
 
 
 
 /* Swap operator for the Fence class. */
 void Rendering::swap(Fence& f1, Fence& f2) {
-    
-
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (f1.gpu != f2.gpu) {
-        DLOG(fatal, "Cannot swap fences with different GPUs");
-    }
+    if (f1.gpu != f2.gpu) { logger.fatalc(Fence::channel, "Cannot swap fences with different GPUs"); }
     #endif
 
     // Swap EVERYTHING but the GPU
     using std::swap;
     swap(f1.vk_fence, f2.vk_fence);
     swap(f1.vk_create_flags, f2.vk_create_flags);
-
-    // Done
-    return;
 }

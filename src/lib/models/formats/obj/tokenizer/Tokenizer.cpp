@@ -29,6 +29,7 @@
 #include <cstring>
 #include <cerrno>
 #include <tuple>
+
 #include "../../auxillary/TokenizerTools.hpp"
 #include "ValueTerminal.hpp"
 #include "Tokenizer.hpp"
@@ -62,7 +63,7 @@ Tokenizer::Tokenizer(const std::string& path) :
         #else
         std::string err = strerror(errno);
         #endif
-        DLOG(fatal, "Could not open file handle: " + err)
+        logger.fatalc(Tokenizer::channel, "Could not open file handle: ", err);
     }
     this->file = static_cast<std::istream*>(is);
 
@@ -1303,19 +1304,8 @@ unknown_token: {
 
 
     // We should never get here
-    DLOG(fatal, "Hole in jump logic encountered; reached point we should never reach");
+    logger.fatalc(Tokenizer::channel, "Hole in jump logic encountered; reached point we should never reach");
     return nullptr;
-}
-
-/* Puts a token back on the internal list of tokens, so it can be returned next get call. Note that the Tokenizer will deallocate these if it gets deallocated. */
-void Tokenizer::unget(Terminal* term) {
-    
-
-    // Put the token back on the list of tokens
-    this->terminal_buffer.push_back(term);
-
-    // Done
-    return;
 }
 
 

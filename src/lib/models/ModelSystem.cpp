@@ -16,6 +16,7 @@
 #include <cstring>
 #include <algorithm>
 
+#include "tools/Logger.hpp"
 #include "tools/Common.hpp"
 #include "formats/obj/ObjLoader.hpp"
 
@@ -34,21 +35,22 @@ using namespace Rasterizer::Models;
 ModelSystem::ModelSystem(Rendering::MemoryManager& memory_manager) :
     memory_manager(memory_manager)
 {
-    
+    logger.logc(Verbosity::important, ModelSystem::channel, "Initializing...");
 
     // Nothing as of yet
 
-    // Done
-    DLOG(info, "Initialized ModelManager.");
+    logger.logc(Verbosity::important, ModelSystem::channel, "Init success.");
 }
 
 /* Copy constructor for the ModelSystem class. */
 ModelSystem::ModelSystem(const ModelSystem& other) :
     memory_manager(other.memory_manager)
 {
-    
+    logger.logc(Verbosity::debug, ModelSystem::channel, "Copying ModelSystem @ ", &other, "...");
 
     // Nothing as of yet
+
+    logger.logc(Verbosity::debug, ModelSystem::channel, "Copy success.");
 }
 
 /* Move constructor for the ModelSystem class. */
@@ -58,18 +60,18 @@ ModelSystem::ModelSystem(ModelSystem&& other) :
 
 /* Destructor for the ModelSystem class. */
 ModelSystem::~ModelSystem() {
-    
+    logger.logc(Verbosity::important, ModelSystem::channel, "Cleaning...");
 
     // Nothing as of yet
+    
+    logger.logc(Verbosity::important, ModelSystem::channel, "Cleaned.");
 }
 
 
 
 /* Loads a model at the given path and with the given format and adds it to the given entity in the given entity manager. */
 void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity, const std::string& path, ModelFormat format) {
-    
-    DLOG(info, "Loading model for entity " + std::to_string(entity) + "...");
-    DINDENT;
+    logger.logc(Verbosity::important, ModelSystem::channel, "Loading model for entity ", entity, "...");
 
     // Get the entity's component
     ECS::Meshes& meshes = entity_manager.get_component<ECS::Meshes>(entity);
@@ -78,13 +80,13 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
     switch (format) {
         case ModelFormat::obj:
             // Use the load function from the modelloader
-            DLOG(info, "Loading '" + path + "' as .obj file...");
+            logger.logc(Verbosity::details, ModelSystem::channel, "Loading '", path, "' as .obj file...");
             load_obj_model(this->memory_manager, meshes, path);
             break;
 
         case ModelFormat::triangle: {
             // Simply set the hardcoded list
-            DLOG(info, "Loading static triangle...");
+            logger.logc(Verbosity::details, ModelSystem::channel, "Loading static triangle...");
 
             // Prepare the mesh struct
             Mesh mesh = {};
@@ -160,26 +162,18 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
         //     break;
 
         default:
-            DLOG(fatal, "Unsupported model format '" + model_format_names[(int) format] + "'");
+            logger.fatal(ModelSystem::channel, "Unsupported model format '", model_format_names[(int) format], "'");
             break;
 
     }
 
-    // Do some debug print
-    DINDENT;
-    DLOG(info, "Loaded " + std::to_string(meshes.size()) + " new meshes.");
-    DDEDENT;
-
-    // Done
-    DDEDENT;
-    return;
+    // Do some debug print to close off
+    logger.logc(Verbosity::debug, ModelSystem::channel, "Loaded ", meshes.size(), " new meshes.");
 }
 
 /* Unloads the model belonging to the given entity in the given entity manager. */
 void ModelSystem::unload_model(ECS::EntityManager& entity_manager, entity_t entity) {
-    
-    DLOG(info, "Deallocating model for entity " + std::to_string(entity) + "...");
-    DINDENT;
+    logger.logc(Verbosity::important, ModelSystem::channel, "Deallocating model for entity ", entity, "...");
 
     // Try to get the entity's meshes and loop through them
     ECS::Meshes& meshes = entity_manager.get_component<ECS::Meshes>(entity);
@@ -191,16 +185,10 @@ void ModelSystem::unload_model(ECS::EntityManager& entity_manager, entity_t enti
 
     // Clear the list
     meshes.clear();
-
-    // Done
-    DDEDENT;
-    return;
 }
 
 /* Binds the model-related buffers for the given mesh component to the given command buffer. */
 void ModelSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& entity_mesh) const {
-    
-
     // Bind the buffers
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(draw_cmd->command_buffer(), 0, 1, &entity_mesh.vertices->buffer(), offsets);
@@ -214,18 +202,11 @@ void ModelSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::
 
 /* Swap operator for the ModelSystem class. */
 void Models::swap(ModelSystem& mm1, ModelSystem& mm2) {
-    
-
     #ifndef NDEBUG
     // Make sure the all pools overlap
-    if (&mm1.memory_manager != &mm2.memory_manager) {
-        DLOG(fatal, "Cannot swap model managers with different memory managers");
-    }
+    if (&mm1.memory_manager != &mm2.memory_manager) { logger.fatal("Cannot swap model managers with different memory managers"); }
     #endif
 
     // Otherwise, swap all elements
     using std::swap;
-
-    // Done
-    return;
 }

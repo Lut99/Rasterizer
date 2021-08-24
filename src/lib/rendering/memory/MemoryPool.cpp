@@ -12,6 +12,7 @@
  *   <Todo>
 **/
 
+#include "tools/Logger.hpp"
 #include "tools/Common.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 #include "../auxillary/MemoryProperties.hpp"
@@ -26,8 +27,6 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VKBufferCreateInfo struct. */
 static void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n_bytes, VkBufferUsageFlags usage_flags, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    
-
     // Only set to default
     buffer_info = {};
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -37,15 +36,10 @@ static void populate_buffer_info(VkBufferCreateInfo& buffer_info, VkDeviceSize n
     buffer_info.usage = usage_flags;
     buffer_info.sharingMode = sharing_mode;
     buffer_info.flags = create_flags;
-
-    // Done
-    return;
 }
 
 /* Populates a given VkImageCreateInfo struct. */
 static void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D& image_size, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    
-
     // Only set to default
     image_info = {};
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -67,15 +61,10 @@ static void populate_image_info(VkImageCreateInfo& image_info, const VkExtent3D&
 
     // Since the sharing mode will be exlusive by default, let's for now hardcode this to not have a queue family
     image_info.queueFamilyIndexCount = 0;
-
-    // Done
-    return;
 }
 
 /* Populates a given VkMemoryAllocateInfo struct. */
 static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t memory_type, VkDeviceSize n_bytes) {
-    
-
     // Set to default & define the stryct type
     allocate_info = {};
     allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -84,9 +73,6 @@ static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t
     allocate_info.allocationSize = n_bytes;
     // Set the type of the memory to allocate
     allocate_info.memoryTypeIndex = memory_type;
-
-    // Done
-    return;
 }
 
 
@@ -96,8 +82,6 @@ static void populate_allocate_info(VkMemoryAllocateInfo& allocate_info, uint32_t
 /***** HELPER FUNCTIONS *****/
 /* Given some memory properties and optionally Buffer/Image usage flags, returns the index of the most suitable memory on the device. */
 static uint32_t select_memory(const Rendering::GPU& gpu, VkMemoryPropertyFlags memory_properties, VkBufferUsageFlags buffer_usage, VkImageUsageFlags image_usage) {
-    
-
     // Get the available memory in the internal device
     VkPhysicalDeviceMemoryProperties gpu_properties;
     vkGetPhysicalDeviceMemoryProperties(gpu, &gpu_properties);
@@ -113,7 +97,7 @@ static uint32_t select_memory(const Rendering::GPU& gpu, VkMemoryPropertyFlags m
         VkResult vk_result;
         VkBuffer dummy;
         if ((vk_result = vkCreateBuffer(gpu, &buffer_info, nullptr, &dummy)) != VK_SUCCESS) {
-            DLOG(fatal, "Could not allocate temporary dummy buffer: " + vk_error_map[vk_result]);
+            logger.fatalc(MemoryPool::channel, "Could not allocate temporary dummy buffer: ", vk_error_map[vk_result]);
         }
 
         // Get the requirements for this buffer
@@ -136,7 +120,7 @@ static uint32_t select_memory(const Rendering::GPU& gpu, VkMemoryPropertyFlags m
         VkResult vk_result;
         VkImage dummy;
         if ((vk_result = vkCreateImage(gpu, &image_info, nullptr, &dummy)) != VK_SUCCESS) {
-            DLOG(fatal, "Could not allocate temporary dummy image: " + vk_error_map[vk_result]);
+            logger.fatalc(MemoryPool::channel, "Could not allocate temporary dummy image: ", vk_error_map[vk_result]);
         }
 
         // Get the requirements for this image
@@ -167,7 +151,7 @@ static uint32_t select_memory(const Rendering::GPU& gpu, VkMemoryPropertyFlags m
     }
 
     // Didn't find any
-    DLOG(fatal, "No suitable memory on device for given memory demands.");
+    logger.fatalc(MemoryPool::channel, "No suitable memory on device for given memory demands.");
     return std::numeric_limits<uint32_t>::max();
 }
 
@@ -184,39 +168,37 @@ MemoryPool::MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemo
 
     vk_properties(memory_properties)
 {
-    
-    DLOG(info, "Intializing MemoryPool...");
-    DINDENT;
+    logger.logc(Verbosity::important, MemoryPool::channel, "Initializing...");
 
     #ifndef NDEBUG
-    // Do some debug printing first
-    DLOG(info, "Memory property flags for this pool:");
-    DINDENT;
-    for (size_t i = 0; i < 8 * sizeof(uint32_t); i++) {
-        VkMemoryPropertyFlagBits bit = (VkMemoryPropertyFlagBits) (memory_properties & (0x1 << i));
-        if (bit) {
-            DLOG(auxillary, vk_memory_property_map.at(bit));
+    if (logger.get_verbosity() >= Verbosity::debug) {
+        // Do some debug printing first
+        logger.logc(Verbosity::debug, MemoryPool::channel, "Memory property flags for this pool:");
+        for (size_t i = 0; i < 8 * sizeof(uint32_t); i++) {
+            VkMemoryPropertyFlagBits bit = (VkMemoryPropertyFlagBits) (memory_properties & (0x1 << i));
+            if (bit) {
+                logger.logc(Verbosity::debug, MemoryPool::channel, vk_memory_property_map.at(bit));
+            }
         }
     }
-    DDEDENT;
     #endif
 
     // Try to find suitable memory
     this->memory_type = select_memory(gpu, memory_properties, buffer_usage, image_usage);
 
     // Prepare a create info for the device memory we'll allocate
-    DLOG(info, "Allocating " + Tools::bytes_to_string(this->free_list.capacity()) +  " on device '" + gpu.name() + "'...");
+    logger.logc(Verbosity::details, MemoryPool::channel, "Allocating ", Tools::bytes_to_string(this->free_list.capacity()),  " on device '", gpu.name(), "'...");
     VkMemoryAllocateInfo allocate_info;
     populate_allocate_info(allocate_info, memory_type, this->free_list.capacity());
 
     // Do the allocation
     VkResult vk_result;
     if ((vk_result = vkAllocateMemory(this->gpu, &allocate_info, nullptr, &this->vk_memory)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not allocate memory on device: " + vk_error_map[vk_result]);
+        logger.fatalc(MemoryPool::channel, "Could not allocate memory on device: ", vk_error_map[vk_result]);
     }
 
     // Cave Johnson, we're done here
-    DDEDENT;
+    logger.logc(Verbosity::important, MemoryPool::channel, "Init success.");
 }
 
 /* Copy constructor for the MemoryPool class. */
@@ -228,7 +210,7 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
 
     vk_properties(other.vk_properties)
 {
-    
+    logger.logc(Verbosity::debug, MemoryPool::channel, "Copying...");
 
     // We already know the memory type and size, so go directly to allocating a new pool
     VkMemoryAllocateInfo allocate_info;
@@ -237,8 +219,10 @@ MemoryPool::MemoryPool(const MemoryPool& other) :
     // Do the allocation
     VkResult vk_result;
     if ((vk_result = vkAllocateMemory(this->gpu, &allocate_info, nullptr, &this->vk_memory)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not allocate memory on device: " + vk_error_map[vk_result]);
+        logger.fatalc(MemoryPool::channel,"Could not allocate memory on device: ", vk_error_map[vk_result]);
     }
+
+    logger.logc(Verbosity::debug, MemoryPool::channel, "Copy success.");
 }
 
 /* Move constructor for the MemoryPool class. */
@@ -259,13 +243,11 @@ MemoryPool::MemoryPool(MemoryPool&& other) :
 
 /* Destructor for the MemoryPool class. */
 MemoryPool::~MemoryPool() {
-    
-    DLOG(info, "Cleaning MemoryPool...");
-    DINDENT;
+    logger.logc(Verbosity::important, MemoryPool::channel, "Cleaning...");
 
     // First, deallocate any buffers or images or whatnot there may be
     if (this->objects.size() > 0) {
-        DLOG(info, "Deallocating allocated objects...");
+        logger.logc(Verbosity::details, MemoryPool::channel, "Deallocating allocated objects...");
         for (uint32_t i = 0; i < this->objects.size(); i++) {
             if (this->objects[i]->type == MemoryObjectType::buffer) {
                 vkDestroyBuffer(this->gpu, ((Buffer*) this->objects[i])->vk_buffer, nullptr);
@@ -278,23 +260,21 @@ MemoryPool::~MemoryPool() {
 
     // If the memory hasn't been stolen, deallocate it
     if (this->vk_memory != nullptr) {
-        DLOG(info, "Deallocating device memory...");
+        logger.logc(Verbosity::details, MemoryPool::channel, "Deallocating device memory...");
         vkFreeMemory(this->gpu, this->vk_memory, nullptr);
     }
 
-    DDEDENT;
+    logger.logc(Verbosity::important, MemoryPool::channel, "Cleaned.");
 }
 
 
 
 /* Private helper function that does the actual memory allocation part. */
 VkDeviceSize MemoryPool::_allocate(const VkMemoryRequirements& requirements) {
-    
-
     // Try to reserve memory in the freelist
     freelist_size_t offset = this->free_list.reserve(requirements.size, requirements.alignment);
-    if (offset == std::numeric_limits<freelist_size_t>::max()) { DLOG(fatal, "Could not allocate new memory object: not enough space left in pool (need " + Tools::bytes_to_string(requirements.size) + ", but " + Tools::bytes_to_string(this->free_list.capacity() - this->free_list.size()) + " free)"); }
-    else if (offset == std::numeric_limits<freelist_size_t>::max() - 1) { DLOG(fatal, "Could not allocate new memory object: enough space but bad fragmentation"); }
+    if (offset == std::numeric_limits<freelist_size_t>::max()) { logger.fatalc(MemoryPool::channel, "Could not allocate new memory object: not enough space left in pool (need ", Tools::bytes_to_string(requirements.size), ", but ", Tools::bytes_to_string(this->free_list.capacity() - this->free_list.size()), " free)"); }
+    else if (offset == std::numeric_limits<freelist_size_t>::max() - 1) { logger.fatalc(MemoryPool::channel, "Could not allocate new memory object: enough space but bad fragmentation"); }
 
     // Well that's it
     return offset;
@@ -304,8 +284,6 @@ VkDeviceSize MemoryPool::_allocate(const VkMemoryRequirements& requirements) {
 
 /* Tries to allocate a new Buffer of the given size (in bytes) and with the given usage flags. Optionally, one can set the sharing mode and any create flags. */
 Buffer* MemoryPool::allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer_usage, VkSharingMode sharing_mode, VkBufferCreateFlags create_flags) {
-    
-
     // First, create the buffer object itself
     VkBufferCreateInfo buffer_info;
     populate_buffer_info(buffer_info, buffer_size, buffer_usage, sharing_mode, create_flags);
@@ -313,7 +291,7 @@ Buffer* MemoryPool::allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer
     VkResult vk_result;
     VkBuffer buffer;
     if ((vk_result = vkCreateBuffer(this->gpu, &buffer_info, nullptr, &buffer)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create new buffer: " + vk_error_map[vk_result]);
+        logger.fatalc(MemoryPool::channel, "Could not create new buffer: ", vk_error_map[vk_result]);
     }
 
     // Fetch more detailed memory requirements for this buffer
@@ -334,8 +312,6 @@ Buffer* MemoryPool::allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer
 
 /* Tries to allocate a new Buffer that is a copy of the given Buffer. */
 Buffer* MemoryPool::allocate(const Buffer* other) {
-    
-
     // Create the buffer object with the properties of the old one
     VkBufferCreateInfo buffer_info;
     populate_buffer_info(buffer_info, other->buffer_size, other->init_data.buffer_usage, other->init_data.sharing_mode, other->init_data.create_flags);
@@ -343,7 +319,7 @@ Buffer* MemoryPool::allocate(const Buffer* other) {
     VkResult vk_result;
     VkBuffer buffer;
     if ((vk_result = vkCreateBuffer(this->gpu, &buffer_info, nullptr, &buffer)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create buffer copy: " + vk_error_map[vk_result]);
+        logger.fatalc(MemoryPool::channel, "Could not create buffer copy: ", vk_error_map[vk_result]);
     }
 
     // Fetch more detailed memory requirements for this buffer
@@ -366,8 +342,6 @@ Buffer* MemoryPool::allocate(const Buffer* other) {
 
 /* Tries to allocate a new Image of the given size (in pixels), the given format, the given layout and with the given usage flags. Optionally, one can set the sharing mode and any create flags. */
 Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_format, VkImageLayout image_layout, VkImageUsageFlags usage_flags, VkSharingMode sharing_mode, VkImageCreateFlags create_flags) {
-    
-
     // First, create the buffer object itself
     VkExtent3D vk_extent3D = { image_extent.width, image_extent.height, 1 };
     VkImageCreateInfo image_info;
@@ -376,7 +350,7 @@ Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_forma
     VkResult vk_result;
     VkImage image;
     if ((vk_result = vkCreateImage(this->gpu, &image_info, nullptr, &image)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create new image: " + vk_error_map[vk_result]);
+        logger.fatalc(MemoryPool::channel, "Could not create new image: " + vk_error_map[vk_result]);
     }
 
     // Fetch more detailed memory requirements for this buffer
@@ -397,8 +371,6 @@ Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_forma
 
 /* Tries to allocate a new Image that is a copy of the given Image. */
 Image* MemoryPool::allocate(const Image* other) {
-    
-
     // First, create the buffer object itself
     VkExtent3D vk_extent3D = { other->vk_extent.width, other->vk_extent.height, 1 };
     VkImageCreateInfo image_info;
@@ -407,7 +379,7 @@ Image* MemoryPool::allocate(const Image* other) {
     VkResult vk_result;
     VkImage image;
     if ((vk_result = vkCreateImage(this->gpu, &image_info, nullptr, &image)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create image copy: " + vk_error_map[vk_result]);
+        logger.fatalc(MemoryPool::channel, "Could not create image copy: " + vk_error_map[vk_result]);
     }
 
     // Fetch more detailed memory requirements for this buffer
@@ -430,8 +402,6 @@ Image* MemoryPool::allocate(const Image* other) {
 
 /* Deallocates the given MemoryObject. */
 void MemoryPool::free(const MemoryObject* object) {
-    
-
     // Try to remove the pointer from the list
     bool found = false;
     for (uint32_t i = 0; i < this->objects.size(); i++) {
@@ -442,7 +412,7 @@ void MemoryPool::free(const MemoryObject* object) {
         }
     }
     if (!found) {
-        DLOG(fatal, "Tried to free Buffer that was not allocated with this pool.");
+        logger.fatalc(MemoryPool::channel, "Tried to free Buffer that was not allocated with this pool.");
     }
 
     // Free the memory in the freelist
@@ -457,21 +427,14 @@ void MemoryPool::free(const MemoryObject* object) {
     
     // Destroy the pointer itself
     delete object;
-
-    // Done
-    return;
 }
 
 
 
 /* Swap operator for the MemoryPool class. */
 void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
-    
-
     #ifndef NDEBUG
-    if (mp1.gpu != mp2.gpu) {
-        DLOG(fatal, "Cannot swap memory pools with different GPUs");
-    }
+    if (mp1.gpu != mp2.gpu) { logger.fatalc(MemoryPool::channel, "Cannot swap memory pools with different GPUs"); }
     #endif
 
     // Simply swap it all
@@ -484,8 +447,5 @@ void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
     swap(mp1.vk_properties, mp2.vk_properties);
 
     swap(mp1.objects, mp2.objects);
-
-    // Done
-    return;
 }
 

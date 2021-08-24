@@ -19,7 +19,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "tools/Logger.hpp"
 #include "tools/Array.hpp"
 #include "../instance/Instance.hpp"
 
@@ -38,15 +37,15 @@ namespace Rasterizer::Rendering {
     /* The GPU class, which is the main interface to our Vulkan compute library implementation. */
     class GPU {
     public:
+        /* Channel name for the GPU class. */
+        static constexpr const char* channel = "GPU";
+
         /* Constant reference to the instance where this GPU is declared with. */
         const Instance& instance;
         /* Constant reference to the surface where we render to. */
         const Surface& surface;
 
     private:
-        /* The logger for the GPU class. */
-        Tools::Logger logger;
-
         /* The physical GPU this class references. */
         VkPhysicalDevice vk_physical_device;
         /* The properties of said device, like its name. */
@@ -65,8 +64,8 @@ namespace Rasterizer::Rendering {
         Tools::Array<VkQueue> vk_queues[QueueInfo::n_queues];
 
     public:
-        /* Constructor for the GPU class, which takes init data for its logger, a Vulkan instance, the target surface and a list of required extensions to enable on the GPU. */
-        GPU(const Tools::Logger::InitData& init_data, const Instance& instance, const Surface& surface, const Tools::Array<uint32_t>& queue_counts = Tools::Array<uint32_t>({ 1, 1, 1, 1 }), const Tools::Array<const char*>& extensions = device_extensions);
+        /* Constructor for the GPU class, which takes a Vulkan instance, the target surface and a list of required extensions to enable on the GPU. */
+        GPU(const Instance& instance, const Surface& surface, const Tools::Array<uint32_t>& queue_counts = Tools::Array<uint32_t>({ 1, 1, 1, 1 }), const Tools::Array<const char*>& extensions = device_extensions);
         /* Copy constructor for the GPU class. */
         GPU(const GPU& other);
         /* Move constructor for the GPU class. */

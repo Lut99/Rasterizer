@@ -15,6 +15,8 @@
 **/
 
 #include <cstring>
+
+#include "tools/Logger.hpp"
 #include "tools/Common.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
@@ -74,17 +76,17 @@ static void populate_device_info(VkDeviceCreateInfo& device_info, const Tools::A
 
 /***** GPU SELECTION HELPER FUNCTIONS *****/
 /* Given a physical device, checks if it supports the required list of extensions. */
-static bool gpu_supports_extensions(Tools::Logger& logger, const VkPhysicalDevice& vk_physical_device, const Tools::Array<const char*>& device_extensions) {
+static bool gpu_supports_extensions(const VkPhysicalDevice& vk_physical_device, const Tools::Array<const char*>& device_extensions) {
     // Get a list of all extensions supported on this device
     uint32_t n_supported_extensions = 0;
     VkResult vk_result;
     if ((vk_result = vkEnumerateDeviceExtensionProperties(vk_physical_device, nullptr, &n_supported_extensions, nullptr)) != VK_SUCCESS) {
-        logger.warning("Could not get the number of supported extensions on the GPU.");
+        logger.warningc(GPU::channel, "Could not get the number of supported extensions on the GPU.");
         return false;
     }
     Tools::Array<VkExtensionProperties> supported_extensions(n_supported_extensions);
     if ((vk_result = vkEnumerateDeviceExtensionProperties(vk_physical_device, nullptr, &n_supported_extensions, supported_extensions.wdata(n_supported_extensions))) != VK_SUCCESS) {
-        logger.warning("Could not get the number of supported extensions on the GPU.");
+        logger.warningc(GPU::channel, "Could not get the number of supported extensions on the GPU.");
         return false;
     }
 
@@ -113,45 +115,45 @@ static bool gpu_supports_extensions(Tools::Logger& logger, const VkPhysicalDevic
 }
 
 /* Given a physical device, checks if it meets our needs. */
-static bool is_suitable_gpu(Tools::Logger& logger, const VkPhysicalDevice& vk_physical_device, const Surface& surface, const Tools::Array<const char*>& device_extensions) {
+static bool is_suitable_gpu(const VkPhysicalDevice& vk_physical_device, const Surface& surface, const Tools::Array<const char*>& device_extensions) {
     // First, we get a list of supported queues on this device
-    QueueInfo queue_info(logger, vk_physical_device, surface);
+    QueueInfo queue_info(vk_physical_device, surface);
 
     // Next, check if the device supports the extensions we want
-    bool supports_extensions = gpu_supports_extensions(logger, vk_physical_device, device_extensions);
+    bool supports_extensions = gpu_supports_extensions(vk_physical_device, device_extensions);
 
     // With those two, return it the GPU is suitable
     return queue_info.supports(QueueType::graphics) && queue_info.supports(QueueType::compute) && queue_info.supports(QueueType::memory) && queue_info.supports(QueueType::present) && supports_extensions;
 }
 
 /* Selects a suitable GPU from the ones that support Vulkan. */
-static VkPhysicalDevice select_gpu(Tools::Logger& logger, const Instance& instance, const Surface& surface, const Tools::Array<const char*>& device_extensions) {
+static VkPhysicalDevice select_gpu(const Instance& instance, const Surface& surface, const Tools::Array<const char*>& device_extensions) {
     // Get how many Vulkan-capable devices are out there
     uint32_t n_available_devices = 0;
     VkResult vk_result;
     if ((vk_result = vkEnumeratePhysicalDevices(instance, &n_available_devices, nullptr)) != VK_SUCCESS) {
-        logger.fatal("Could not get the number of available GPUs: ", vk_error_map[vk_result]);
+        logger.fatalc(GPU::channel, "Could not get the number of available GPUs: ", vk_error_map[vk_result]);
     }
     if (n_available_devices == 0) {
-        logger.fatal("No Vulkan-compatible GPUs found.");
+        logger.fatalc(GPU::channel, "No Vulkan-compatible GPUs found.");
     }
 
     // If there are GPUs, then we fetch a list
     Tools::Array<VkPhysicalDevice> available_devices(n_available_devices);
     if ((vk_result = vkEnumeratePhysicalDevices(instance, &n_available_devices, available_devices.wdata(n_available_devices))) != VK_SUCCESS) {
-        logger.fatal("Could not get list of available GPUs: ", vk_error_map[vk_result]);
+        logger.fatalc(GPU::channel, "Could not get list of available GPUs: ", vk_error_map[vk_result]);
     }
 
     // Iterate through each of them to find a suitable one
     for (uint32_t i = 0; i < available_devices.size(); i++) {
         // Just take the first suitable one
-        if (is_suitable_gpu(logger, available_devices[i], surface, device_extensions)) {
+        if (is_suitable_gpu(available_devices[i], surface, device_extensions)) {
             return available_devices[i];
         }
     }
 
     // Otherwise, we didn't find any
-    logger.fatal("Could not find a supported GPU.");
+    logger.fatalc(GPU::channel, "Could not find a supported GPU.");
 }
 
 
@@ -159,31 +161,30 @@ static VkPhysicalDevice select_gpu(Tools::Logger& logger, const Instance& instan
 
 
 /***** GPU CLASS *****/
-/* Constructor for the GPU class, which takes init data for its logger, a Vulkan instance, the target surface and a list of required extensions to enable on the GPU. */
-GPU::GPU(const Tools::Logger::InitData& init_data, const Instance& instance, const Surface& surface, const Tools::Array<uint32_t>& queue_counts, const Tools::Array<const char*>& extensions) :
+/* Constructor for the GPU class, which takes a Vulkan instance, the target surface and a list of required extensions to enable on the GPU. */
+GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<uint32_t>& queue_counts, const Tools::Array<const char*>& extensions) :
     instance(instance),
     surface(surface),
-    logger(init_data, "GPU"),
-    vk_queue_info(this->logger),
-    vk_swapchain_info(this->logger),
     vk_extensions(extensions)
 {
+    logger.logc(Verbosity::important, GPU::channel, "Initializing...");
+
     // Then, we move to getting a phsysical device that supports our desired properties
-    this->logger.log(Verbosity::details, "Choosing physical device...");
+    logger.logc(Verbosity::details, GPU::channel, "Choosing physical device...");
 
     // Start by selecting a proper one
-    this->vk_physical_device = select_gpu(logger, this->instance, this->surface, this->vk_extensions);
+    this->vk_physical_device = select_gpu(this->instance, this->surface, this->vk_extensions);
 
     // Next, get some of its properties, like the name & queue info
     vkGetPhysicalDeviceProperties(this->vk_physical_device, &this->vk_physical_device_properties);
-    this->vk_queue_info = QueueInfo(this->logger, this->vk_physical_device, this->surface);
-    this->vk_swapchain_info = SwapchainInfo(this->logger, this->vk_physical_device, this->surface);
-    this->logger.log(Verbosity::important, "Selected GPU: '", this->vk_physical_device_properties.deviceName, '\'');
+    this->vk_queue_info = QueueInfo(this->vk_physical_device, this->surface);
+    this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, this->surface);
+    logger.logc(Verbosity::important, GPU::channel, "Selected GPU: '", this->vk_physical_device_properties.deviceName, '\'');
 
     
 
     // With the physical device, create the logical device
-    this->logger.log(Verbosity::details, "Initializing logical device...");
+    logger.logc(Verbosity::details, GPU::channel, "Initializing logical device...");
 
     // Prepare the list of queue priorities (all set to 1.0f for now)
     Tools::Array<Tools::Array<float>> queue_priorities(queue_counts.size());
@@ -206,40 +207,42 @@ GPU::GPU(const Tools::Logger::InitData& init_data, const Instance& instance, con
     // With the device info ready, create it
     VkResult vk_result;
     if ((vk_result = vkCreateDevice(this->vk_physical_device, &device_info, nullptr, &this->vk_device)) != VK_SUCCESS) {
-        this->logger.fatal("Could not create the logical device: ", vk_error_map[vk_result]);
+        logger.fatalc(GPU::channel, "Could not create the logical device: ", vk_error_map[vk_result]);
     }
     
 
 
     // For debugging purposes, print the extensions enabled
     for (uint32_t i = 0; i < extensions.size(); i++) {
-        this->logger.log(Verbosity::debug, "Enabled extension '", std::string(extensions[i]), '\'');
+        logger.logc(Verbosity::debug, GPU::channel, "Enabled extension '", std::string(extensions[i]), '\'');
     }
 
 
 
     // As a quick next step, fetch the relevant device queues
-    this->logger.log(Verbosity::details, "Fetching device queues...");
+    logger.logc(Verbosity::details, GPU::channel, "Fetching device queues...");
     for (uint32_t i = 0; i < QueueInfo::n_queues; i++) {
         this->vk_queues[i].resize(queue_counts[i]);
         for (uint32_t j = 0; j < queue_counts[i]; j++) {
             vkGetDeviceQueue(this->vk_device, this->vk_queue_info[(QueueType) i], j, &this->vk_queues[i][j]);
         }
     }
+
+    // D0ne
+    logger.logc(Verbosity::important, GPU::channel, "Init success.");
 }
 
 /* Copy constructor for the GPU class. */
 GPU::GPU(const GPU& other) :
     instance(other.instance),
     surface(other.surface),
-    logger(other.logger),
     vk_physical_device(other.vk_physical_device),
     vk_physical_device_properties(other.vk_physical_device_properties),
     vk_queue_info(other.vk_queue_info),
     vk_swapchain_info(other.vk_swapchain_info),
     vk_extensions(other.vk_extensions)
 {
-    this->logger.log(Verbosity::details, "Starting copy...");
+    logger.logc(Verbosity::debug, GPU::channel, "Copying...");
 
     // The physical device can be copied literally; just create a new instance of the logical device
     // But before we do, we prepare a new list of queue counts & priorities
@@ -267,7 +270,7 @@ GPU::GPU(const GPU& other) :
     // With the device info ready, create it
     VkResult vk_result;
     if ((vk_result = vkCreateDevice(this->vk_physical_device, &device_info, nullptr, &this->vk_device)) != VK_SUCCESS) {
-        this->logger.fatal("Could not create the logical device: " + vk_error_map[vk_result]);
+        logger.fatalc(GPU::channel, "Could not create the logical device: " + vk_error_map[vk_result]);
     }
 
     // Re-fetch the relevant device queues to make sure they are accurate
@@ -277,13 +280,15 @@ GPU::GPU(const GPU& other) :
             vkGetDeviceQueue(this->vk_device, this->vk_queue_info[(QueueType) i], j, &this->vk_queues[i][j]);
         }
     }
+
+    // D0ne
+    logger.logc(Verbosity::debug, GPU::channel, "Copy success.");
 }
 
 /* Move constructor for the GPU class. */
 GPU::GPU(GPU&& other) :
     instance(other.instance),
     surface(other.surface),
-    logger(other.logger),
     vk_physical_device(other.vk_physical_device),
     vk_physical_device_properties(other.vk_physical_device_properties),
     vk_queue_info(other.vk_queue_info),
@@ -302,13 +307,17 @@ GPU::GPU(GPU&& other) :
 
 /* Destructor for the GPU class. */
 GPU::~GPU() {
+    logger.logc(Verbosity::important, GPU::channel, "Cleaning...");
+
     // Destroy them in reverse order: first, the logical device
     if (this->vk_device != nullptr) {
-        this->logger.log(Verbosity::details, "Cleaning logical device...");
+        logger.logc(Verbosity::details, "Cleaning logical device...");
         vkDestroyDevice(this->vk_device, nullptr);
     }
 
     // Physical devices need no destructing
+
+    logger.logc(Verbosity::important, GPU::channel, "Cleaned.");
 }
 
 
@@ -316,7 +325,7 @@ GPU::~GPU() {
 /* Refreshes the swapchain info, based on the new surface. */
 void GPU::refresh_swapchain_info() {
     // Simply generate a new one based on the physical device and the surface
-    this->vk_swapchain_info = SwapchainInfo(this->logger, this->vk_physical_device, this->surface.surface());
+    this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, this->surface.surface());
 }
 
 
@@ -325,15 +334,14 @@ void GPU::refresh_swapchain_info() {
 void Rendering::swap(GPU& g1, GPU& g2) {
     #ifndef NDEBUG
     // Check if the instances are actually the same
-    if (g1.instance != g2.instance) { throw std::runtime_error("Cannot swap gpus with different instances"); }
+    if (g1.instance != g2.instance) { logger.fatalc(GPU::channel, "Cannot swap gpus with different instances"); }
     // And also check the surfaces
-    if (g1.surface != g2.surface) { throw std::runtime_error("Cannot swap gpus with different surfaces"); }
+    if (g1.surface != g2.surface) { logger.fatalc(GPU::channel, "Cannot swap gpus with different surfaces"); }
     #endif
 
     // Swap all operators
     using std::swap;
 
-    swap(g1.logger, g2.logger);
     swap(g1.vk_physical_device, g2.vk_physical_device);
     swap(g1.vk_physical_device_properties, g2.vk_physical_device_properties);
     swap(g1.vk_queue_info, g2.vk_queue_info);

@@ -14,6 +14,7 @@
  *   CommandPool.
 **/
 
+#include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "CommandPool.hpp"
@@ -27,23 +28,16 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Function that populates a given VkCommandBufferBeginInfo struct with the given values. */
 static void populate_begin_info(VkCommandBufferBeginInfo& begin_info, VkCommandBufferUsageFlags usage_flags) {
-    
-
     // Set the deafult
     begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
     // Set the flags
     begin_info.flags = usage_flags;
-
-    // Done
-    return;
 }
 
 /* Function that populates a given VkSubmitINfo struct with the given values. */
 static void populate_submit_info(VkSubmitInfo& submit_info, const VkCommandBuffer& vk_command_buffer) {
-    
-
     // Set to default
     submit_info = {};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -55,9 +49,6 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const VkCommandBuffe
     // Make sure that there are no semaphores used
     submit_info.signalSemaphoreCount = 0;
     submit_info.waitSemaphoreCount = 0;
-
-    // Done
-    return;
 }
 
 
@@ -77,8 +68,6 @@ CommandBuffer::~CommandBuffer() {}
 
 /* Begins recording the command buffer. Overwrites whatever is already recorded here, for some reason. Takes optional usage flags for this recording. */
 void CommandBuffer::begin(VkCommandBufferUsageFlags usage_flags) const {
-    
-
     // Populate the begin info struct
     VkCommandBufferBeginInfo begin_info;
     populate_begin_info(begin_info, usage_flags);
@@ -86,21 +75,16 @@ void CommandBuffer::begin(VkCommandBufferUsageFlags usage_flags) const {
     // Initialize the recording
     VkResult vk_result;
     if ((vk_result = vkBeginCommandBuffer(this->vk_command_buffer, &begin_info)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not begin recording command buffer: " + vk_error_map[vk_result]);
+        logger.fatalc(CommandBuffer::channel, "Could not begin recording command buffer: ", vk_error_map[vk_result]);
     }
-
-    // Done
-    return;
 }
 
 /* Ends recording the command buffer, but does not yet submit to any queue unless one is given. If so, then you can optionally specify to wait or not to wait for the queue to become idle. */
 void CommandBuffer::end(VkQueue vk_queue, bool wait_queue_idle) const {
-    
-    
     // Whatever the parameters, always call the stop recording
     VkResult vk_result;
     if ((vk_result = vkEndCommandBuffer(this->vk_command_buffer)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not finish recording command buffer: " + vk_error_map[vk_result]);
+        logger.fatalc(CommandBuffer::channel, "Could not finish recording command buffer: ", vk_error_map[vk_result]);
     }
 
     // If a queue is given, then submit the buffer to that queue
@@ -111,25 +95,20 @@ void CommandBuffer::end(VkQueue vk_queue, bool wait_queue_idle) const {
 
         // Submit it to the queue
         if ((vk_result = vkQueueSubmit(vk_queue, 1, &submit_info, VK_NULL_HANDLE)) != VK_SUCCESS) {
-            DLOG(fatal, "Could not submit command buffer to the given queue: " + vk_error_map[vk_result]);
+            logger.fatalc(CommandBuffer::channel, "Could not submit command buffer to the given queue: ", vk_error_map[vk_result]);
         }
 
         // If we're told to wait, then do so
         if (wait_queue_idle) {
             if ((vk_result = vkQueueWaitIdle(vk_queue)) != VK_SUCCESS) {
-                DLOG(fatal, "Could not wait for queue to become idle: " + vk_error_map[vk_result]);
+                logger.fatalc(CommandBuffer::channel, "Could not wait for queue to become idle: ", vk_error_map[vk_result]);
             }
         }
     }
-
-    // Done
-    return;
 }
 
 /* Return the VkSubmitInfo for this command buffer. */
 VkSubmitInfo CommandBuffer::get_submit_info() const {
-    
-    
     // Populate the submit info struct
     VkSubmitInfo submit_info;
     populate_submit_info(submit_info, this->vk_command_buffer);

@@ -25,6 +25,10 @@
 namespace Rasterizer::Models::Mtl {
     /* The Tokenizer for .mtl model files. */
     class Tokenizer {
+    public:
+        /* Channel name for the Tokenizer class. */
+        static constexpr const char* channel = "MtlTokenizer";
+
     private:
         /* File handle to the open file. */
         std::istream* file;

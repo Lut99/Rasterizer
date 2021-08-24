@@ -23,6 +23,10 @@
 namespace Rasterizer::Rendering {
     /* The Image class, which wraps a VkImage object and whos memory is managerd by the MemoryPool class. */
     class Image: public MemoryObject {
+    public:
+        /* Channel name for the Image class. */
+        static constexpr const char* channel = "Image";
+
     private:
         /* The InitData struct, which is used to group everything needed for copying buffers. */
         struct InitData {

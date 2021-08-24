@@ -30,6 +30,9 @@ namespace Rasterizer::Rendering {
     /* The MemoryPool class, which manages all Buffers and Images in the Rasterizer. */
     class MemoryPool {
     public:
+        /* Channel name for the MemoryPool class. */
+        static constexpr const char* channel = "MemoryPool";
+
         /* The GPU to which the pool is bound. */
         const Rendering::GPU& gpu;
     

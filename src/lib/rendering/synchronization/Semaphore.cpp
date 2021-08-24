@@ -24,14 +24,9 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkSemaphoreCreateInfo struct. */
 static void populate_semaphore_info(VkSemaphoreCreateInfo& semaphore_info) {
-    
-
     // Set to default
     semaphore_info = {};
-    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;;
-
-    // And done!
-    return;
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 }
 
 
@@ -43,8 +38,6 @@ static void populate_semaphore_info(VkSemaphoreCreateInfo& semaphore_info) {
 Semaphore::Semaphore(const Rendering::GPU& gpu) :
     gpu(gpu)
 {
-    
-
     // Populate the create info
     VkSemaphoreCreateInfo semaphore_info;
     populate_semaphore_info(semaphore_info);
@@ -52,7 +45,7 @@ Semaphore::Semaphore(const Rendering::GPU& gpu) :
     // Create the semaphore
     VkResult vk_result;
     if ((vk_result = vkCreateSemaphore(this->gpu, &semaphore_info, nullptr, &this->vk_semaphore)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not create semaphore: " + vk_error_map[vk_result]);
+        logger.fatalc(Semaphore::channel, "Could not create semaphore: ", vk_error_map[vk_result]);
     }
 }
 
@@ -60,8 +53,6 @@ Semaphore::Semaphore(const Rendering::GPU& gpu) :
 Semaphore::Semaphore(const Semaphore& other) :
     gpu(other.gpu)
 {
-    
-
     // Populate the create info
     VkSemaphoreCreateInfo semaphore_info;
     populate_semaphore_info(semaphore_info);
@@ -69,7 +60,7 @@ Semaphore::Semaphore(const Semaphore& other) :
     // Create the semaphore
     VkResult vk_result;
     if ((vk_result = vkCreateSemaphore(this->gpu, &semaphore_info, nullptr, &this->vk_semaphore)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not re-create semaphore: " + vk_error_map[vk_result]);
+        logger.fatalc(Semaphore::channel, "Could not re-create semaphore: ", vk_error_map[vk_result]);
     }
 }
 
@@ -84,13 +75,9 @@ Semaphore::Semaphore(Semaphore&& other) :
 
 /* Destructor for the Semaphore class. */
 Semaphore::~Semaphore() {
-    
-
     if (this->vk_semaphore != nullptr) {
         vkDestroySemaphore(this->gpu, this->vk_semaphore, nullptr);
     }
-
-    return;
 }
 
 
@@ -101,15 +88,10 @@ void Rendering::swap(Semaphore& s1, Semaphore& s2) {
 
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (s1.gpu != s2.gpu) {
-        DLOG(fatal, "Cannot swap semaphores with different GPUs");
-    }
+    if (s1.gpu != s2.gpu) { logger.fatalc(Semaphore::channel, "Cannot swap semaphores with different GPUs"); }
     #endif
 
     // Swap EVERYTHING but the GPU
     using std::swap;
     swap(s1.vk_semaphore, s2.vk_semaphore);
-
-    // Done
-    return;
 }

@@ -30,6 +30,9 @@ namespace Rasterizer::Rendering {
     /* The RenderPass class, which wraps a VkRenderPass object. Also used to define subpasses for this render pass. */
     class RenderPass {
     public:
+        /* Channel name for the RenderPass class. */
+        static constexpr const char* channel = "RenderPass";
+
         /* The GPU where the RenderPass lives. */
         const Rendering::GPU& gpu;
     

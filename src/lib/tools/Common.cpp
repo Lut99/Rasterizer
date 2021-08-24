@@ -25,7 +25,6 @@
 #include <string>
 #include <stdexcept>
 
-#include "CppDebugger.hpp"
 #include "Common.hpp"
 
 using namespace std;
@@ -35,8 +34,6 @@ using namespace Tools;
 /***** EXPORTED FUNCTIONS *****/
 /* Function that returns the path of the folder of the executable. */
 std::string Tools::get_executable_path() {
-    
-
     #ifdef _WIN32
     /* For Windows machiens */
 
@@ -175,8 +172,6 @@ const char* Tools::readable_char(char c) {
 
 /* Splits a given string on the given character, returning an Array of strings. If the character isn't present, returns a split of one (the string itself). */
 Array<std::string> Tools::split_string(const std::string& to_split, char splitter) {
-    
-
     // Search and collect the list
     std::stringstream sstr;
     Array<std::string> to_return(1);
@@ -202,8 +197,6 @@ Array<std::string> Tools::split_string(const std::string& to_split, char splitte
 
 /* Function that returns a string more compactly describing the given number of bytes. */
 std::string Tools::bytes_to_string(size_t n_bytes) {
-    
-
     // Select the proper scale to write the bytes to
     std::stringstream sstr;
     if (n_bytes < 1024) {
@@ -226,8 +219,6 @@ std::string Tools::bytes_to_string(size_t n_bytes) {
 
 /* Function that parses a bytes string with format and returns the raw number of bytes meant by it. */
 size_t Tools::string_to_bytes(const std::string& text) {
-    
-
     // First, remove spaces from the text
     size_t i = 0;
     while (text[i] == ' ' && i < text.size()) { ++i; }

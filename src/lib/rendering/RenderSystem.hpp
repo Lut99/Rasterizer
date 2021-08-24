@@ -39,6 +39,8 @@ namespace Rasterizer::Rendering {
     /* The RenderSystem class, which is in charge of rendering the renderable entities in the EntityManager. */
     class RenderSystem {
     public:
+        /* Channel name for the RenderSystem class. */
+        static constexpr const char* channel = "RenderSystem";
         /* The maximum number of frames in flight we allow. */
         static const constexpr uint32_t max_frames_in_flight = 2;
 

@@ -14,6 +14,7 @@
  *   piece of memory should be accessed on the GPU.
 **/
 
+#include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
 #include "DescriptorPool.hpp"
@@ -26,21 +27,14 @@ using namespace Rasterizer::Rendering;
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkDescriptorPoolSize struct. */
 static void populate_descriptor_pool_size(VkDescriptorPoolSize& descriptor_pool_size, const std::tuple<VkDescriptorType, uint32_t>& descriptor_type) {
-    
-
     // Initialize to default
     descriptor_pool_size = {};
     descriptor_pool_size.type = std::get<0>(descriptor_type);
     descriptor_pool_size.descriptorCount = std::get<1>(descriptor_type);
-
-    // Done;
-    return;
 }
 
 /* Populates a given VkDescriptorPoolCreateInfo struct. */
 static void populate_descriptor_pool_info(VkDescriptorPoolCreateInfo& descriptor_pool_info, const Tools::Array<VkDescriptorPoolSize>& descriptor_pool_sizes, uint32_t n_sets, VkDescriptorPoolCreateFlags descriptor_pool_flags) {
-    
-
     // Initialize to default
     descriptor_pool_info = {};
     descriptor_pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -54,15 +48,10 @@ static void populate_descriptor_pool_info(VkDescriptorPoolCreateInfo& descriptor
 
     // Set the flags to use
     descriptor_pool_info.flags = descriptor_pool_flags | VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-
-    // Done;
-    return;
 }
 
 /* Populates a given VkDescriptorSetAllocateInfo struct. */
 static void populate_descriptor_set_info(VkDescriptorSetAllocateInfo& descriptor_set_info, VkDescriptorPool vk_descriptor_pool, const Tools::Array<VkDescriptorSetLayout>& vk_descriptor_set_layouts, uint32_t n_sets) {
-    
-
     // Set to default
     descriptor_set_info = {};
     descriptor_set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -75,9 +64,6 @@ static void populate_descriptor_set_info(VkDescriptorSetAllocateInfo& descriptor
 
     // Set the layout for this descriptor
     descriptor_set_info.pSetLayouts = vk_descriptor_set_layouts.rdata();
-
-    // Done
-    return;
 }
 
 
@@ -92,14 +78,12 @@ DescriptorPool::DescriptorPool(const Rendering::GPU& gpu, const std::pair<VkDesc
     vk_max_sets(max_sets),
     vk_create_flags(flags)
 {
-    
-    DLOG(info, "Initializing DescriptorPool...");
-    DINDENT;
+    logger.logc(Verbosity::important, DescriptorPool::channel, "Initializing with a single type...");
 
 
 
     // First, we define how large the pool will be
-    DLOG(info, "Preparing structs...");
+    logger.logc(Verbosity::details, DescriptorPool::channel, "Preparing structs...");
     VkDescriptorPoolSize descriptor_pool_size;
     populate_descriptor_pool_size(descriptor_pool_size, this->vk_descriptor_types[0]);
 
@@ -110,10 +94,10 @@ DescriptorPool::DescriptorPool(const Rendering::GPU& gpu, const std::pair<VkDesc
 
 
     // Actually allocate the pool
-    DLOG(info, "Allocating pool...");
+    logger.logc(Verbosity::details, DescriptorPool::channel, "Allocating pool..");
     VkResult vk_result;
     if ((vk_result = vkCreateDescriptorPool(this->gpu, &descriptor_pool_info, nullptr, &this->vk_descriptor_pool)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not allocate descriptor pool: " + vk_error_map[vk_result]);
+        logger.fatalc(DescriptorPool::channel, "Could not allocate descriptor pool: ", vk_error_map[vk_result]);
     }
 
 
@@ -123,7 +107,8 @@ DescriptorPool::DescriptorPool(const Rendering::GPU& gpu, const std::pair<VkDesc
 
 
 
-    DDEDENT;
+    // D0ne
+    logger.logc(Verbosity::important, DescriptorPool::channel, "Init success.");
 }
 
 /* Constructor for the DescriptorPool class, which takes the GPU to create the pool on, a list of descriptor types and their counts, the maximum number of descriptor sets that can be allocated and optionally custom create flags. */
@@ -133,14 +118,12 @@ DescriptorPool::DescriptorPool(const Rendering::GPU& gpu, const Tools::Array<std
     vk_max_sets(max_sets),
     vk_create_flags(flags)
 {
-    
-    DLOG(info, "Initializing DescriptorPool for multiple types...");
-    DINDENT;
+    logger.logc(Verbosity::important, DescriptorPool::channel, "Initializing with multiple types...");
 
 
 
     // First, we define how large the pool will be
-    DLOG(info, "Preparing structs...");
+    logger.logc(Verbosity::details, DescriptorPool::channel, "Preparing structs...");
     Tools::Array<VkDescriptorPoolSize> descriptor_pool_sizes;
     descriptor_pool_sizes.resize(this->vk_descriptor_types.size());
     for (uint32_t i = 0; i < this->vk_descriptor_types.size(); i++) {
@@ -154,10 +137,10 @@ DescriptorPool::DescriptorPool(const Rendering::GPU& gpu, const Tools::Array<std
 
 
     // Actually allocate the pool
-    DLOG(info, "Allocating pool...");
+    logger.logc(Verbosity::details, DescriptorPool::channel, "Allocating pool..");
     VkResult vk_result;
     if ((vk_result = vkCreateDescriptorPool(this->gpu, &descriptor_pool_info, nullptr, &this->vk_descriptor_pool)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not allocate descriptor pool: " + vk_error_map[vk_result]);
+        logger.fatalc(DescriptorPool::channel, "Could not allocate descriptor pool: ", vk_error_map[vk_result]);
     }
 
 
@@ -167,7 +150,8 @@ DescriptorPool::DescriptorPool(const Rendering::GPU& gpu, const Tools::Array<std
 
 
 
-    DDEDENT;
+    // D0ne
+    logger.logc(Verbosity::important, DescriptorPool::channel, "Init success.");
 }
 
 /* Copy constructor for the DescriptorPool. */
@@ -177,7 +161,7 @@ DescriptorPool::DescriptorPool(const DescriptorPool& other) :
     vk_max_sets(other.vk_max_sets),
     vk_create_flags(other.vk_create_flags)
 {
-    
+    logger.logc(Verbosity::debug, DescriptorPool::channel, "Copying...");
 
     // First, we define how large the pool will be
     Tools::Array<VkDescriptorPoolSize> descriptor_pool_sizes;
@@ -193,7 +177,7 @@ DescriptorPool::DescriptorPool(const DescriptorPool& other) :
     // Actually allocate the pool
     VkResult vk_result;
     if ((vk_result = vkCreateDescriptorPool(this->gpu, &descriptor_pool_info, nullptr, &this->vk_descriptor_pool)) != VK_SUCCESS) {
-        DLOG(fatal, "Could not allocate descriptor pool: " + vk_error_map[vk_result]);
+        logger.fatalc(DescriptorPool::channel, "Could not allocate descriptor pool: ", vk_error_map[vk_result]);
     }
 
     // Do not copy individual descriptors
@@ -202,6 +186,9 @@ DescriptorPool::DescriptorPool(const DescriptorPool& other) :
 
     // Before we leave, we can optimise by setting the map to the maximum memory size
     this->descriptor_sets.reserve(this->vk_max_sets);
+
+    // D0ne
+    logger.logc(Verbosity::debug, DescriptorPool::channel, "Copy success.");
 }
         
 /* Move constructor for the DescriptorPool. */
@@ -220,37 +207,33 @@ DescriptorPool::DescriptorPool(DescriptorPool&& other):
 
 /* Destructor for the DescriptorPool. */
 DescriptorPool::~DescriptorPool() {
-    
-    DLOG(info, "Cleaning DescriptorPool...");
-    DINDENT;
+    logger.logc(Verbosity::important, DescriptorPool::channel, "Cleaning...");
 
     VkResult vk_result;
     if (this->descriptor_sets.size() > 0) {
-        DLOG(info, "Deallocating descriptor sets...");
+        logger.logc(Verbosity::details, DescriptorPool::channel, "Deallocating descriptor sets...");
         for (uint32_t i = 0; i < this->descriptor_sets.size(); i++) {
             if ((vk_result = vkFreeDescriptorSets(this->gpu, this->vk_descriptor_pool, 1, &this->descriptor_sets[i]->descriptor_set())) != VK_SUCCESS) {
-                DLOG(nonfatal, "Could not deallocate descriptor sets: " + vk_error_map[vk_result]);
+                logger.errorc(DescriptorPool::channel, "Could not deallocate descriptor sets: ", vk_error_map[vk_result]);
             }
         }
     }
 
     if (this->vk_descriptor_pool != nullptr) {
-        DLOG(info, "Deallocating pool...");
+        logger.logc(Verbosity::details, DescriptorPool::channel, "Deallocating pool...");
         vkDestroyDescriptorPool(this->gpu, this->vk_descriptor_pool, nullptr);
     }
 
-    DDEDENT;
+    logger.logc(Verbosity::important, DescriptorPool::channel, "Cleaned.");
 }
 
 
 
 /* Allocates a single descriptor set with the given layout. Will fail with errors if there's no more space. */
 DescriptorSet* DescriptorPool::allocate(const Rendering::DescriptorSetLayout& descriptor_set_layout) {
-    
-
     // Check if we have enough space left
     if (static_cast<uint32_t>(this->descriptor_sets.size()) >= this->vk_max_sets) {
-        DLOG(fatal, "Cannot allocate new DescriptorSet: already allocated maximum of " + std::to_string(this->vk_max_sets) + " sets.");
+        logger.fatalc(DescriptorPool::channel, "Cannot allocate new DescriptorSet: already allocated maximum of ", this->vk_max_sets, " sets.");
     }
 
     // Put the layout in a struct s.t. we can pass it and keep it in memory until after the call
@@ -264,7 +247,7 @@ DescriptorSet* DescriptorPool::allocate(const Rendering::DescriptorSetLayout& de
     VkResult vk_result;
     VkDescriptorSet set;
     if ((vk_result = vkAllocateDescriptorSets(this->gpu, &descriptor_set_info, &set)) != VK_SUCCESS) {
-        DLOG(fatal, "Failed to allocate new DescriptorSet: " + vk_error_map[vk_result]);
+        logger.fatalc(DescriptorPool::channel, "Failed to allocate new DescriptorSet: ", vk_error_map[vk_result]);
     }
 
     // Create the object and insert it
@@ -277,22 +260,20 @@ DescriptorSet* DescriptorPool::allocate(const Rendering::DescriptorSetLayout& de
 
 /* Allocates multiple descriptor sets with the given layout, returning them as an Array. Will fail with errors if there's no more space. */
 Tools::Array<DescriptorSet*> DescriptorPool::nallocate(uint32_t n_sets, const Tools::Array<Rendering::DescriptorSetLayout>& descriptor_set_layouts) {
-    
-
     #ifndef NDEBUG
     // If n_sets if null, nothing to do
     if (n_sets == 0) {
-        DLOG(warning, "Request to allocate 0 sets received; nothing to do.");
+        logger.warningc(DescriptorPool::channel, "Request to allocate 0 sets received; nothing to do.");
         return {};
     }
     // If we aren't passed enough layouts, then tell us
     if (n_sets != descriptor_set_layouts.size()) {
-        DLOG(fatal, "Not enough descriptor set layouts passed: got " + std::to_string(descriptor_set_layouts.size()) + ", expected " + std::to_string(n_sets));
+        logger.fatalc(DescriptorPool::channel, "Not enough descriptor set layouts passed: got ", descriptor_set_layouts.size(), ", expected ", n_sets);
     }
     #endif
     // Check if we have enough space left
     if (static_cast<uint32_t>(this->descriptor_sets.size()) + n_sets > this->vk_max_sets) {
-        DLOG(fatal, "Cannot allocate " + std::to_string(n_sets) + " new DescriptorSets: only space for " + std::to_string(this->vk_max_sets - static_cast<uint32_t>(this->descriptor_sets.size())) + " sets");
+        logger.fatalc(DescriptorPool::channel, "Cannot allocate ", n_sets, " new DescriptorSets: only space for ", this->vk_max_sets - static_cast<uint32_t>(this->descriptor_sets.size()), " sets");
     }
 
     // Get the VkDescriptorSetLayout objects behind the layouts
@@ -309,7 +290,7 @@ Tools::Array<DescriptorSet*> DescriptorPool::nallocate(uint32_t n_sets, const To
     // We can now call the allocate function
     VkResult vk_result;
     if ((vk_result = vkAllocateDescriptorSets(this->gpu, &descriptor_set_info, sets.wdata(n_sets))) != VK_SUCCESS) {
-        DLOG(fatal, "Failed to allocate " + std::to_string(n_sets) + " new DescriptorSets: " + vk_error_map[vk_result]);
+        logger.fatalc(DescriptorPool::channel, "Failed to allocate ", n_sets, " new DescriptorSets: ", vk_error_map[vk_result]);
     }
 
     // Create the resulting DescriptorSet object for each pair, then return
@@ -327,8 +308,6 @@ Tools::Array<DescriptorSet*> DescriptorPool::nallocate(uint32_t n_sets, const To
 
 /* Deallocates the descriptor set with the given handle. */
 void DescriptorPool::free(const DescriptorSet* set) {
-    
-
     // Try to remove the pointer from the list
     bool found = false;
     for (uint32_t i = 0; i < this->descriptor_sets.size(); i++) {
@@ -339,7 +318,7 @@ void DescriptorPool::free(const DescriptorSet* set) {
         }
     }
     if (!found) {
-        DLOG(fatal, "Tried to free DescriptorSet that was not allocated with this pool.");
+        logger.fatalc(DescriptorPool::channel, "Tried to free DescriptorSet that was not allocated with this pool.");
     }
 
     // Destroy the VkCommandBuffer
@@ -347,15 +326,10 @@ void DescriptorPool::free(const DescriptorSet* set) {
     
     // Destroy the pointer itself
     delete set;
-
-    // Done
-    return;
 }
 
 /* Deallocates an array of given descriptors sets. */
 void DescriptorPool::nfree(const Tools::Array<DescriptorSet*>& sets) {
-    
-
     // First, we check if all handles exist
     Tools::Array<VkDescriptorSet> to_remove(sets.size());
     for (uint32_t i = 0; i < sets.size(); i++) {
@@ -368,7 +342,7 @@ void DescriptorPool::nfree(const Tools::Array<DescriptorSet*>& sets) {
             }
         }
         if (!found) {
-            DLOG(fatal, "Tried to free DescriptorSet that was not allocated with this pool.");
+            logger.fatalc(DescriptorPool::channel, "Tried to free DescriptorSet that was not allocated with this pool.");
         }
 
         // Mark the Vk object for removal
@@ -381,24 +355,17 @@ void DescriptorPool::nfree(const Tools::Array<DescriptorSet*>& sets) {
     // All that's left is to actually remove the handles; do that
     VkResult vk_result;
     if ((vk_result = vkFreeDescriptorSets(this->gpu, this->vk_descriptor_pool, to_remove.size(), to_remove.rdata())) != VK_SUCCESS) {
-        DLOG(fatal, "Could not deallocate descriptor sets: " + vk_error_map[vk_result]);
+        logger.fatalc(DescriptorPool::channel, "Could not deallocate descriptor sets: ", vk_error_map[vk_result]);
     }
-
-    // Done!
-    return;
 }
 
 
 
 /* Swap operator for the DescriptorPool class. */
 void Rendering::swap(DescriptorPool& dp1, DescriptorPool& dp2) {
-    
-
     #ifndef NDEBUG
     // If the GPU is not the same, then initialize to all nullptrs and everything
-    if (dp1.gpu != dp2.gpu) {
-        DLOG(fatal, "Cannot swap descriptor pools with different GPUs");
-    }
+    if (dp1.gpu != dp2.gpu) { logger.fatalc(DescriptorPool::channel, "Cannot swap descriptor pools with different GPUs"); }
     #endif
 
     // Swap all fields
@@ -409,7 +376,4 @@ void Rendering::swap(DescriptorPool& dp1, DescriptorPool& dp2) {
     swap(dp1.vk_max_sets, dp2.vk_max_sets);
     swap(dp1.vk_create_flags, dp2.vk_create_flags);
     swap(dp1.descriptor_sets, dp2.descriptor_sets);
-
-    // Done
-    return;
 }
