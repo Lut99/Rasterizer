@@ -27,6 +27,7 @@
 #include "world/WorldSystem.hpp"
 
 #include "models/ModelSystem.hpp"
+#include "textures/TextureSystem.hpp"
 
 #include "rendering/instance/Instance.hpp"
 #include "rendering/memory/MemoryManager.hpp"
@@ -224,6 +225,8 @@ int main(int argc, const char** argv) {
         World::WorldSystem world_system;
         // Initialize the ModelSystem
         Models::ModelSystem model_system(memory_manager);
+        // Initialize the TextureSystem
+        Textures::TextureSystem texture_system(memory_manager);
         // Initialize the RenderSystem
         Rendering::RenderSystem render_system(window, memory_manager, model_system);
         // Initialize the entity manager

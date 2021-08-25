@@ -14,6 +14,7 @@
 **/
 
 #include "tools/Logger.hpp"
+#include "../auxillary/ImageLayouts.hpp"
 
 #include "MemoryPool.hpp"
 #include "Image.hpp"
@@ -25,7 +26,7 @@ using namespace Rasterizer::Rendering;
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkImageMemoryBarrier struct. */
-static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage vk_image, VkImageLayout old_layout, VkImageLayout new_layout) {
+static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage vk_image, VkImageLayout old_layout, VkImageLayout new_layout, VkAccessFlags source_mask, VkAccessFlags destination_mask) {
     // Initialize to default first
     image_barrier = {};
     image_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -47,8 +48,8 @@ static void populate_image_barrier(VkImageMemoryBarrier& image_barrier, VkImage 
     image_barrier.subresourceRange.layerCount = 1;
 
     // Define what operations to wait for before the pipeline can continue
-    image_barrier.srcAccessMask = 0; /* TODO */
-    image_barrier.dstAccessMask = 0; /* TODO */
+    image_barrier.srcAccessMask = source_mask;
+    image_barrier.dstAccessMask = destination_mask;
 }
 
 
@@ -74,9 +75,33 @@ Image::~Image() {}
 
 /* Schedules a layout transition on the given command buffer using a pipeline barrier. The layout is updated immediately internally. */
 void Image::schedule_transition(const Rendering::CommandBuffer* command_buffer, VkImageLayout new_layout) {
+    // Select the proper masks based on the old & new layouts
+    VkAccessFlags source_mask, destination_mask;
+    VkPipelineStageFlags source_stage, destination_stage;
+    if (this->vk_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        // Set the mask (we have to be ready before writing)
+        source_mask = 0;
+        destination_mask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        // Set the shader stage mask (before we transfer images around)
+        source_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destination_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (this->vk_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        // Set the mask (transfer must be completed, shader not yet started)
+        source_mask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        destination_mask = VK_ACCESS_SHADER_READ_BIT;
+
+        // Set the shader stage mask (after transfer but before the fragment shader where we'll read)
+        source_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destination_stage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else {
+        // We call this transition unsupported for now
+        logger.fatalc(Image::channel, "Unsupported transition from ", vk_image_layout_map[this->vk_layout], " to ", vk_image_layout_map[new_layout], '.');
+    }
+
     // Prepare the image barrier
     VkImageMemoryBarrier image_barrier;
-    populate_image_barrier(image_barrier, this->vk_image, this->vk_layout, new_layout);
+    populate_image_barrier(image_barrier, this->vk_image, this->vk_layout, new_layout, source_mask, destination_mask);
 
     // Schedule the pipeline barrier
     vkCmdPipelineBarrier(

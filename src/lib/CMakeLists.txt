@@ -1,6 +1,7 @@
 # Add the subdirectories
 add_subdirectory(window)
 add_subdirectory(models)
+add_subdirectory(textures)
 add_subdirectory(rendering)
 add_subdirectory(world)
 add_subdirectory(ecs)

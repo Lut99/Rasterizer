@@ -18,6 +18,7 @@
 #include "components/Meshes.hpp"
 #include "components/Camera.hpp"
 #include "components/Controllable.hpp"
+#include "components/Textures.hpp"
 
 #include "EntityManager.hpp"
 
@@ -35,6 +36,7 @@ EntityManager::EntityManager() {
     this->components[1] = (IComponentList*) new ComponentList<Meshes>(ComponentFlags::meshes);
     this->components[2] = (IComponentList*) new ComponentList<Camera>(ComponentFlags::camera);
     this->components[3] = (IComponentList*) new ComponentList<Controllable>(ComponentFlags::controllable);
+    this->components[4] = (IComponentList*) new ComponentList<Texture>(ComponentFlags::texture);
 }
 
 /* Copy constructor for the EntityManager class. */

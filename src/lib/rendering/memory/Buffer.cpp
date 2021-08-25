@@ -198,8 +198,8 @@ void Buffer::schedule_copyto(const Buffer* destination, VkDeviceSize n_bytes, Vk
     vkCmdCopyBuffer(command_buffer->command_buffer(), this->vk_buffer, destination->vk_buffer, 1, &copy_region);
 }
 
-/* Schedules a copy to the given image on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given (the latter of which is three dimensional). */
-void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, const VkOffset3D& target_offset, const Rendering::CommandBuffer* command_buffer) const {
+/* Schedules a copy to the given image on the given command buffer. Also accepts a new image layout, since we need to transition to copy destination layout anyway. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given (the latter of which is three dimensional). */
+void Buffer::schedule_copyto(Image* destination, VkImageLayout new_layout, VkDeviceSize n_bytes, VkDeviceSize source_offset, const VkOffset3D& target_offset, const Rendering::CommandBuffer* command_buffer) const {
     #ifndef NDEBUG
     // Check if the offsets are valid
     if (source_offset >= this->buffer_size) {
@@ -235,6 +235,9 @@ void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceS
     VkBufferImageCopy buffer_image_copy;
     populate_buffer_image_copy(buffer_image_copy, source_offset, 0, target_offset, vk_extent);
 
+    // First, schedule the image transition layout
+    destination->schedule_transition(command_buffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
     // Schedule the copy
     vkCmdCopyBufferToImage(
         command_buffer->command_buffer(),
@@ -243,8 +246,10 @@ void Buffer::schedule_copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceS
         1, &buffer_image_copy
     );
 
-    // Update the layout in the image, then D0ne
-    destination->vk_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    // Next, revert the image to the target layout (if needed)
+    if (new_layout != VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        destination->schedule_transition(command_buffer, new_layout);
+    }
 }
 
 
@@ -262,15 +267,15 @@ void Buffer::copyto(const Buffer* destination, VkDeviceSize n_bytes, VkDeviceSiz
     command_buffer->end(vk_queue, wait_queue_idle);
 }
 
-/* Copies this buffer's contents to the given Image, scheduling the command on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source buffer and target image can be given. (the latter in three dimensions). Optionally, a queue can be given to run the commands on, which will otherwise default to the first memory queue of the internal GPU. */
-void Buffer::copyto(Image* destination, VkDeviceSize n_bytes, VkDeviceSize source_offset, const VkOffset3D& target_offset, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
+/* Copies this buffer's contents to the given Image, scheduling the command on the given command buffer. Because we put the image in another layout for copying, a new layout can be specified for the image. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source buffer and target image can be given. (the latter in three dimensions). Optionally, a queue can be given to run the commands on, which will otherwise default to the first memory queue of the internal GPU. */
+void Buffer::copyto(Image* destination, VkImageLayout new_layout, VkDeviceSize n_bytes, VkDeviceSize source_offset, const VkOffset3D& target_offset, const Rendering::CommandBuffer* command_buffer, VkQueue vk_queue, bool wait_queue_idle) const {
     // Resolve the queue
     vk_queue = vk_queue == nullptr ? this->gpu.queues(Rendering::QueueType::memory)[0] : vk_queue;
 
     // Start recording the given command buffer, and we'll tell Vulkan we use this recording only once
     command_buffer->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     // We schedule the copy
-    this->schedule_copyto(destination, n_bytes, source_offset, target_offset, command_buffer);
+    this->schedule_copyto(destination, new_layout, n_bytes, source_offset, target_offset, command_buffer);
     // Since that's all, submit the queue. Note that we only return once the copy is 
     command_buffer->end(vk_queue, wait_queue_idle);
 }

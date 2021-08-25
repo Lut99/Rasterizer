@@ -18,6 +18,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include "../commandbuffers/CommandBuffer.hpp"
 #include "MemoryObject.hpp"
 
 namespace Rasterizer::Rendering {

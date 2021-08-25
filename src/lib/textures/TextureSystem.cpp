@@ -13,6 +13,9 @@
  *   managing textures for an entity.
 **/
 
+#include "tools/Logger.hpp"
+
+#include "formats/png/PngLoader.hpp"
 #include "TextureSystem.hpp"
 
 using namespace std;
@@ -24,12 +27,24 @@ using namespace Rasterizer::Textures;
 /* Constructor for the TextureSystem class, which takes a reference to the MemoryManager from which we allocate buffers and images and junk. */
 TextureSystem::TextureSystem(Rendering::MemoryManager& memory_manager) :
     memory_manager(memory_manager)
-{}
+{
+    logger.logc(Verbosity::important, TextureSystem::channel, "Initializing...");
+
+    // Nothing as of yet
+
+    logger.logc(Verbosity::important, TextureSystem::channel, "Init success.");
+}
 
 /* Copy constructor for the TextureSystem class. */
 TextureSystem::TextureSystem(const TextureSystem& other) :
     memory_manager(other.memory_manager)
-{}
+{
+    logger.logc(Verbosity::debug, TextureSystem::channel, "Copying...");
+
+    // Nothing as of yet
+
+    logger.logc(Verbosity::debug, TextureSystem::channel, "Copy success.");
+}
 
 /* Move constructor for the TextureSystem class. */
 TextureSystem::TextureSystem(TextureSystem&& other) :
@@ -37,15 +52,19 @@ TextureSystem::TextureSystem(TextureSystem&& other) :
 {}
 
 /* Destructor for the TextureSystem class. */
-TextureSystem::~TextureSystem() {}
+TextureSystem::~TextureSystem() {
+    logger.logc(Verbosity::important, TextureSystem::channel, "Cleaning...");
+
+    // Nothing as of yet
+
+    logger.logc(Verbosity::important, TextureSystem::channel, "Cleaned.");
+}
 
 
 
 /* Loads a new texture for the given entity using the given format. */
-void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t entity, const std::string& path, TextureFormat format = TextureFormat::png) {
-    
-    DLOG(info, "Loading texture for entity " + std::to_string(entity) + "...");
-    DINDENT;
+void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t entity, const std::string& path, TextureFormat format) {
+    logger.logc(Verbosity::important, TextureSystem::channel, "Loading texture for entity ", entity, "...");
 
     // Get the entity's component
     ECS::Texture& texture = entity_manager.get_component<ECS::Texture>(entity);
@@ -54,36 +73,29 @@ void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t en
     switch (format) {
         case TextureFormat::png:
             // Use the load function from the modelloader
-            DLOG(info, "Loading '" + path + "' as .png file...");
-            // load_obj_model(this->memory_manager, meshes, path);
+            logger.logc(Verbosity::details, TextureSystem::channel, "Loading '", path, "' as .png file...");
+            load_png_texture(this->memory_manager, texture, path);
             break;
 
         default:
-            DLOG(fatal, "Unsupported texture format '" + texture_format_names[(int) format] + "'");
+            logger.fatalc(TextureSystem::channel, "Unsupported texture format '", texture_format_names[(int) format], '\'');
             break;
 
     }
 
-    // Done
-    DDEDENT;
-    return;
+    // We're done, but do a debug print just for fun
+    logger.logc(Verbosity::debug, TextureSystem::channel, "Loaded texture of ", texture.extent.width, 'x', texture.extent.height, " pixels.");
 }
 
 /* Unloads the texture loaded for the given entity. */
 void TextureSystem::unload_texture(ECS::EntityManager& entity_manager, entity_t entity) {
-    
-    DLOG(info, "Deallocating texture for entity " + std::to_string(entity) + "...");
-    DINDENT;
+    logger.logc(Verbosity::important, TextureSystem::channel, "Deallocating texture for entity ", entity, "...");
 
     // Try to get the entity's texture
     ECS::Texture& texture = entity_manager.get_component<ECS::Texture>(entity);
     
     // Deallocate the image
-    this->memory_manager.draw_pool.deallocate(texture.image_h);
-
-    // Done
-    DDEDENT;
-    return;
+    this->memory_manager.draw_pool.free(texture.image);
 }
 
 
@@ -91,27 +103,16 @@ void TextureSystem::unload_texture(ECS::EntityManager& entity_manager, entity_t 
 /* Binds the model-related buffers and junk for the given mesh component to the given command buffer. */
 void TextureSystem::schedule(const ECS::Texture& entity_texture, const Rendering::CommandBuffer& draw_cmd) const {
     
-
-
-
-    return;
 }
 
 
 
 /* Swap operator for the TextureSystem class. */
 void Rasterizer::Textures::swap(TextureSystem& ts1, TextureSystem& ts2) {
-    
-
     #ifndef NDEBUG
-    if (&ts1.memory_manager != &ts2.memory_manager) {
-        DLOG(fatal, "Cannot swap texture systems with different memory managers.");
-    }
+    if (&ts1.memory_manager != &ts2.memory_manager) { logger.fatalc(TextureSystem::channel, "Cannot swap texture systems with different memory managers."); }
     #endif
 
     // Simply swap it all
     using std::swap;
-
-    // Done
-    return;
 }

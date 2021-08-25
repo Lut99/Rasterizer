@@ -26,6 +26,9 @@ namespace Rasterizer::Textures {
     /* The TextureSystem class, which is responsible for loading and managing textures. */
     class TextureSystem {
     public:
+        /* Channel name for the TextureSystem class. */
+        static constexpr const char* channel = "TextureSystem";
+
         /* The MemoryManager class used for allocating new images and stage buffers and the like. */
         Rendering::MemoryManager& memory_manager;
 

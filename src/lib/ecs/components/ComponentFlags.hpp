@@ -36,7 +36,9 @@ namespace Rasterizer::ECS {
             /* The Camera component, which means the entity defines some camera through which we can render the scene. */
             camera = 0x4,
             /* The Controllable component, which means the entity can listen to mouse/keyboard input. */
-            controllable = 0x8
+            controllable = 0x8,
+            /* The Texture component, which means the entity has a renderable texture over its meshes. */
+            texture = 0x10
 
         };
     };
@@ -51,7 +53,8 @@ namespace Rasterizer::ECS {
         { ComponentFlags::transform,    "transform" },
         { ComponentFlags::meshes,       "meshes" },
         { ComponentFlags::camera,       "camera" },
-        { ComponentFlags::controllable, "controllable" }
+        { ComponentFlags::controllable, "controllable" },
+        { ComponentFlags::texture, "texture" }
     };
 
 }
