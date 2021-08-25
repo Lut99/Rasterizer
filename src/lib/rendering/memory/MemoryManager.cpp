@@ -32,7 +32,7 @@ MemoryManager::MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_s
     draw_pool(this->gpu, draw_pool_size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
     stage_pool(this->gpu, stage_pool_size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
 
-    descr_pool(this->gpu, { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1),
+    descr_pool(this->gpu, { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 } }, 8),
 
     view_pool(this->gpu),
 

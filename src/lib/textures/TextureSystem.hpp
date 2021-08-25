@@ -20,6 +20,7 @@
 #include "ecs/components/Textures.hpp"
 
 #include "rendering/memory/MemoryManager.hpp"
+#include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "rendering/sampling/Sampler.hpp"
 
 #include "TextureFormat.hpp"
@@ -54,7 +55,7 @@ namespace Rasterizer::Textures {
         void unload_texture(ECS::EntityManager& entity_manager, entity_t entity);
 
         /* Binds the model-related buffers and junk for the given mesh component to the given command buffer. */
-        void schedule(const ECS::Texture& entity_texture, const Rendering::CommandBuffer& draw_cmd) const;
+        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Texture& entity_texture, const Rendering::DescriptorSet* descriptor_set) const;
 
         /* Copy assignment operator for the TextureSystem class. */
         inline TextureSystem& operator=(const TextureSystem& other) { return *this = TextureSystem(other); }

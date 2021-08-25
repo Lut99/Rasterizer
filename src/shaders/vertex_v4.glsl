@@ -20,9 +20,13 @@
 layout(location = 0) in vec3 vertex;
 // And a 3D color
 layout(location = 1) in vec3 color;
+// And a texture coordinate
+layout(location = 2) in vec2 texel;
 
 // We drop the color of the vertex for the fragment shader
 layout(location = 0) out vec3 frag_color;
+// Also pass the texture coordinate we got
+layout(location = 1) out vec2 frag_texel;
 
 // The camera data as push constants
 layout(push_constant) uniform Camera {
@@ -36,6 +40,7 @@ void main() {
     // Return the vertex as a 4D vertex
     // gl_Position = camera.proj * camera.view * camera.model * vec4(vertex, 0.0, 1.0);
     gl_Position = camera.mat * vec4(vertex, 1.0);
-    // Also return the color & normal for the fragment shader
+    // Also return the color & texture for the fragment shader
     frag_color = color;
+    frag_texel = texel;
 }

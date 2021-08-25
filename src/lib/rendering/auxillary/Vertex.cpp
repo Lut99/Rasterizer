@@ -68,6 +68,22 @@ static void populate_input_attribute_description_colour(VkVertexInputAttributeDe
     vk_input_attribute_description.offset = offsetof(Vertex, colour);
 }
 
+/* Populates the given VkVertexInputAttributeDescription struct as if it was to describe RGB colors. */
+static void populate_input_attribute_description_texel(VkVertexInputAttributeDescription& vk_input_attribute_description) {
+    // Set to default
+    vk_input_attribute_description = {};
+
+    // Set the binding and the index in the binding
+    vk_input_attribute_description.binding = 0;
+    vk_input_attribute_description.location = 2;
+
+    // Set the format of the position
+    vk_input_attribute_description.format = VK_FORMAT_R32G32_SFLOAT;
+
+    // Set the offset of the value in each vertex object
+    vk_input_attribute_description.offset = offsetof(Vertex, texel);
+}
+
 
 
 
@@ -82,7 +98,15 @@ Vertex::Vertex() :
 /* Constructor for the Vertex struct, which takes the position and colour. */
 Vertex::Vertex(const glm::vec3& pos, const glm::vec3& colour) :
     pos(pos),
-    colour(colour)
+    colour(colour),
+    texel(0.0f, 0.0f)
+{}
+
+/* Constructor for the Vertex struct, which takes the position, colour and texel coordinate. */
+Vertex::Vertex(const glm::vec3& pos, const glm::vec3& colour, const glm::vec2& texel) :
+    pos(pos),
+    colour(colour),
+    texel(texel)
 {}
 
 
@@ -101,9 +125,10 @@ VkVertexInputBindingDescription Vertex::input_binding_description() {
 Tools::Array<VkVertexInputAttributeDescription> Vertex::input_attribute_descriptions() {
     // Create and populate
     Tools::Array<VkVertexInputAttributeDescription> result;
-    result.resize(2);
+    result.resize(3);
     populate_input_attribute_description_position(result[0]);
     populate_input_attribute_description_colour(result[1]);
+    populate_input_attribute_description_texel(result[2]);
 
     // Return
     return result;

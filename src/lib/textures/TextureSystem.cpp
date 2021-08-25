@@ -108,8 +108,9 @@ void TextureSystem::unload_texture(ECS::EntityManager& entity_manager, entity_t 
 
 
 /* Binds the model-related buffers and junk for the given mesh component to the given command buffer. */
-void TextureSystem::schedule(const ECS::Texture& entity_texture, const Rendering::CommandBuffer& draw_cmd) const {
-    
+void TextureSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Texture& entity_texture, const Rendering::DescriptorSet* descriptor_set) const {
+    // Schedule the descriptor population
+    descriptor_set->bind(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, { make_pair(entity_texture.view->view(), this->sampler.sampler()) });
 }
 
 

@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 14:39:16
  * Last edited:
- *   24/08/2021, 22:31:36
+ *   25/08/2021, 17:34:28
  * Auto updated?
  *   Yes
  *
@@ -65,8 +65,10 @@ namespace Rasterizer::Rendering {
 
         /* Allocates a single descriptor set with the given layout. Will fail with errors if there's no more space. */
         DescriptorSet* allocate(const Rendering::DescriptorSetLayout& descriptor_set_layout);
-        /* Allocates multiple descriptor sets with the given layout, returning them as an Array. Will fail with errors if there's no more space. */
+        /* Allocates multiple descriptor sets with the given layouts, returning them as an Array. Will fail with errors if there's no more space. */
         Tools::Array<DescriptorSet*> nallocate(uint32_t n_sets, const Tools::Array<Rendering::DescriptorSetLayout>& descriptor_set_layouts);
+        /* Allocates multiple descriptor sets with the given layout (repeating it), returning them as an Array. Will fail with errors if there's no more space. */
+        Tools::Array<DescriptorSet*> nallocate(uint32_t n_sets, const Rendering::DescriptorSetLayout& descriptor_set_layout);
 
         /* Deallocates the descriptor set with the given handle. */
         void free(const DescriptorSet* set);

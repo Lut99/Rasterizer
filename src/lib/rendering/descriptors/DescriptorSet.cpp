@@ -36,14 +36,14 @@ static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buff
 }
 
 /* Populates a given VkDescriptorImageInfo struct. */
-static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImageView& image_view) {
+static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImageView& image_view, const VkSampler& vk_sampler = nullptr) {
     // Set to default
     image_info = {};
     
     // Set the image view associated with this info and the rest to nullptrs
     image_info.imageView = image_view;
     image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-    image_info.sampler = nullptr;
+    image_info.sampler = vk_sampler;
 }
 
 /* Populates a given VkWriteDescriptorSet struct to write a buffer. */
@@ -136,10 +136,10 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 
 /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
 void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const {
-    // We first create a list of buffer infos
+    // We first create a list of image infos
     Tools::Array<VkDescriptorImageInfo> image_infos(image_views.size());
     for (uint32_t i = 0; i < image_views.size(); i++) {
-        // Start by creating the buffer info so that the descriptor knows smthng about the buffer
+        // Start by creating the image info so that the descriptor knows smthng about the image
         VkDescriptorImageInfo image_info;
         populate_image_info(image_info, image_views[i]);
 
@@ -147,7 +147,29 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
         image_infos.push_back(image_info);
     }
 
-    // Next, generate a VkWriteDescriptorSet with which we populate the buffer information
+    // Next, generate a VkWriteDescriptorSet with which we populate the image information
+    // Can also use copies, for descriptor-to-descriptor stuff.
+    VkWriteDescriptorSet write_info;
+    populate_write_info(write_info, this->vk_descriptor_set, descriptor_type, bind_index, image_infos);
+
+    // With the write info populated, update this set. Note that this can be used to perform multiple descriptor write & copies simultaneously
+    vkUpdateDescriptorSets(gpu, 1, &write_info, 0, nullptr);
+}
+
+/* Binds this descriptor set with the contents of a given image view & sampler pair to the given bind index. Must be enough views to actually populate all bindings of the given type. */
+void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::pair<VkImageView, VkSampler>>& view_sampler_pairs) const {
+    // We first create a list of image infos
+    Tools::Array<VkDescriptorImageInfo> image_infos(view_sampler_pairs.size());
+    for (uint32_t i = 0; i < view_sampler_pairs.size(); i++) {
+        // Start by creating the image info so that the descriptor knows smthng about the image
+        VkDescriptorImageInfo image_info;
+        populate_image_info(image_info, view_sampler_pairs[i].first, view_sampler_pairs[i].second);
+
+        // Add to the list
+        image_infos.push_back(image_info);
+    }
+
+    // Next, generate a VkWriteDescriptorSet with which we populate the image information
     // Can also use copies, for descriptor-to-descriptor stuff.
     VkWriteDescriptorSet write_info;
     populate_write_info(write_info, this->vk_descriptor_set, descriptor_type, bind_index, image_infos);

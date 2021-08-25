@@ -21,6 +21,7 @@
 #include "ecs/components/Transform.hpp"
 #include "ecs/components/Meshes.hpp"
 #include "ecs/components/Camera.hpp"
+#include "ecs/components/Textures.hpp"
 #include "models/ModelSystem.hpp"
 
 #include "auxillary/ErrorCodes.hpp"
@@ -81,17 +82,20 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
 
 /***** RENDERSYSTEM CLASS *****/
-/* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively) and a model system to schedule the model buffers with. */
-RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system) :
+/* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a model system to schedule the model buffers with and a texture system to schedule texture images with. */
+RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system, const Textures::TextureSystem& texture_system) :
     window(window),
     memory_manager(memory_manager),
     model_system(model_system),
+    texture_system(texture_system),
+
+    texture_layout(this->window.gpu()),
 
     depth_stencil(this->window.gpu(), this->memory_manager.draw_pool, this->window.swapchain().extent()),
     framebuffers(this->window.swapchain().size()),
 
-    vertex_shader(this->window.gpu(), "bin/shaders/vertex_v3.spv"),
-    fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
+    vertex_shader(this->window.gpu(), "bin/shaders/vertex_v4.spv"),
+    fragment_shader(this->window.gpu(), "bin/shaders/frag_v2.spv"),
 
     render_pass(this->window.gpu()),
     pipeline(this->window.gpu()),
@@ -105,6 +109,13 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     current_frame(0)
 {
+    // Initialize the descriptor set layout
+    this->texture_layout.add_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, this->window.swapchain().size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    this->texture_layout.finalize();
+
+    // Allocate enough descriptor sets
+    this->texture_sets = this->memory_manager.descr_pool.nallocate(this->window.swapchain().size(), this->texture_layout);
+
     // Initialize the render pass
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     uint32_t dep_index = this->render_pass.add_attachment(this->depth_stencil.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -127,7 +138,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     pipeline.init_multisampling();
     pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
     pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
-    pipeline.init_pipeline_layout({ {} }, { { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t) (sizeof(glm::mat4)) } });
+    pipeline.init_pipeline_layout({ this->texture_layout }, { { VK_SHADER_STAGE_VERTEX_BIT, (uint32_t) (sizeof(glm::mat4)) } });
     pipeline.finalize(this->render_pass, 0);
 
     // Done initializing
@@ -139,6 +150,9 @@ RenderSystem::RenderSystem(const RenderSystem& other) :
     window(other.window),
     memory_manager(other.memory_manager),
     model_system(other.model_system),
+    texture_system(other.texture_system),
+
+    texture_layout(this->window.gpu()),
 
     depth_stencil(other.depth_stencil),
     framebuffers(other.framebuffers),
@@ -170,6 +184,10 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
     window(other.window),
     memory_manager(other.memory_manager),
     model_system(other.model_system),
+    texture_system(other.texture_system),
+
+    texture_layout(other.texture_layout),
+    texture_sets(other.texture_sets),
 
     depth_stencil(other.depth_stencil),
     framebuffers(other.framebuffers),
@@ -269,8 +287,10 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     Tools::Array<glm::mat4> cam_matrices(cam_mat, list.size());
     for (ECS::component_list_size_t i = 0; i < list.size(); i++) {
         // Get the relevant components for this entity
+        entity_t entity = list.get_entity(i);
         const ECS::Meshes& meshes = list[i];
-        const ECS::Transform& transform = entity_manager.get_component<Transform>(list.get_entity(i));
+        const ECS::Transform& transform = entity_manager.get_component<Transform>(entity);
+        const ECS::Texture& texture = entity_manager.get_component<Texture>(entity);
 
         // Compute the camera matrix for this entity
         cam_matrices[i] *= transform.translation;
@@ -278,6 +298,12 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         // Record the command buffer for this entity's groups
         this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), (void*) &cam_matrices[i]);
         for (uint32_t j = 0; j < meshes.size(); j++) {
+            // Schedule the texture
+            this->texture_system.schedule(this->draw_cmds[swapchain_index], texture, this->texture_sets[swapchain_index]);
+            // Schedule the descriptor itself
+            this->texture_sets[swapchain_index]->schedule(this->draw_cmds[swapchain_index], this->pipeline.layout());
+
+            // Schedule the mesh data
             this->model_system.schedule(this->draw_cmds[swapchain_index], meshes[j]);
             this->pipeline.schedule_draw_indexed(this->draw_cmds[swapchain_index], meshes[j].n_indices, 1);
         }
@@ -334,10 +360,14 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
     if (&rs1.window != &rs2.window) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different windows"); }
     if (&rs1.memory_manager != &rs2.memory_manager) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different memory managers"); }
     if (&rs1.model_system != &rs2.model_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different model systems"); }
+    if (&rs1.texture_system != &rs2.texture_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different texture systems"); }
     #endif
 
     // Simply swap everything
     using std::swap;
+
+    swap(rs1.texture_layout, rs2.texture_layout);
+    swap(rs1.texture_sets, rs2.texture_sets);
 
     swap(rs1.depth_stencil, rs2.depth_stencil);
     swap(rs1.framebuffers, rs2.framebuffers);

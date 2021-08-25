@@ -304,6 +304,45 @@ Tools::Array<DescriptorSet*> DescriptorPool::nallocate(uint32_t n_sets, const To
     return result;
 }
 
+/* Allocates multiple descriptor sets with the given layout (repeating it), returning them as an Array. Will fail with errors if there's no more space. */
+Tools::Array<DescriptorSet*> DescriptorPool::nallocate(uint32_t n_sets, const Rendering::DescriptorSetLayout& descriptor_set_layout) {
+    #ifndef NDEBUG
+    // If n_sets if null, nothing to do
+    if (n_sets == 0) {
+        logger.warningc(DescriptorPool::channel, "Request to allocate 0 sets received; nothing to do.");
+        return {};
+    }
+    #endif
+    // Check if we have enough space left
+    if (static_cast<uint32_t>(this->descriptor_sets.size()) + n_sets > this->vk_max_sets) {
+        logger.fatalc(DescriptorPool::channel, "Cannot allocate ", n_sets, " new DescriptorSets: only space for ", this->vk_max_sets - static_cast<uint32_t>(this->descriptor_sets.size()), " sets");
+    }
+
+    // Get the VkDescriptorSetLayout object behind the layout as an array
+    Tools::Array<VkDescriptorSetLayout> vk_descriptor_set_layout(descriptor_set_layout.descriptor_set_layout(), n_sets);
+    // Create a temporary list of result sets to which we can allocate
+    Tools::Array<VkDescriptorSet> sets(n_sets);
+
+    // Next, populate the create info
+    VkDescriptorSetAllocateInfo descriptor_set_info;
+    populate_descriptor_set_info(descriptor_set_info, this->vk_descriptor_pool, vk_descriptor_set_layout, n_sets);
+    // We can now call the allocate function
+    VkResult vk_result;
+    if ((vk_result = vkAllocateDescriptorSets(this->gpu, &descriptor_set_info, sets.wdata(n_sets))) != VK_SUCCESS) {
+        logger.fatalc(DescriptorPool::channel, "Failed to allocate ", n_sets, " new DescriptorSets: ", vk_error_map[vk_result]);
+    }
+
+    // Create the resulting DescriptorSet object for each pair, then return
+    Tools::Array<DescriptorSet*> result(n_sets);
+    for (uint32_t i = 0; i < n_sets; i++) {
+        result.push_back(new DescriptorSet(this->gpu, sets[i]));
+        this->descriptor_sets.push_back(result.last());
+    }
+
+    // We're done, so return the set of handles
+    return result;
+}
+
 
 
 /* Deallocates the descriptor set with the given handle. */

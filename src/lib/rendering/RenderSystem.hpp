@@ -21,6 +21,7 @@
 #include "window/Window.hpp"
 #include "memory/MemoryManager.hpp"
 #include "models/ModelSystem.hpp"
+#include "textures/TextureSystem.hpp"
 
 #include "depthtesting/DepthStencil.hpp"
 #include "swapchain/Framebuffer.hpp"
@@ -50,8 +51,15 @@ namespace Rasterizer::Rendering {
         MemoryManager& memory_manager;
         /* The ModelSystem which we use to schedule the model buffers with. */
         const Models::ModelSystem& model_system;
-    
+        /* The TextureSystem which we use to schedule the texture buffers with. */
+        const Textures::TextureSystem& texture_system;
+
     private:
+        /* Descriptor set layout for the textures. */
+        Rendering::DescriptorSetLayout texture_layout;
+        /* Descriptor sets for the textures (we have one per swapchain image). */
+        Tools::Array<Rendering::DescriptorSet*> texture_sets;
+
         /* The depth stencil we attach to the pipeline. */
         Rendering::DepthStencil depth_stencil;
         /* List of framebuffers we'll draw to. */
@@ -87,8 +95,8 @@ namespace Rasterizer::Rendering {
         void _resize();
 
     public:
-        /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively) and a model system to schedule the model buffers with. */
-        RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system);
+        /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a model system to schedule the model buffers with and a texture system to schedule texture images with. */
+        RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system, const Textures::TextureSystem& texture_system);
         /* Copy constructor for the RenderSystem class. */
         RenderSystem(const RenderSystem& other);
         /* Move constructor for the RenderSystem class. */

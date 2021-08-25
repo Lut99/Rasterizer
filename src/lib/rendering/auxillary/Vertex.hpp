@@ -28,11 +28,15 @@ namespace Rasterizer::Rendering {
         glm::vec3 pos;
         /* The colour of the vertex. */
         glm::vec3 colour;
+        /* The texture coordinate of the vertex. */
+        glm::vec2 texel;
 
         /* Default constructor for the Vertex struct. */
         Vertex();
         /* Constructor for the Vertex struct, which takes the position and colour. */
         Vertex(const glm::vec3& pos, const glm::vec3& colour);
+        /* Constructor for the Vertex struct, which takes the position, colour and texel coordinate. */
+        Vertex(const glm::vec3& pos, const glm::vec3& colour, const glm::vec2& texel);
 
         /* Static function that returns the binding description for the vertex. */
         static VkVertexInputBindingDescription input_binding_description();

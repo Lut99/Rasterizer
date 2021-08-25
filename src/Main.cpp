@@ -228,7 +228,7 @@ int main(int argc, const char** argv) {
         // Initialize the TextureSystem
         Textures::TextureSystem texture_system(memory_manager);
         // Initialize the RenderSystem
-        Rendering::RenderSystem render_system(window, memory_manager, model_system);
+        Rendering::RenderSystem render_system(window, memory_manager, model_system, texture_system);
         // Initialize the entity manager
         ECS::EntityManager entity_manager;
 
@@ -260,7 +260,8 @@ int main(int argc, const char** argv) {
         // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
         // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
         // model_system.load_model(entity_manager, obj, "bin/models/teddy.obj", Models::ModelFormat::obj);
-        model_system.load_model(entity_manager, obj, "triangle", Models::ModelFormat::triangle);
+        model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
+        texture_system.load_texture(entity_manager, obj, "bin/textures/man.png", Textures::TextureFormat::png);
 
         // Do the render
         uint32_t fps = 0;

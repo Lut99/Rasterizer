@@ -118,6 +118,10 @@ RenderPass::RenderPass(const Rendering::GPU& gpu) :
     vk_render_pass(nullptr)
 {
     logger.logc(Verbosity::important, RenderPass::channel, "Initializing...");
+
+    // Nothing yet
+    
+    logger.logc(Verbosity::important, RenderPass::channel, "Init success.");
 }
 
 /* Copy constructor for the RenderPass class. */
