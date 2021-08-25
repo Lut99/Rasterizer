@@ -253,7 +253,7 @@ int main(int argc, const char** argv) {
         world_system.set_controllable(entity_manager, cam, 1.0f, 10.0f);
 
         // Prepare the teddy bear
-        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes);
+        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
         world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 1, 1, 1 });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });

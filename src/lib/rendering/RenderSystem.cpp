@@ -110,7 +110,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     current_frame(0)
 {
     // Initialize the descriptor set layout
-    this->texture_layout.add_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, this->window.swapchain().size(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    this->texture_layout.add_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
     this->texture_layout.finalize();
 
     // Allocate enough descriptor sets

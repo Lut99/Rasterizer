@@ -107,7 +107,7 @@ void Image::schedule_transition(const Rendering::CommandBuffer* command_buffer, 
     vkCmdPipelineBarrier(
         command_buffer->command_buffer(),
         /* The stages where the pipeline will sit in between. */
-        0 /* TODO */, 0 /* TODO */,
+        source_stage, destination_stage,
         /* Dependency flags on other resources. */
         0,
         /* 'Normal' memory barriers. */

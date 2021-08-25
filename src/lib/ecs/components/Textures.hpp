@@ -40,7 +40,7 @@ namespace Rasterizer::ECS {
     // using Textures = Tools::Array<Texture>;
 
     /* Hash function for the Texture component, which returns its 'hash' code. */
-    template <> inline constexpr uint32_t hash_component<Texture>() { return 5; }
+    template <> inline constexpr uint32_t hash_component<Texture>() { return 4; }
     // /* Hash function for the Textures list, which returns its 'hash' code. */
     // template <> inline constexpr uint32_t hash_component<Textures>() { return 5; }
 }

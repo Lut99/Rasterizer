@@ -64,7 +64,9 @@ void Textures::load_png_texture(Rendering::MemoryManager& memory_manager, ECS::T
     stage->unmap();
 
     // Copy the stage memory to the image once its in the correct layout
-    stage->copyto(texture.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, memory_manager.copy_cmd);
+    Rendering::CommandBuffer* draw_cmd = memory_manager.draw_cmd_pool.allocate();
+    stage->copyto(texture.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, draw_cmd, memory_manager.gpu.queues(Rendering::QueueType::graphics)[0]);
+    memory_manager.draw_cmd_pool.free(draw_cmd);
 
     // Deallocate the staging buffer
     memory_manager.stage_pool.free(stage);

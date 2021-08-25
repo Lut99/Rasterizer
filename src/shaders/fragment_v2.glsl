@@ -20,15 +20,18 @@
 // The input is the color we get from the vertex shader
 layout(location = 0) in vec3 frag_color;
 // And the texture coordinate we got
-layout(location = 1) out vec2 frag_texel;
+layout(location = 1) in vec2 frag_texel;
 
 // The output is the color to actually render
 layout(location = 0) out vec4 out_color;
+
+// The image sampler for the texture
+layout(binding = 0) uniform sampler2D texture_sampler;
 
 
 
 /* Entry point */
 void main() {
     // Simply pass on
-    out_color = vec4(frag_texel, 0.0, 1.0);
+    out_color = texture(texture_sampler, frag_texel);
 }

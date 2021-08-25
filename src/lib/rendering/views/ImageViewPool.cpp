@@ -90,6 +90,7 @@ ImageViewPool::~ImageViewPool() {
     if (this->views.size() > 0) {
         logger.logc(Verbosity::details, ImageViewPool::channel, "Destroying image views...");
         for (uint32_t i = 0; i < this->views.size(); i++) {
+            vkDestroyImageView(this->gpu, this->views[i]->vk_view, nullptr);
             delete this->views[i];
         }
     }

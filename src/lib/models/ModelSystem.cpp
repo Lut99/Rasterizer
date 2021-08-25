@@ -87,18 +87,19 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
         case ModelFormat::triangle: {
             // Simply set the hardcoded list
             logger.logc(Verbosity::details, ModelSystem::channel, "Loading static triangle...");
+            uint32_t n_vertices = 3, n_indices = 3;
 
             // Prepare the mesh struct
             Mesh mesh = {};
             mesh.name = "triangle";
             mesh.mtl = "rainbow";
             mesh.mtl_col = { 0.0f, 0.0f, 0.0f, 0.0f };
-            mesh.vertices = this->memory_manager.draw_pool.allocate(3 * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-            mesh.n_indices = 3;
-            mesh.indices = this->memory_manager.draw_pool.allocate(mesh.n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.vertices = this->memory_manager.draw_pool.allocate(n_vertices * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.indices = this->memory_manager.draw_pool.allocate(n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.n_indices = n_indices;
 
             // Prepare a staging buffer
-            Rendering::Buffer* stage_buffer = this->memory_manager.stage_pool.allocate(std::max(3 * sizeof(Rendering::Vertex), mesh.n_indices * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            Rendering::Buffer* stage_buffer = this->memory_manager.stage_pool.allocate(std::max(n_vertices * sizeof(Rendering::Vertex), n_indices * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
             void* stage_memory;
             stage_buffer->map(&stage_memory);
 
@@ -107,16 +108,16 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             vstage_memory[0] = Rendering::Vertex({ 0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f});
             vstage_memory[1] = Rendering::Vertex({ 0.5f,  0.5f, 0.0f}, {0.0f, 1.0f, 0.0f});
             vstage_memory[2] = Rendering::Vertex({-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f});
-            stage_buffer->flush();
-            stage_buffer->copyto(mesh.vertices, 3 * sizeof(Rendering::Vertex), 0, 0, this->memory_manager.copy_cmd);
+            stage_buffer->flush(n_vertices * sizeof(Rendering::Vertex));
+            stage_buffer->copyto(mesh.vertices, n_vertices * sizeof(Rendering::Vertex), 0, 0, this->memory_manager.copy_cmd);
 
             // Next, populate the indices
             Rendering::index_t* istage_memory = (Rendering::index_t*) stage_memory;
             istage_memory[0] = 0;
             istage_memory[1] = 1;
             istage_memory[2] = 2;
-            stage_buffer->flush(mesh.n_indices * sizeof(Rendering::index_t));
-            stage_buffer->copyto(mesh.indices, mesh.n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
+            stage_buffer->flush(n_indices * sizeof(Rendering::index_t));
+            stage_buffer->copyto(mesh.indices, n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
 
             // Deallocate the stage buffer and update the index count
             stage_buffer->unmap();
@@ -130,18 +131,19 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
         case ModelFormat::square: {
             // Simply set the hardcoded list
             logger.logc(Verbosity::details, ModelSystem::channel, "Loading static square...");
+            uint32_t n_vertices = 4, n_indices = 6;
 
             // Prepare the mesh struct
             Mesh mesh = {};
             mesh.name = "square";
             mesh.mtl = "texture";
             mesh.mtl_col = { 0.0f, 0.0f, 0.0f, 0.0f };
-            mesh.vertices = this->memory_manager.draw_pool.allocate(4 * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.vertices = this->memory_manager.draw_pool.allocate(n_vertices * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.indices = this->memory_manager.draw_pool.allocate(n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             mesh.n_indices = 6;
-            mesh.indices = this->memory_manager.draw_pool.allocate(mesh.n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
             // Prepare a staging buffer
-            Rendering::Buffer* stage_buffer = this->memory_manager.stage_pool.allocate(std::max(4 * sizeof(Rendering::Vertex), mesh.n_indices * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+            Rendering::Buffer* stage_buffer = this->memory_manager.stage_pool.allocate(std::max(n_vertices * sizeof(Rendering::Vertex), n_indices * sizeof(Rendering::index_t)), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
             void* stage_memory;
             stage_buffer->map(&stage_memory);
 
@@ -151,8 +153,8 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             vstage_memory[1] = Rendering::Vertex({ 0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f});
             vstage_memory[2] = Rendering::Vertex({ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f});
             vstage_memory[3] = Rendering::Vertex({-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f});
-            stage_buffer->flush();
-            stage_buffer->copyto(mesh.vertices, 3 * sizeof(Rendering::Vertex), 0, 0, this->memory_manager.copy_cmd);
+            stage_buffer->flush(n_vertices * sizeof(Rendering::Vertex));
+            stage_buffer->copyto(mesh.vertices, n_vertices * sizeof(Rendering::Vertex), 0, 0, this->memory_manager.copy_cmd);
 
             // Next, populate the indices
             Rendering::index_t* istage_memory = (Rendering::index_t*) stage_memory;
@@ -162,8 +164,8 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             istage_memory[3] = 2;
             istage_memory[4] = 3;
             istage_memory[5] = 0;
-            stage_buffer->flush(mesh.n_indices * sizeof(Rendering::index_t));
-            stage_buffer->copyto(mesh.indices, mesh.n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
+            stage_buffer->flush(n_indices * sizeof(Rendering::index_t));
+            stage_buffer->copyto(mesh.indices, n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
 
             // Deallocate the stage buffer and update the index count
             stage_buffer->unmap();
