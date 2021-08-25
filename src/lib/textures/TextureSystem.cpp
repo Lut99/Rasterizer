@@ -82,9 +82,11 @@ void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t en
             break;
 
     }
-
-    // We're done, but do a debug print just for fun
+    // Do a debug print just for fun
     logger.logc(Verbosity::debug, TextureSystem::channel, "Loaded texture of ", texture.extent.width, 'x', texture.extent.height, " pixels.");
+
+    // Finally, initialize the image view for this image
+    texture.view = this->memory_manager.view_pool.allocate(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
 }
 
 /* Unloads the texture loaded for the given entity. */
@@ -94,6 +96,8 @@ void TextureSystem::unload_texture(ECS::EntityManager& entity_manager, entity_t 
     // Try to get the entity's texture
     ECS::Texture& texture = entity_manager.get_component<ECS::Texture>(entity);
     
+    // Deallocate the view
+    this->memory_manager.view_pool.free(texture.view);
     // Deallocate the image
     this->memory_manager.draw_pool.free(texture.image);
 }

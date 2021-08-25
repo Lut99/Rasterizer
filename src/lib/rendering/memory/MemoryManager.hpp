@@ -22,6 +22,7 @@
 #include "../memory/MemoryPool.hpp"
 #include "../commandbuffers/CommandPool.hpp"
 #include "../descriptors/DescriptorPool.hpp"
+#include "../views/ImageViewPool.hpp"
 
 namespace Rasterizer::Rendering {
     /* The MemoryManager class, which bundles different kind of pools into one place. */
@@ -46,6 +47,9 @@ namespace Rasterizer::Rendering {
 
         /* The descriptor pool used to manage the descriptors. */
         Rendering::DescriptorPool descr_pool;
+
+        /* The ImageView pool used to allocate image views. */
+        Rendering::ImageViewPool view_pool;
 
         /* A command buffer for memory transfer operations. */
         Rendering::CommandBuffer* copy_cmd;

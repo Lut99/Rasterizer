@@ -22,6 +22,7 @@
 #include "tools/Array.hpp"
 #include "tools/Typenames.hpp"
 #include "rendering/memory/Image.hpp"
+#include "rendering/views/ImageView.hpp"
 
 #include "../auxillary/ComponentHash.hpp"
 
@@ -30,6 +31,8 @@ namespace Rasterizer::ECS {
     struct Texture {
         /* The image containing the texture. */
         Rendering::Image* image;
+        /* The imageview for this image. */
+        Rendering::ImageView* view;
         /* The dimension of the texture. */
         VkExtent2D extent;
     };

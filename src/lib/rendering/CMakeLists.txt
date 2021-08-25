@@ -9,6 +9,7 @@ target_include_directories(RenderSystem PUBLIC
 list(APPEND EXTRA_LIBS RenderSystem)
 
 # Add the subdirectories
+add_subdirectory(views)
 add_subdirectory(synchronization)
 add_subdirectory(renderpass)
 add_subdirectory(pipeline)

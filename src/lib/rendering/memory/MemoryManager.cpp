@@ -34,6 +34,8 @@ MemoryManager::MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_s
 
     descr_pool(this->gpu, { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 } }, 1),
 
+    view_pool(this->gpu),
+
     copy_cmd(this->mem_cmd_pool.allocate())
 {}
 
@@ -48,6 +50,8 @@ MemoryManager::MemoryManager(const MemoryManager& other) :
     stage_pool(other.stage_pool),
 
     descr_pool(other.descr_pool),
+
+    view_pool(other.view_pool),
 
     copy_cmd(this->mem_cmd_pool.allocate())
 
@@ -64,6 +68,8 @@ MemoryManager::MemoryManager(MemoryManager&& other) :
     stage_pool(other.stage_pool),
 
     descr_pool(other.descr_pool),
+
+    view_pool(other.view_pool),
 
     copy_cmd(other.copy_cmd)
 {
@@ -95,6 +101,8 @@ void Rendering::swap(MemoryManager& mm1, MemoryManager& mm2) {
     swap(mm1.stage_pool, mm2.stage_pool);
 
     swap(mm1.descr_pool, mm2.descr_pool);
+
+    swap(mm1.view_pool, mm2.view_pool);
 
     swap(mm1.copy_cmd, mm2.copy_cmd);
 }
