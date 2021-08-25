@@ -55,6 +55,9 @@ namespace Rasterizer::Rendering {
         /* The swapchain support of this device. */
         SwapchainInfo vk_swapchain_info;
 
+        /* Whether or not this device supports anisotropic filtering. */
+        VkBool32 vk_supports_anisotropy;
+
         /* The logical device this class references. */
         VkDevice vk_device;
         /* The extensions enabled on the device. */
@@ -88,6 +91,8 @@ namespace Rasterizer::Rendering {
 
         /* Returns the name of the chosen GPU. */
         inline std::string name() const { return std::string(this->vk_physical_device_properties.deviceName); }
+        /* Returns whether or not the GPU supports anisotropic filtering. */
+        inline VkBool32 supports_anisotropy() const { return this->vk_supports_anisotropy; }
         /* Returns the queue information of the chosen GPU. */
         inline const QueueInfo& queue_info() const { return this->vk_queue_info; }
         /* Returns the swapchain information of the chosen GPU. */

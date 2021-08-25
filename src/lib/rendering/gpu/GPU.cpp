@@ -47,9 +47,12 @@ static void populate_queue_infos(Tools::Array<VkDeviceQueueCreateInfo>& queue_in
 }
 
 /* Populates a VkPhysicalDeviceFeatures struct with hardcoded settings. */
-static void populate_device_features(VkPhysicalDeviceFeatures& device_features) {
+static void populate_device_features(VkPhysicalDeviceFeatures& device_features, VkBool32 enable_anisotropy) {
     // None!
     device_features = {};
+
+    // Enable anisotropy if asked to do so
+    device_features.samplerAnisotropy = enable_anisotropy;
 }
 
 /* Populates a VkDeviceCreateInfo struct based on the given list of qeueu infos and the given device features. */
@@ -181,7 +184,12 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
     this->vk_swapchain_info = SwapchainInfo(this->vk_physical_device, this->surface);
     logger.logc(Verbosity::important, GPU::channel, "Selected GPU: '", this->vk_physical_device_properties.deviceName, '\'');
 
-    
+    // Set some optional features
+    VkPhysicalDeviceFeatures supported_features;
+    vkGetPhysicalDeviceFeatures(vk_physical_device, &supported_features);
+    this->vk_supports_anisotropy = supported_features.samplerAnisotropy;
+
+
 
     // With the physical device, create the logical device
     logger.logc(Verbosity::details, GPU::channel, "Initializing logical device...");
@@ -198,7 +206,7 @@ GPU::GPU(const Instance& instance, const Surface& surface, const Tools::Array<ui
 
     // Next, populate the list of features we like from our device.
     VkPhysicalDeviceFeatures device_features;
-    populate_device_features(device_features);
+    populate_device_features(device_features, this->vk_supports_anisotropy);
 
     // Then, use the queue indices and the features to populate the create info for the device itself
     VkDeviceCreateInfo device_info;
@@ -240,6 +248,7 @@ GPU::GPU(const GPU& other) :
     vk_physical_device_properties(other.vk_physical_device_properties),
     vk_queue_info(other.vk_queue_info),
     vk_swapchain_info(other.vk_swapchain_info),
+    vk_supports_anisotropy(other.vk_supports_anisotropy),
     vk_extensions(other.vk_extensions)
 {
     logger.logc(Verbosity::debug, GPU::channel, "Copying...");
@@ -261,7 +270,7 @@ GPU::GPU(const GPU& other) :
 
     // Next, populate the list of features we like from our device.
     VkPhysicalDeviceFeatures device_features;
-    populate_device_features(device_features);
+    populate_device_features(device_features, this->vk_supports_anisotropy);
 
     // Then, use the queue indices and the features to populate the create info for the device itself
     VkDeviceCreateInfo device_info;
@@ -293,6 +302,7 @@ GPU::GPU(GPU&& other) :
     vk_physical_device_properties(other.vk_physical_device_properties),
     vk_queue_info(other.vk_queue_info),
     vk_swapchain_info(other.vk_swapchain_info),
+    vk_supports_anisotropy(other.vk_supports_anisotropy),
     vk_device(other.vk_device),
     vk_extensions(other.vk_extensions)
 {

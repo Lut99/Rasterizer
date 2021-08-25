@@ -26,7 +26,8 @@ using namespace Rasterizer::Textures;
 /***** TEXTURESYSTEM CLASS *****/
 /* Constructor for the TextureSystem class, which takes a reference to the MemoryManager from which we allocate buffers and images and junk. */
 TextureSystem::TextureSystem(Rendering::MemoryManager& memory_manager) :
-    memory_manager(memory_manager)
+    memory_manager(memory_manager),
+    sampler(memory_manager.gpu, VK_FILTER_LINEAR, VK_TRUE)
 {
     logger.logc(Verbosity::important, TextureSystem::channel, "Initializing...");
 
@@ -37,7 +38,8 @@ TextureSystem::TextureSystem(Rendering::MemoryManager& memory_manager) :
 
 /* Copy constructor for the TextureSystem class. */
 TextureSystem::TextureSystem(const TextureSystem& other) :
-    memory_manager(other.memory_manager)
+    memory_manager(other.memory_manager),
+    sampler(other.sampler)
 {
     logger.logc(Verbosity::debug, TextureSystem::channel, "Copying...");
 
@@ -48,7 +50,8 @@ TextureSystem::TextureSystem(const TextureSystem& other) :
 
 /* Move constructor for the TextureSystem class. */
 TextureSystem::TextureSystem(TextureSystem&& other) :
-    memory_manager(std::move(other.memory_manager))
+    memory_manager(std::move(other.memory_manager)),
+    sampler(std::move(other.sampler))
 {}
 
 /* Destructor for the TextureSystem class. */
@@ -119,4 +122,5 @@ void Rasterizer::Textures::swap(TextureSystem& ts1, TextureSystem& ts2) {
 
     // Simply swap it all
     using std::swap;
+    swap(ts1.sampler, ts2.sampler);
 }

@@ -18,7 +18,9 @@
 
 #include "ecs/EntityManager.hpp"
 #include "ecs/components/Textures.hpp"
+
 #include "rendering/memory/MemoryManager.hpp"
+#include "rendering/sampling/Sampler.hpp"
 
 #include "TextureFormat.hpp"
 
@@ -31,6 +33,10 @@ namespace Rasterizer::Textures {
 
         /* The MemoryManager class used for allocating new images and stage buffers and the like. */
         Rendering::MemoryManager& memory_manager;
+    
+    private:
+        /* The Sampler to use for all textures. */
+        Rendering::Sampler sampler;
 
     public:
         /* Constructor for the TextureSystem class, which takes a reference to the MemoryManager from which we allocate buffers and images and junk. */
