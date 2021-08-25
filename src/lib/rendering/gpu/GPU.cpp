@@ -311,7 +311,7 @@ GPU::~GPU() {
 
     // Destroy them in reverse order: first, the logical device
     if (this->vk_device != nullptr) {
-        logger.logc(Verbosity::details, "Cleaning logical device...");
+        logger.logc(Verbosity::details, GPU::channel, "Cleaning logical device...");
         vkDestroyDevice(this->vk_device, nullptr);
     }
 

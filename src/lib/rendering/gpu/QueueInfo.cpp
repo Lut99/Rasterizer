@@ -13,6 +13,7 @@
  *   present on the GPU and by what index.
 **/
 
+#include "tools/Logger.hpp"
 #include "QueueInfo.hpp"
 
 using namespace std;

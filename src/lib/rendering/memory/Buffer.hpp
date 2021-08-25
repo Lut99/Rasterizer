@@ -77,7 +77,7 @@ namespace Rasterizer::Rendering {
         /* Flushes all unflushed memory operations done on mapped memory. If the memory of this buffer has VK_MEMORY_PROPERTY_HOST_COHERENT_BIT set, then nothing is done as the memory is already automatically flushed. */
         void flush(VkDeviceSize n_bytes = VK_WHOLE_SIZE) const;
         /* Unmaps buffer's memory. */
-        inline void unmap() const { vkUnmapMemory(this->gpu, this->pool.memory()); }
+        void unmap() const;
 
         /* Schedules a copy to the given buffer on the given command buffer. */
         inline void schedule_copyto(const Buffer* destination, const Rendering::CommandBuffer* command_buffer) const { return this->schedule_copyto(destination, VK_WHOLE_SIZE, 0, 0, command_buffer); }

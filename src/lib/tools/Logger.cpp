@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:06
  * Last edited:
- *   24/08/2021, 21:47:22
+ *   25/08/2021, 15:18:08
  * Auto updated?
  *   Yes
  *
@@ -23,7 +23,7 @@ using namespace Tools;
 
 /***** GLOBALS *****/
 /* Global instance of the Logger everyone uses. */
-Logger logger(std::cout, std::cerr, Verbosity::none);
+Logger Tools::logger(std::cout, std::cerr, Verbosity::none);
 
 
 
@@ -44,7 +44,8 @@ Logger::Fatal::Fatal(const std::string& message) :
 Logger::Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity) :
     stdos(&stdos),
     erros(&erros),
-    verbosity(verbosity)
+    verbosity(verbosity),
+    start_time(chrono::system_clock::now())
 {}
 
 /* Copy constructor for the Logger class. */
@@ -52,7 +53,8 @@ Logger::Logger(const Logger& other) :
     stdos(other.stdos),
     erros(other.erros),
 
-    verbosity(other.verbosity)
+    verbosity(other.verbosity),
+    start_time(chrono::system_clock::now())
 {}
 
 /* Move constructor for the Logger class. */
@@ -60,11 +62,35 @@ Logger::Logger(Logger&& other) :
     stdos(std::move(other.stdos)),
     erros(std::move(other.erros)),
 
-    verbosity(std::move(other.verbosity))
+    verbosity(std::move(other.verbosity)),
+    start_time(other.start_time)
 {}
 
 /* Destructor for the Logger class. */
 Logger::~Logger() {}
+
+
+
+/* Private static helper function that pads a float to always have three decimals. */
+std::string Logger::pad_float(float value) {
+    // Convert to string
+    std::stringstream sstr;
+    sstr << value;
+
+    // Try to find the decimal point
+    size_t dec_pos = sstr.str().find_last_of('.');
+    if (dec_pos == std::string::npos) {
+        sstr << ".000";
+    } else {
+        std::string decimals = sstr.str().substr(dec_pos + 1);
+        for (size_t i = decimals.size(); i < 3; i++) {
+            sstr << '0';
+        }
+    }
+
+    // Done, return
+    return sstr.str();
+}
 
 
 
@@ -104,4 +130,5 @@ void Tools::swap(Logger& l1, Logger& l2) {
     swap(l1.stdos, l2.stdos);
     swap(l1.erros, l2.erros);
     swap(l1.verbosity, l2.verbosity);
+    swap(l1.start_time, l2.start_time);
 }

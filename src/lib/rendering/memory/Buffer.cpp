@@ -150,6 +150,11 @@ void Buffer::flush(VkDeviceSize n_bytes) const {
     }
 }
 
+/* Unmaps buffer's memory. */
+void Buffer::unmap() const {
+    vkUnmapMemory(this->gpu, this->pool.memory());
+}
+
 
 
 /* Schedules a copy to the given buffer on the given command buffer. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given. */

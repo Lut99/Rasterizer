@@ -203,6 +203,7 @@ int main(int argc, const char** argv) {
         logger.set_verbosity(Verbosity::debug);
 
         // Indicate that we're starting
+        logger.logc(Verbosity::important, "main", "Starting Rasterizer on ", logger.get_start_time());
         logger.logc(Verbosity::important, "main", "Initializing Rasterizer...");
 
         // Initialize the GLFW library
@@ -260,7 +261,7 @@ int main(int argc, const char** argv) {
 
         // Do the render
         uint32_t fps = 0;
-        logger.log(Verbosity::important, "main", "Done initializing, entering game loop...");
+        logger.logc(Verbosity::important, "main", "Done initializing, entering game loop...");
         chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
         bool busy = true;
         uint32_t count = 0;
@@ -310,7 +311,7 @@ int main(int argc, const char** argv) {
         }
 
         // Wait for the GPU to be idle before we stop
-        logger.log(Verbosity::important, "main", "Cleaning up...");
+        logger.logc(Verbosity::important, "main", "Cleaning up...");
         window.gpu().wait_for_idle();
 
         // We're done

@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   24/08/2021, 21:46:43
+ *   25/08/2021, 15:18:36
  * Auto updated?
  *   Yes
  *
@@ -71,17 +71,27 @@ namespace Tools {
         std::ostream* erros;
         /* The verbosity level of logging. */
         Verbosity verbosity;
+        /* Start time of the logger. */
+        std::chrono::system_clock::time_point start_time;
         /* Mutex to synchronize Logger access. */
         std::mutex lock;
 
 
+        /* Private static helper function that pads a float to always have three decimals. */
+        static std::string pad_float(float value);
+        /* Private helper function that returns the number of seconds since the start of the Logger. */
+        inline std::string get_time_passed() const { return pad_float((float) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - this->start_time).count() / 1000.0f); }
         /* Internal helper function that populates a given stringstream with all given types, converted to strings. */
         template <class T>
-        static inline void _add_args(std::ostream& os, const T& arg) { os << arg; }
+        static void _add_args(std::ostream* os, const T& arg) {
+            using namespace date;
+            *os << arg;
+        }
         /* Internal helper function that populates a given stringstream with all given types, converted to strings. */
         template <class T, class... Ts>
-        static void _add_args(std::ostream& os, const T& arg, const Ts&... rest) {
-            os << arg;
+        static void _add_args(std::ostream* os, const T& arg, const Ts&... rest) {
+            using namespace date;
+            *os << arg;
             Logger::_add_args(os, rest...);
         }
   
@@ -107,13 +117,15 @@ namespace Tools {
         void set_verbosity(Verbosity new_value);
         /* Returns the internal verbosity. */
         inline Verbosity get_verbosity() const { return this->verbosity; }
+        /* Returns the start time of the Logger. */
+        inline std::chrono::system_clock::time_point get_start_time() const { return this->start_time; }
 
         /* Writes a message to the internal standard output stream. The given verbosity determines if the message is printed or not. The arguments are appended (in order) and without spaces in between. */
         template <class... Ts>
-        inline void log(Verbosity verbosity, const Ts&... message) const { this->logc(verbosity, "", message...); }
+        inline void log(Verbosity verbosity, const Ts&... message) { this->logc(verbosity, "", message...); }
         /* Writes a message to the internal standard output stream. The given verbosity determines if the message is printed or not, and the channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. */
         template<class... Ts>
-        void logc(Verbosity verbosity, const std::string& channel, Ts... args) const {
+        void logc(Verbosity verbosity, const std::string& channel, Ts... args) {
             using namespace date;
 
             // Check if we should print
@@ -125,12 +137,12 @@ namespace Tools {
                 std::unique_lock<std::mutex>(this->lock);
 
                 // Write to the stream now that we have synchronized access
-                this->stdos << '[' << std::chrono::system_clock::now() << ']';
-                this->stdos << "[INFO]";
-                if (!channel.empty()) { this->stdos << '[' << channel << ']'; }
-                this->stdos << ' ';
+                *this->stdos << '[' << this->get_time_passed() << ']';
+                *this->stdos << "[INFO]";
+                if (!channel.empty()) { *this->stdos << '[' << channel << ']'; }
+                *this->stdos << ' ';
                 this->_add_args(this->stdos, args...);
-                this->stdos << std::endl;
+                *this->stdos << std::endl;
             }
 
             // Done
@@ -138,10 +150,10 @@ namespace Tools {
         }
         /* Writes a warning message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 1 (important). */
         template <class... Ts>
-        inline void warning(const Ts&... message) const { this->warningc("", message...); }
+        inline void warning(const Ts&... message) { this->warningc("", message...); }
         /* Writes a warning message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 1 (important). */
         template<class... Ts>
-        void warningc(const std::string& channel, Ts... args) const {
+        void warningc(const std::string& channel, Ts... args) {
             using namespace date;
 
             // Check if we should print
@@ -153,12 +165,12 @@ namespace Tools {
                 std::unique_lock<std::mutex>(this->lock);
 
                 // Write to the stream now that we have synchronized access
-                this->erros << '[' << std::chrono::system_clock::now() << ']';
-                this->erros << "[WARNING]";
-                if (!channel.empty()) { this->erros << '[' << channel << ']'; }
-                this->erros << ' ';
+                *this->erros << '[' << this->get_time_passed() << ']';
+                *this->erros << "[WARNING]";
+                if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
+                *this->erros << ' ';
                 this->_add_args(this->erros, args...);
-                this->erros << std::endl;
+                *this->erros << std::endl;
             }
 
             // Done
@@ -166,10 +178,10 @@ namespace Tools {
         }
         /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's an error, its verbosity is fixed to 0 (always shown). */
         template <class... Ts>
-        inline void error(const Ts&... message) const { this->errorc("", message...); }
+        inline void error(const Ts&... message) { this->errorc("", message...); }
         /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's an error, its verbosity is fixed to 0 (always shown). */
         template<class... Ts>
-        void errorc(const std::string& channel, Ts... args) const {
+        void errorc(const std::string& channel, Ts... args) {
             using namespace date;
 
             // Otherwise, start constructing the stringstream
@@ -178,12 +190,12 @@ namespace Tools {
                 std::unique_lock<std::mutex>(this->lock);
 
                 // Write to the stream now that we have synchronized access
-                this->erros << '[' << std::chrono::system_clock::now() << ']';
-                this->erros << "[ERROR]";
-                if (!channel.empty()) { this->erros << '[' << channel << ']'; }
-                this->erros << ' ';
+                *this->erros << '[' << this->get_time_passed() << ']';
+                *this->erros << "[ERROR]";
+                if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
+                *this->erros << ' ';
                 this->_add_args(this->erros, args...);
-                this->erros << std::endl;
+                *this->erros << std::endl;
             }
 
             // Done
@@ -191,15 +203,15 @@ namespace Tools {
         }
         /* Writes an error message to the internal error output stream. The arguments are appended (in order) and without spaces in between. Since it's a fatal error, its verbosity is fixed to 0 (always shown). */
         template <class... Ts>
-        [[ noreturn ]] inline void fatal(const Ts&... message) const { this->fatalc("", message...); }
+        [[ noreturn ]] inline void fatal(const Ts&... message) { this->fatalc("", message...); }
         /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a fatal error, its verbosity is fixed to 0 (always shown). */
         template<class... Ts>
-        [[ noreturn ]] void fatalc(const std::string& channel, Ts... args) const {
+        [[ noreturn ]] void fatalc(const std::string& channel, Ts... args) {
             using namespace date;
 
             // We first construct the message separately
             std::stringstream sstr;
-            this->_add_args((std::ostream&) sstr, args...);
+            this->_add_args((std::ostream*) &sstr, args...);
 
             // Always start constructing the stringstream
             {
@@ -207,10 +219,10 @@ namespace Tools {
                 std::unique_lock<std::mutex>(this->lock);
 
                 // Write to the stream now that we have synchronized access
-                this->erros << '[' << std::chrono::system_clock::now() << ']';
-                this->erros << "[FATAL]";
-                if (!channel.empty()) { this->erros << '[' << channel << ']'; }
-                this->erros << ' ' << sstr.str() << std::endl;
+                *this->erros << '[' << this->get_time_passed() << ']';
+                *this->erros << "[FATAL]";
+                if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
+                *this->erros << ' ' << sstr.str() << std::endl;
             }
 
             // Instead of returning, hit 'em with the exception

@@ -92,6 +92,9 @@ VkVertexInputBindingDescription Vertex::input_binding_description() {
     // Create and populate
     VkVertexInputBindingDescription result;
     populate_input_binding_description(result);
+
+    // Return
+    return result;
 }
 
 /* Static function that returns the attribute descriptions for the vertex. */
@@ -101,4 +104,7 @@ Tools::Array<VkVertexInputAttributeDescription> Vertex::input_attribute_descript
     result.resize(2);
     populate_input_attribute_description_position(result[0]);
     populate_input_attribute_description_colour(result[1]);
+
+    // Return
+    return result;
 }

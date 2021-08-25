@@ -166,7 +166,7 @@ Instance::Instance(const Tools::Array<const char*>& extensions, const Tools::Arr
     vk_extensions(extensions),
     vk_layers(layers)
 {
-    logger.logc(Verbosity::important, "Initializing...");
+    logger.logc(Verbosity::important, Instance::channel, "Initializing...");
 
 
 
@@ -203,7 +203,7 @@ Instance::Instance(const Tools::Array<const char*>& extensions, const Tools::Arr
     #ifndef NDEBUG
     for (uint32_t i = 0; i < this->vk_layers.size(); i++) {
         if (this->vk_layers[i] == std::string("VK_LAYER_KHRONOS_validation")) {
-            logger.logc(Verbosity::details, "Initializing debug logger...");
+            logger.logc(Verbosity::details, Instance::channel, "Initializing debug logger...");
 
             // First, we load the two extension functions needed using the dynamic loader
             PFN_vkCreateDebugUtilsMessengerEXT vk_create_debug_utils_messenger_method = (PFN_vkCreateDebugUtilsMessengerEXT) load_instance_method(this->vk_instance, "vkCreateDebugUtilsMessengerEXT");
@@ -227,7 +227,7 @@ Instance::Instance(const Tools::Array<const char*>& extensions, const Tools::Arr
 
 
     // D0ne
-    logger.logc(Verbosity::important, "Init success.");
+    logger.logc(Verbosity::important, Instance::channel, "Init success.");
 }
 
 /* Copy constructor for the Instance class. */

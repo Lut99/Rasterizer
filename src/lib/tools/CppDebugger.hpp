@@ -52,10 +52,10 @@
 #define DENTER(FUNC_NAME) \
     CppDebugger::debugger.push((FUNC_NAME), (__FILE__), (__LINE__) - 1);
 /* Pops the current frame from the stack only, but does not call return. */
-#define \
+#define DLEAVE \
     CppDebugger::debugger.pop();
 /* Wraps the return statement, first popping the current value from the stack. */
-#define return \
+#define DRETURN \
     CppDebugger::debugger.pop(); \
     return
 
@@ -92,9 +92,9 @@
 /* Registers given function on the debugger's stacktrace. */
 #define DENTER(FUNC_NAME)
 /* Pops the current frame from the stack only, but does not call return. */
-#define
+#define DLEAVE
 /* Wraps the return statement, first popping the current value from the stack. */
-#define return \
+#define DRETURN \
     return
 
 /* Mutes function with the given name. */

@@ -118,14 +118,14 @@ CommandPool::~CommandPool() {
     logger.logc(Verbosity::important, CommandBuffer::channel, "Cleaning for queue ", this->vk_queue_index, "...");
 
     if (this->command_buffers.size() > 0) {
-        logger.fatalc(CommandPool::channel, "Cleaning command buffers...");
+        logger.logc(Verbosity::details, CommandPool::channel, "Cleaning command buffers...");
         for (uint32_t i = 0; i < this->command_buffers.size(); i++) {
             vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &this->command_buffers[i]->command_buffer());
         }
     }
 
     if (this->vk_command_pool != nullptr) {
-        logger.fatalc(CommandPool::channel, "Deallocating the pool...");
+        logger.logc(Verbosity::details, CommandPool::channel, "Deallocating the pool...");
         vkDestroyCommandPool(this->gpu, this->vk_command_pool, nullptr);
     }
 

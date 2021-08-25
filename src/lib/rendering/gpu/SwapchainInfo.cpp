@@ -13,7 +13,9 @@
  *   information about the swapchain to which we render.
 **/
 
+#include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
+
 #include "SwapchainInfo.hpp"
 
 using namespace std;
