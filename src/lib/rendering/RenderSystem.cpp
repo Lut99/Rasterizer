@@ -95,7 +95,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     framebuffers(this->window.swapchain().size()),
 
     vertex_shader(this->window.gpu(), "bin/shaders/vertex_v4.spv"),
-    fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
+    fragment_shader(this->window.gpu(), "bin/shaders/frag_v2.spv"),
 
     render_pass(this->window.gpu()),
     pipeline(this->window.gpu()),
@@ -299,9 +299,9 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         this->pipeline.schedule_push_constants(this->draw_cmds[swapchain_index], VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), (void*) &cam_matrices[i]);
         for (uint32_t j = 0; j < meshes.size(); j++) {
             // // Schedule the texture
-            // this->texture_system.schedule(this->draw_cmds[swapchain_index], texture, this->texture_sets[swapchain_index]);
+            this->texture_system.schedule(this->draw_cmds[swapchain_index], texture, this->texture_sets[swapchain_index]);
             // // Schedule the descriptor itself
-            // this->texture_sets[swapchain_index]->schedule(this->draw_cmds[swapchain_index], this->pipeline.layout());
+            this->texture_sets[swapchain_index]->schedule(this->draw_cmds[swapchain_index], this->pipeline.layout());
 
             // Schedule the mesh data
             this->model_system.schedule(this->draw_cmds[swapchain_index], meshes[j]);

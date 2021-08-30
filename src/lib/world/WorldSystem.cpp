@@ -29,6 +29,14 @@ using namespace Rasterizer::ECS;
 using namespace Rasterizer::World;
 
 
+/***** CONSTANTS *****/
+/* The up vector for the camera. */
+const glm::vec3 WorldSystem::up = { 0.0f, -1.0f, 0.0f };
+
+
+
+
+
 /***** HELPER FUNCTIONS *****/
 /* Computes a direction vector based on some yaw and pitch (in degrees). */
 static inline glm::vec3 compute_direction_vector(float yaw, float pitch) {
@@ -59,7 +67,7 @@ static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, flo
 
     // Use that to compute the projection and the view matrices
     glm::mat4 proj = glm::perspective(fov, aspect_ratio, 0.001f, 10.0f);
-    glm::mat4 view = glm::lookAt(position, position + direction, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 view = glm::lookAt(position, position + direction, WorldSystem::up);
     proj[1][1] *= -1;
 
     // Done, so multiple and return
@@ -236,8 +244,8 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             // Bind the rotations
             if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
             else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
-            // if (xspeed != 0.0) { printf("xspeed: %f - %f -> %f -> %f degrees\n", mouse.x, this->last_mouse.x, xspeed, transform.rotation.y); }
-            // if (yspeed != 0.0) { printf("yspeed: %f - %f -> %f -> %f degrees\n", mouse.y, this->last_mouse.y, yspeed, transform.rotation.x); }
+            if (xspeed != 0.0) { logger.debug("xspeed: ", xspeed); }
+            if (yspeed != 0.0) { logger.debug("yspeed: ", yspeed); }
 
 
 
@@ -249,7 +257,7 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
 
             // Compute the rotational vector forward and the one tangent to that
             glm::vec3 dir_forward = compute_direction_vector(transform.rotation.y, transform.rotation.x);
-            glm::vec3 dir_up      = glm::vec3(0.0f, 1.0f, 0.0f);
+            glm::vec3 dir_up      = WorldSystem::up;
             glm::vec3 dir_right   = glm::normalize(glm::cross(dir_forward, dir_up));
             // if (xspeed > 0.0 || yspeed > 0.0) {
             //     printf("Forward: %f %f %f\n", dir_forward.x, dir_forward.y, dir_forward.z);

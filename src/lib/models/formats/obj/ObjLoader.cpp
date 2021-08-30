@@ -69,6 +69,8 @@ struct ParserState {
     Tools::Array<glm::vec4> vertices;
     /* 'Global" (i.e., file-wide) list of vertex normals. */
     Tools::Array<glm::vec3> normals;
+    /* 'Global' (i.e., file-wide) list of texture coordinates. */
+    Tools::Array<glm::vec2> texels;
 
     /* Collection of Rendering::Vertex objects that are collected uniquely. */
     std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>> temp_vertices;
@@ -128,7 +130,7 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
 }
 
 /* Stores a given vertex/texture/normal index in the given state struct. The final (returned) index will be different to the given one, as the result indexes into our large array of unique vertices, where uniqueness is also determined by texture and normal coordinates. */
-static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t normal_index = std::numeric_limits<uint32_t>::max(), uint32_t texture_index = std::numeric_limits<uint32_t>::max()) {
+static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t texture_index = std::numeric_limits<uint32_t>::max(), uint32_t normal_index = std::numeric_limits<uint32_t>::max()) {
     // First, check if the pair already exists
     glm::uvec3 index = {vertex_index, normal_index, texture_index};
     std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>::iterator iter = state.temp_vertices.find(index);
@@ -139,7 +141,7 @@ static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t
         // Generate the new index
         uint32_t to_return = static_cast<uint32_t>(state.temp_vertices.size());
         // Insert the new vertex
-        state.temp_vertices.insert(make_pair(index, make_pair(to_return, Rendering::Vertex(glm::vec3(state.vertices[vertex_index - 1]), state.mtl_lib.at(state.mesh.mtl)))));
+        state.temp_vertices.insert(make_pair(index, make_pair(to_return, Rendering::Vertex(glm::vec3(state.vertices[vertex_index - 1]), state.mtl_lib.at(state.mesh.mtl), state.texels[texture_index - 1]))));
         // Return the index
         return to_return;
     }
@@ -370,14 +372,13 @@ texture_start: {
                 return "error";
             }
 
-            // // Otherwise, we can parse the vector normal; get the coordinates
-            // Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
-            // float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
-            // float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
-            // float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            // Otherwise, we can parse the vector normal; get the coordinates
+            Tools::LinkedArray<Terminal*>::iterator value_iter = iter;
+            float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+            float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
 
-            // // Store the vertex
-            // new_vertices.push_back(Rendering::Vertex({ x, y, z }, { 0.5f + (rand() / (2 * RAND_MAX)), 0.0f, 0.0f }));
+            // Store the normal
+            state.texels.push_back({ x, y });
 
             // Remove the used symbols off the top of the stack (except the next one), then return
             remove_stack_bottom(state.symbol_stack, --iter);

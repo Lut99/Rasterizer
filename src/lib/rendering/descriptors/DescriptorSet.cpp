@@ -181,5 +181,5 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
 void DescriptorSet::schedule(const CommandBuffer* buffer, VkPipelineLayout pipeline_layout) const {
     // Add the binding
-    vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout, 0, 1, &this->vk_descriptor_set, 0, nullptr);
+    vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &this->vk_descriptor_set, 0, nullptr);
 }

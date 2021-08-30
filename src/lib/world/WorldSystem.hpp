@@ -32,6 +32,8 @@ namespace Rasterizer::World {
     public:
         /* Channel name for the WorldSystem class. */
         static constexpr const char* channel = "WorldSystem";
+        /* The up vector for the camera. */
+        static const glm::vec3 up;
 
     private:
         /* The update speed of the world system, i.e., how many faster or slower time should run in the simulation. */
