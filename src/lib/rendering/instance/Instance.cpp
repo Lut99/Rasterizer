@@ -52,7 +52,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_callback(VkDebugUtilsMessageSeverityFla
             break;
         
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            logger->errorc(vulkan_channel, pCallbackData->pMessage);
+            // logger->errorc(vulkan_channel, pCallbackData->pMessage);
+            logger->fatalc(vulkan_channel, pCallbackData->pMessage);
             break;
         
         default:
