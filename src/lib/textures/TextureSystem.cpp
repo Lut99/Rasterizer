@@ -50,7 +50,7 @@ TextureSystem::TextureSystem(const TextureSystem& other) :
 
 /* Move constructor for the TextureSystem class. */
 TextureSystem::TextureSystem(TextureSystem&& other) :
-    memory_manager(std::move(other.memory_manager)),
+    memory_manager(other.memory_manager),
     sampler(std::move(other.sampler))
 {}
 
