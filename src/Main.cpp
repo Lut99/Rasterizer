@@ -12,6 +12,11 @@
  *   Entry point to the rasterizer executable
 **/
 
+#if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+#include <execinfo.h>
+#include <stdio.h>
+#endif
+
 #include <string>
 #include <chrono>
 #define _USE_MATH_DEFINES
@@ -58,6 +63,22 @@ struct Options {
 
 
 /***** HELPER FUNCTIONS *****/
+#if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+/* Helper function that prints a stacktrace for the last called 32 functions.
+ * Code from: https://stackoverflow.com/a/77336/5270125 */
+static void print_stacktrace() {
+    void* helper_array[32];
+    size_t size;
+
+    // Get pointers for all entries on the stack
+    size = backtrace(helper_array, 32);
+
+    // Print out the frames to stderror
+    fprintf(stderr, "Stacktrace:\n");
+    backtrace_symbols_fd(helper_array, size, STDERR_FILENO);
+}
+#endif
+
 /* Returns a Tools::Array with the required extensions for GLFW. */
 static Tools::Array<const char*> get_glfw_extensions() {
     // We first collect a list of GLFW extensions
@@ -325,6 +346,9 @@ int main(int argc, const char** argv) {
     } catch (std::exception& e) {
         // Otherwise, print the error and return
         logger.error(e.what());
+        #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+        print_stacktrace();
+        #endif
         return EXIT_FAILURE;
     }
 }
