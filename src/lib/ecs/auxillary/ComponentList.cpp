@@ -24,6 +24,7 @@
 using namespace std;
 using namespace Rasterizer;
 using namespace Rasterizer::ECS;
+using namespace Tools;
 
 
 /***** COMPONENTLIST CLASS *****/

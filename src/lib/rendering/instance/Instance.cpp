@@ -36,22 +36,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_callback(VkDebugUtilsMessageSeverityFla
                                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                   void* user_data)
 {
-    // Determine the verbosity level
-    Tools::Verbosity verbosity;
-    switch(message_severity) {
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            verbosity = Tools::Verbosity::details;
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            verbosity = Tools::Verbosity::important;
-            break;
-        default:
-            verbosity = (Tools::Verbosity) -1;
-            break;
-    }
-
     // Do not use the message type for now
     (void) message_type;
 
