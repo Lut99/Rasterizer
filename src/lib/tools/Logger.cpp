@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:06
  * Last edited:
- *   30/08/2021, 20:43:23
+ *   30/08/2021, 20:44:02
  * Auto updated?
  *   Yes
  *
@@ -78,7 +78,7 @@ Logger::~Logger() {}
 #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
 /* Private static helper function that prints the current stack on unix systems.
  * Code from: https://stackoverflow.com/a/77336/5270125 */
-static void Logger::print_stacktrace() {
+void Logger::print_stacktrace() {
     void* helper_array[10];
     size_t size;
 
