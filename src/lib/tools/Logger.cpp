@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:06
  * Last edited:
- *   25/08/2021, 15:18:08
+ *   30/08/2021, 20:40:22
  * Auto updated?
  *   Yes
  *
@@ -13,6 +13,10 @@
  *   severity level.
 **/
 
+#if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+#include <execinfo.h>
+#include <stdio.h>
+#endif
 #include <iostream>
 
 #include "Logger.hpp"
@@ -70,6 +74,22 @@ Logger::Logger(Logger&& other) :
 Logger::~Logger() {}
 
 
+
+#if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+/* Private static helper function that prints the current stack on unix systems.
+ * Code from: https://stackoverflow.com/a/77336/5270125 */
+static void print_stacktrace() {
+    void* helper_array[10];
+    size_t size;
+
+    // Get pointers for all entries on the stack
+    size = backtrace(helper_array, 10);
+
+    // Print out the frames to stderror
+    fprintf(stderr, "Stacktrace:\n");
+    backtrace_symbols_fd(helper_array, size, fileno(stderr));
+}
+#endif
 
 /* Private static helper function that pads a float to always have three decimals. */
 std::string Logger::pad_float(float value) {

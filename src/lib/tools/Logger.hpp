@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   30/08/2021, 15:45:34
+ *   30/08/2021, 20:39:25
  * Auto updated?
  *   Yes
  *
@@ -77,6 +77,10 @@ namespace Tools {
         std::mutex lock;
 
 
+        #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+        /* Private static helper function that prints the current stack on unix systems. */
+        static void print_stacktrace();
+        #endif
         /* Private static helper function that pads a float to always have three decimals. */
         static std::string pad_float(float value);
         /* Private helper function that returns the number of seconds since the start of the Logger. */
@@ -224,6 +228,11 @@ namespace Tools {
                 *this->erros << ' ';
                 this->_add_args(this->erros, message...);
                 *this->erros << std::endl;
+
+                // Next, print the stacktrace
+                #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+                this->print_stacktrace();
+                #endif
             }
 
             // Done
@@ -251,6 +260,11 @@ namespace Tools {
                 *this->erros << "[FATAL]";
                 if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
                 *this->erros << ' ' << sstr.str() << std::endl;
+
+                // Next, print the stacktrace
+                #if (defined(unix) || defined(__unix) || defined(__unix__)) && !defined(NDEBUG)
+                this->print_stacktrace();
+                #endif
             }
 
             // Instead of returning, hit 'em with the exception

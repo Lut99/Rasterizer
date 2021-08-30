@@ -46,16 +46,16 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_callback(VkDebugUtilsMessageSeverityFla
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
             logger->logc(Verbosity::details, vulkan_channel, pCallbackData->pMessage);
             break;
-        
+
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             logger->warningc(vulkan_channel, pCallbackData->pMessage);
             break;
-        
+
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            // logger->errorc(vulkan_channel, pCallbackData->pMessage);
-            logger->fatalc(vulkan_channel, pCallbackData->pMessage);
+            logger->errorc(vulkan_channel, pCallbackData->pMessage);
+            // logger->fatalc(vulkan_channel, pCallbackData->pMessage);
             break;
-        
+
         default:
             // Throw meta error
             logger->fatalc(Instance::channel, "Unknown Vulkan message severity.");
