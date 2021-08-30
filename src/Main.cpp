@@ -75,7 +75,7 @@ static void print_stacktrace() {
 
     // Print out the frames to stderror
     fprintf(stderr, "Stacktrace:\n");
-    backtrace_symbols_fd(helper_array, size, _fileno(stderr));
+    backtrace_symbols_fd(helper_array, size, fileno(stderr));
 }
 #endif
 
