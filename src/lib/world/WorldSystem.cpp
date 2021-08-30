@@ -75,7 +75,8 @@ static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, flo
 WorldSystem::WorldSystem(float time_ratio) :
     time_ratio(time_ratio),
 
-    last_update(std::chrono::system_clock::now()),
+    start(std::chrono::system_clock::now()),
+    last_update(this->start),
     last_mouse(0.0f, 0.0f)
 {
     logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
@@ -89,7 +90,8 @@ WorldSystem::WorldSystem(float time_ratio) :
 WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
     time_ratio(time_ratio),
 
-    last_update(std::chrono::system_clock::now()),
+    start(std::chrono::system_clock::now()),
+    last_update(this->start),
     last_mouse(0.0f, 0.0f)
 {
     logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
@@ -104,7 +106,8 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
 WorldSystem::WorldSystem(ECS::EntityManager& entity_manager, const std::string& scene_path, float time_ratio) :
     time_ratio(time_ratio),
 
-    last_update(std::chrono::system_clock::now()),
+    start(std::chrono::system_clock::now()),
+    last_update(this->start),
     last_mouse(0.0f, 0.0f)
 {
     logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
@@ -203,7 +206,7 @@ void WorldSystem::scale(ECS::EntityManager& entity_manager, entity_t entity, con
 void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& window) {
     // Compute the number of seconds passed since last update
     std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-    float passed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(this->last_update - now).count());
+    float passed = static_cast<float>(std::chrono::duration_cast<std::chrono::milliseconds>(now - this->last_update).count());
 
     // Compute the relative mouse speed
     glm::vec2 mouse = window.mouse_pos();
@@ -211,7 +214,7 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
     float yspeed = mouse.y - this->last_mouse.y;
 
     // First, handle Controllable updates
-    if (window.has_focus()) {
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - this->start).count() > 100 && window.has_focus()) {
         ComponentList<Controllable>& controllables = entity_manager.get_list<Controllable>();
         for (component_list_size_t i = 0; i < controllables.size(); i++) {
             entity_t entity = controllables.get_entity(i);
@@ -227,14 +230,14 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
 
 
             // Compute the new rotation vector
-            transform.rotation.y -= rot_speed * xspeed;
-            transform.rotation.x += rot_speed * yspeed;
+            transform.rotation.x += rot_speed * -yspeed;
+            transform.rotation.y += rot_speed *  xspeed;
 
             // Bind the rotations
             if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
             else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
-            // if (xspeed != 0.0) { printf("xspeed: %f -> %f degrees\n", xspeed, transform.rotation.y); }
-            // if (yspeed != 0.0) { printf("yspeed: %f -> %f degrees\n", yspeed, transform.rotation.x); }
+            // if (xspeed != 0.0) { printf("xspeed: %f - %f -> %f -> %f degrees\n", mouse.x, this->last_mouse.x, xspeed, transform.rotation.y); }
+            // if (yspeed != 0.0) { printf("yspeed: %f - %f -> %f -> %f degrees\n", mouse.y, this->last_mouse.y, yspeed, transform.rotation.x); }
 
 
 
@@ -245,9 +248,9 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             }
 
             // Compute the rotational vector forward and the one tangent to that
-            glm::vec3 dir_forward = -compute_direction_vector(transform.rotation.y, transform.rotation.x);
-            glm::vec3 dir_up      =  glm::vec3(0.0f, 1.0f, 0.0f);
-            glm::vec3 dir_right   =  glm::normalize(glm::cross(dir_forward, dir_up));
+            glm::vec3 dir_forward = compute_direction_vector(transform.rotation.y, transform.rotation.x);
+            glm::vec3 dir_up      = glm::vec3(0.0f, 1.0f, 0.0f);
+            glm::vec3 dir_right   = glm::normalize(glm::cross(dir_forward, dir_up));
             // if (xspeed > 0.0 || yspeed > 0.0) {
             //     printf("Forward: %f %f %f\n", dir_forward.x, dir_forward.y, dir_forward.z);
             //     printf("Up:      %f %f %f\n", dir_up.x, dir_up.y, dir_up.z);
@@ -271,10 +274,10 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             }
             if (window.key_pressed(GLFW_KEY_SPACE)) {
                 // Move up
-                transform.position -= mov_speed * dir_up;
+                transform.position += mov_speed * dir_up;
             } else if (window.key_pressed(GLFW_KEY_LEFT_SHIFT) || window.key_pressed(GLFW_KEY_RIGHT_SHIFT)) {
                 // Move down
-                transform.position += mov_speed * dir_up;
+                transform.position -= mov_speed * dir_up;
             }
 
 
@@ -291,5 +294,4 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
     // When done, update the last-update-time and quit
     this->last_update = now;
     this->last_mouse = mouse;
-    return;
 }

@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   25/08/2021, 15:18:36
+ *   30/08/2021, 15:45:34
  * Auto updated?
  *   Yes
  *
@@ -120,12 +120,40 @@ namespace Tools {
         /* Returns the start time of the Logger. */
         inline std::chrono::system_clock::time_point get_start_time() const { return this->start_time; }
 
+        /* Writes a debug message to the internal standard output stream. Assumes a verbosity of "debug" and no channel. */
+        template <class... Ts>
+        inline void debug(const Ts&... message) { this->debugc("", message...); }
+        /* Writes a debug message to the internal standard output stream. Assumes a verbosity of "debug", and never prints a channel. */
+        template <class... Ts>
+        void debugc(const std::string& channel, const Ts&... message) {
+            using namespace date;
+
+            // Check if we should print
+            if (this->verbosity < Verbosity::debug) { return; }
+
+            // Otherwise, start constructing the stringstream
+            {
+                // Get the lock first
+                std::unique_lock<std::mutex>(this->lock);
+
+                // Write to the stream now that we have synchronized access
+                *this->stdos << '[' << this->get_time_passed() << ']';
+                *this->stdos << "[DEBUG]";
+                if (!channel.empty()) { *this->stdos << '[' << channel << ']'; }
+                *this->stdos << ' ';
+                this->_add_args(this->stdos, message...);
+                *this->stdos << std::endl;
+            }
+
+            // Done
+            return;
+        }
         /* Writes a message to the internal standard output stream. The given verbosity determines if the message is printed or not. The arguments are appended (in order) and without spaces in between. */
         template <class... Ts>
         inline void log(Verbosity verbosity, const Ts&... message) { this->logc(verbosity, "", message...); }
         /* Writes a message to the internal standard output stream. The given verbosity determines if the message is printed or not, and the channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. */
         template<class... Ts>
-        void logc(Verbosity verbosity, const std::string& channel, Ts... args) {
+        void logc(Verbosity verbosity, const std::string& channel, Ts... message) {
             using namespace date;
 
             // Check if we should print
@@ -141,7 +169,7 @@ namespace Tools {
                 *this->stdos << "[INFO]";
                 if (!channel.empty()) { *this->stdos << '[' << channel << ']'; }
                 *this->stdos << ' ';
-                this->_add_args(this->stdos, args...);
+                this->_add_args(this->stdos, message...);
                 *this->stdos << std::endl;
             }
 
@@ -153,7 +181,7 @@ namespace Tools {
         inline void warning(const Ts&... message) { this->warningc("", message...); }
         /* Writes a warning message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a warning, its verbosity is fixed to 1 (important). */
         template<class... Ts>
-        void warningc(const std::string& channel, Ts... args) {
+        void warningc(const std::string& channel, Ts... message) {
             using namespace date;
 
             // Check if we should print
@@ -169,7 +197,7 @@ namespace Tools {
                 *this->erros << "[WARNING]";
                 if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
                 *this->erros << ' ';
-                this->_add_args(this->erros, args...);
+                this->_add_args(this->erros, message...);
                 *this->erros << std::endl;
             }
 
@@ -181,7 +209,7 @@ namespace Tools {
         inline void error(const Ts&... message) { this->errorc("", message...); }
         /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's an error, its verbosity is fixed to 0 (always shown). */
         template<class... Ts>
-        void errorc(const std::string& channel, Ts... args) {
+        void errorc(const std::string& channel, Ts... message) {
             using namespace date;
 
             // Otherwise, start constructing the stringstream
@@ -194,7 +222,7 @@ namespace Tools {
                 *this->erros << "[ERROR]";
                 if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
                 *this->erros << ' ';
-                this->_add_args(this->erros, args...);
+                this->_add_args(this->erros, message...);
                 *this->erros << std::endl;
             }
 
@@ -206,12 +234,12 @@ namespace Tools {
         [[ noreturn ]] inline void fatal(const Ts&... message) { this->fatalc("", message...); }
         /* Writes an error message to the internal error output stream. The channel is used to group certain messages together. The arguments are appended (in order) and without spaces in between. Since it's a fatal error, its verbosity is fixed to 0 (always shown). */
         template<class... Ts>
-        [[ noreturn ]] void fatalc(const std::string& channel, Ts... args) {
+        [[ noreturn ]] void fatalc(const std::string& channel, Ts... message) {
             using namespace date;
 
             // We first construct the message separately
             std::stringstream sstr;
-            this->_add_args((std::ostream*) &sstr, args...);
+            this->_add_args((std::ostream*) &sstr, message...);
 
             // Always start constructing the stringstream
             {

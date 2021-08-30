@@ -37,6 +37,8 @@ namespace Rasterizer::World {
         /* The update speed of the world system, i.e., how many faster or slower time should run in the simulation. */
         float time_ratio;
 
+        /* The start time that the WorldSystem was initiated. */
+        std::chrono::system_clock::time_point start;
         /* The last time update() was called. */
         std::chrono::system_clock::time_point last_update;
         /* The last recorded mouse position. */
