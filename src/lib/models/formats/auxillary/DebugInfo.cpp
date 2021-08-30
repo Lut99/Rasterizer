@@ -225,36 +225,36 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
     bool accent_mode = false;
     uint32_t number_width = (uint32_t) ceil(log10(this->line_end + 1));
     for (size_t y = this->line_start; y <= this->line_end; y++) {
-        // First, print the line number
-        os << ' ' << pad_spaces(y, number_width) << " | ";
         // Get the line
         std::string line = this->get_line((uint32_t) (y - this->line_start));
 
-        // Loop to print it
-        for (size_t x = 0; x < line.size(); x++) {
-            // If we're at the start pos, print the start colour
-            if (supports_ansi && !accent_mode && y == this->line_start && x == this->col_start - 1) {
-                os << accent_colour;
-                accent_mode = true;
+        // Skip if empty
+        if (line.size() > 0) {
+            // Print the line number
+            os << ' ' << pad_spaces(y, number_width) << " | ";
+            
+            // Print the line
+            for (size_t x = 0; x < line.size(); x++) {
+                // If we're at the start pos, print the start colour
+                if (supports_ansi && !accent_mode && y == this->line_start && x == this->col_start - 1) {
+                    os << accent_colour;
+                    accent_mode = true;
+                }
+
+                // Print the character
+                os << line[x];
+
+                // If we're at the end pos, print the end colour
+                if (supports_ansi && accent_mode && y == this->line_end && x == this->col_end - 1) {
+                    os << "\033[0m";
+                    accent_mode = false;
+                }
             }
 
-            // Print the character
-            os << line[x];
-
-            // If we're at the end pos, print the end colour
-            if (supports_ansi && accent_mode && y == this->line_end && x == this->col_end - 1) {
-                os << "\033[0m";
-                accent_mode = false;
-            }
+            // When done, print a newline
+            if (supports_ansi) { os << "\033[0m"; }
+            os << endl;
         }
-
-        // When done, print a newline
-        os << endl;
-    }
-
-    // If we're still in accent mode, always print closing character
-    if (supports_ansi && accent_mode) {
-        os << "\033[0m";
     }
 
     // We're done

@@ -23,6 +23,7 @@
 
 /***** INCLUDES *****/
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <unordered_map>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -188,6 +189,10 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
         case TerminalType::group:
             // Start of a new group definition
             goto group_start;
+
+        case TerminalType::object:
+            // Start of a new object definition
+            goto object_start;
 
         case TerminalType::mtllib:
             // Start of a new material definition
@@ -702,6 +707,30 @@ group_start: {
 
 
 
+object_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == state.symbol_stack.end()) { return ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::name:
+            // Remove the token, then we're done
+            remove_stack_bottom(state.symbol_stack, iter);
+            return "object";
+        
+        default:
+            // Missing name
+            (*(iter - 1))->debug_info.print_error(cerr, "Missing name after object definition.");
+            remove_stack_bottom(state.symbol_stack, --iter);
+            return "error";
+
+    }
+}
+
+
+
 mtllib_start: {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
     if (++iter == state.symbol_stack.end()) { return ""; }
@@ -725,16 +754,21 @@ mtllib_start: {
             filepath += ((ValueTerminal<std::string>*) term)->value;
 
             // Parse the material file
-            logger.logc(Verbosity::details, channel, "Loading '", filepath, "' as .mtl file...");
-            load_mtl_lib(state.mtl_lib, filepath);
-            stringstream sstr;
-            bool first = true;
-            for (const std::pair<std::string, glm::vec3>& p : state.mtl_lib) {
-                if (first) { first = false; }
-                else { sstr << ", "; }
-                sstr << '\'' << p.first << '\'';
+            if (FILE* test = fopen(filepath.c_str(), "r")) {
+                fclose(test);
+                logger.logc(Verbosity::details, channel, "Loading '", filepath, "' as .mtl file...");
+                load_mtl_lib(state.mtl_lib, filepath);
+                stringstream sstr;
+                bool first = true;
+                for (const std::pair<std::string, glm::vec3>& p : state.mtl_lib) {
+                    if (first) { first = false; }
+                    else { sstr << ", "; }
+                    sstr << '\'' << p.first << '\'';
+                }
+                logger.logc(Verbosity::debug, channel, "Loaded materials: ", sstr.str());
+            } else {
+                logger.warningc(channel, "Material library '", filepath, "' not found; cannot load.");
             }
-            logger.logc(Verbosity::debug, channel, "Loaded materials: ", sstr.str());
 
             // Done with this one
             remove_stack_bottom(state.symbol_stack, iter);
@@ -763,9 +797,9 @@ usemtl_start: {
             std::string material = ((ValueTerminal<std::string>*) term)->value;
             std::unordered_map<std::string, glm::vec3>::iterator mtl_iter = state.mtl_lib.find(material);
             if (mtl_iter == state.mtl_lib.end()) {
-                term->debug_info.print_error(cerr, "Unknown material name '" + material + "'.");
+                term->debug_info.print_warning(cerr, "Unknown material name '" + material + "'.");
                 remove_stack_bottom(state.symbol_stack, iter);
-                return "error";
+                return "warning";
             }
 
             // Else, set as current and return

@@ -55,32 +55,42 @@ using namespace Rasterizer;
 
 /* Function that, given a file stream and the start of this line, parses an entire line. */
 std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
-    
+    // Backup the current cursor and go to the start of the line
+    std::streampos old_cursor = is->tellg();
+    // Go to the start of the line
+    is->seekg(sentence_start);
 
-    // // Backup the current cursor and go to the start of the line
-    // std::streampos old_cursor = is->tellg();
-    // // Go to the start of the line
-    // is->seekg(sentence_start);
+    // Loop to assemble the line
+    char c;
+    std::stringstream sstr;
+    while (true) {
+        // Get the character
+        is->get(c);
+        if (!(*is)) {
+            if (is->eof()) {
+                c = EOF;
+            } else {
+                #ifdef _WIN32
+                char buffer[BUFSIZ];
+                strerror_s(buffer, errno);
+                std::string err = buffer;
+                #else
+                std::string err = strerror(errno);
+                #endif
+                Tools::logger.fatalc("TokenizerTools", "Something went wrong while reading from the stream: ", err);
+            }
+        }
 
-    // // Loop to assemble the line
-    // char c;
-    // int col = 0;
-    // int i = 0;
-    // std::stringstream sstr;
-    // while (true) {
-    //     // Get the character
-    //     GET_CHAR(c, is, col, i);
+        // If it's a newline, stop
+        if (c == '\n' || c == EOF) {
+            is->seekg(old_cursor);
+            is->clear();
+            return sstr.str();
+        }
 
-    //     // If it's a newline, stop
-    //     if (c == '\n' || c == EOF) {
-    //         is->seekg(old_cursor);
-    //         is->clear();
-    //         return sstr.str();
-    //     }
-
-    //     // Otherwise, store and re-try
-    //     sstr << c;
-    // }
+        // Otherwise, store and re-try
+        sstr << c;
+    }
 
     // We should never get here
     return "";

@@ -38,27 +38,29 @@ namespace Rasterizer::Models::Obj {
         texture = 5,
         /* The group keyword, which groups some vertices and faces in, well, a group. */
         group = 6,
+        /* The object keyword, which indicates the start of an object. */
+        object = 7,
         /* The mtllib keyword, defining a new material. */
-        mtllib = 7,
+        mtllib = 8,
         /* The usemtl keyword, referencing a material defined in another file. */
-        usemtl = 8,
+        usemtl = 9,
 
         /* Signed integer value, only occuring for negative values. */
-        sint = 9,
+        sint = 10,
         /* An unsigned integer value. */
-        uint = 10,
+        uint = 11,
         /* A floating-point value. */
-        decimal = 11,
+        decimal = 12,
         /* A combined index of vertex/texture coordinate. */
-        v_vt = 12,
+        v_vt = 13,
         /* A combined index of vertex/texture/normal coordinate. */
-        v_vt_vn = 13,
+        v_vt_vn = 14,
         /* A combined index of vertex/normal coordinate. */
-        v_vn = 14,
+        v_vn = 15,
         /* The name of some external file. */
-        filename = 15,
+        filename = 16,
         /* Some name used internally in the obj file structure. */
-        name = 16
+        name = 17
     };
     /* Converts the given TerminalType to a string. */
     static std::string terminal_type_names[] = {
@@ -70,6 +72,7 @@ namespace Rasterizer::Models::Obj {
         "normal",
         "texture",
         "group",
+        "object",
         "mtllib",
         "usemtl",
 

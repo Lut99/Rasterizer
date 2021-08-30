@@ -51,8 +51,6 @@ Tokenizer::Tokenizer(const std::string& path) :
     col(0),
     last_sentence_start(0)
 {
-    
-
     // First, open a handle
     std::ifstream* is = new std::ifstream(this->path, std::ios::ate);
     if (!is->is_open()) {
@@ -107,8 +105,6 @@ Tokenizer::~Tokenizer() {
 
 /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
 Terminal* Tokenizer::get() {
-    
-
     // If there's something in the buffer, pop that off first
     if (this->terminal_buffer.size() > 0) {
         Terminal* result = this->terminal_buffer.last();
@@ -154,6 +150,13 @@ start: {
         line_start = this->line;
         col_start = this->col;
         goto g_end;
+    
+    } else if (c == 'o') {
+        // It's an object start symbol; simple token, but harder parsing afterwards
+        DEBUG_PATH("object", "going o_end");
+        line_start = this->line;
+        col_start = this->col;
+        goto o_end;
 
     } else if (c == 'm') {
         // Might be mtllib or something
@@ -334,16 +337,44 @@ g_end: {
     // If not whitespace, parse as unknown keyword
     if (IS_WHITESPACE(c)) {
         // It's the start of a groupname; we can parse the group token already
-        DEBUG_PATH("letter/underscore", "going name_start");
+        DEBUG_PATH("whitespace", "going name_start");
         UNGET_CHAR(this->file, this->col);
         to_return = new Terminal(TerminalType::group, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
         goto name_start;
 
     } else {
         // Parse as some other, unknown token
-        DEBUG_PATH("other", "pasring as unknown token");
+        DEBUG_PATH("other", "parsing as unknown token");
         UNGET_CHAR(this->file, this->col);
         sstr << 'g';
+        goto unknown_token;
+
+    }
+}
+
+
+
+o_end: {
+    // Possibly store the sentence start
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
+
+    // Get a character from the stream
+    GET_CHAR(c, this->file, this->col, i);
+    DEBUG_LABEL(o_end, c);
+
+    // If not whitespace, parse as unknown keyword
+    if (IS_WHITESPACE(c)) {
+        // It's the start of a groupname; we can parse the group token already
+        DEBUG_PATH("whitespace", "going name_start");
+        UNGET_CHAR(this->file, this->col);
+        to_return = new Terminal(TerminalType::object, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
+        goto name_start;
+
+    } else {
+        // Parse as some other, unknown token
+        DEBUG_PATH("other", "parsing as unknown token");
+        UNGET_CHAR(this->file, this->col);
+        sstr << 'o';
         goto unknown_token;
 
     }
@@ -1202,9 +1233,9 @@ name_start: {
         DEBUG_PATH("whitespace", "retrying");
         goto name_start;
 
-    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
         // Looks like the start of the name; keep going
-        DEBUG_PATH("letter/underscore", "going name_contd");
+        DEBUG_PATH("letter/number/underscore", "going name_contd");
         sstr.str("");
         sstr << c;
         line_start = this->line;
@@ -1239,9 +1270,9 @@ name_contd: {
         this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
         return to_return;
 
-    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+    } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
         // Keep parsing as name
-        DEBUG_PATH("letter/underscore", "continuing");
+        DEBUG_PATH("letter/number/underscore", "continuing");
         sstr << c;
         goto name_contd;
 

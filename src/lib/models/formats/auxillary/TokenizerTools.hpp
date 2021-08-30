@@ -56,7 +56,7 @@
             char buffer[BUFSIZ]; \
             strerror_s(buffer, errno); \
             std::string err = buffer; \
-            logger.fatalc(Tokenizer::channel, "Something went wrong while reading from the stream: ", err); \
+            Tools::logger.fatalc(Tokenizer::channel, "Something went wrong while reading from the stream: ", err); \
         } \
     } \
     ++(COL); \
@@ -71,7 +71,7 @@
             (C) = EOF; \
         } else { \
             std::string err = strerror(errno); \
-            logger.fatalc(Tokenizer::channel, "Something went wrong while reading from the stream: ", err); \
+            Tools::logger.fatalc(Tokenizer::channel, "Something went wrong while reading from the stream: ", err); \
         } \
     } \
     ++(COL); \
