@@ -28,7 +28,7 @@ set(WARNING_FLAGS "")
 endif()
 
 # Add extra flags needed
-set(DEBUG_FLAGS "-g -DNTRACE")
+set(DEBUG_FLAGS "-g -rdynamic -DNTRACE")
 if(WIN32)
 set(DEBUG_FLAGS "")
 endif()
