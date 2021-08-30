@@ -51,9 +51,9 @@ namespace Rasterizer::Rendering {
         /* Binds this descriptor set with the contents of a given buffer to the given bind index. Must be enough buffers to actually populate all bindings of the given type. */
         void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<Rendering::Buffer*>& buffers) const;
         /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-        void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const;
+        void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::tuple<VkImageView, VkImageLayout>>& image_views) const;
         /* Binds this descriptor set with the contents of a given image view & sampler pair to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-        void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::pair<VkImageView, VkSampler>>& view_sampler_pairs) const;
+        void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::tuple<VkImageView, VkImageLayout, VkSampler>>& view_sampler_pairs) const;
         /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
         void schedule(const Rendering::CommandBuffer* buffer, VkPipelineLayout pipeline_layout) const;
 

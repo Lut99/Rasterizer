@@ -36,13 +36,13 @@ static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buff
 }
 
 /* Populates a given VkDescriptorImageInfo struct. */
-static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImageView& image_view, const VkSampler& vk_sampler = nullptr) {
+static void populate_image_info(VkDescriptorImageInfo& image_info, const VkImageView& image_view, VkImageLayout image_layout, const VkSampler& vk_sampler = nullptr) {
     // Set to default
     image_info = {};
     
     // Set the image view associated with this info and the rest to nullptrs
     image_info.imageView = image_view;
-    image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    image_info.imageLayout = image_layout;
     image_info.sampler = vk_sampler;
 }
 
@@ -135,13 +135,13 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 }
 
 /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<VkImageView>& image_views) const {
+void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::tuple<VkImageView, VkImageLayout>>& image_views) const {
     // We first create a list of image infos
     Tools::Array<VkDescriptorImageInfo> image_infos(image_views.size());
     for (uint32_t i = 0; i < image_views.size(); i++) {
         // Start by creating the image info so that the descriptor knows smthng about the image
         VkDescriptorImageInfo image_info;
-        populate_image_info(image_info, image_views[i]);
+        populate_image_info(image_info, std::get<0>(image_views[i]), std::get<1>(image_views[i]));
 
         // Add to the list
         image_infos.push_back(image_info);
@@ -157,13 +157,13 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 }
 
 /* Binds this descriptor set with the contents of a given image view & sampler pair to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::pair<VkImageView, VkSampler>>& view_sampler_pairs) const {
+void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::tuple<VkImageView, VkImageLayout, VkSampler>>& view_sampler_pairs) const {
     // We first create a list of image infos
     Tools::Array<VkDescriptorImageInfo> image_infos(view_sampler_pairs.size());
     for (uint32_t i = 0; i < view_sampler_pairs.size(); i++) {
         // Start by creating the image info so that the descriptor knows smthng about the image
         VkDescriptorImageInfo image_info;
-        populate_image_info(image_info, view_sampler_pairs[i].first, view_sampler_pairs[i].second);
+        populate_image_info(image_info, std::get<0>(view_sampler_pairs[i]), std::get<1>(view_sampler_pairs[i]), std::get<2>(view_sampler_pairs[i]));
 
         // Add to the list
         image_infos.push_back(image_info);
