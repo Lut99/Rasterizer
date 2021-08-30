@@ -261,7 +261,7 @@ int main(int argc, const char** argv) {
         // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
         // model_system.load_model(entity_manager, obj, "data/models/teddy.obj", Models::ModelFormat::obj);
         model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
-        texture_system.load_texture(entity_manager, obj, "data/textures/man.png", Textures::TextureFormat::png);
+        texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
 
         // Do the render
         uint32_t fps = 0;

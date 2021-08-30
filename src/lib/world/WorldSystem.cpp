@@ -222,7 +222,7 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
     float yspeed = mouse.y - this->last_mouse.y;
 
     // First, handle Controllable updates
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - this->start).count() > 100 && window.has_focus()) {
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - this->start).count() > 250 && window.has_focus()) {
         ComponentList<Controllable>& controllables = entity_manager.get_list<Controllable>();
         for (component_list_size_t i = 0; i < controllables.size(); i++) {
             entity_t entity = controllables.get_entity(i);
@@ -238,14 +238,14 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
 
 
             // Compute the new rotation vector
-            transform.rotation.x += rot_speed * -yspeed;
-            transform.rotation.y += rot_speed *  xspeed;
+            transform.rotation.x += rot_speed * yspeed;
+            transform.rotation.y -= rot_speed * xspeed;
 
             // Bind the rotations
             if (transform.rotation.x > 89.0f) { transform.rotation.x = 89.0f; }
             else if (transform.rotation.x < -89.0f) { transform.rotation.x = -89.0f; }
-            if (xspeed != 0.0) { logger.debug("xspeed: ", xspeed); }
-            if (yspeed != 0.0) { logger.debug("yspeed: ", yspeed); }
+            // if (xspeed != 0.0) { logger.debug("xspeed: ", xspeed); }
+            // if (yspeed != 0.0) { logger.debug("yspeed: ", yspeed); }
 
 
 
