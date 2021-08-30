@@ -259,9 +259,9 @@ int main(int argc, const char** argv) {
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
         // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
         // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
-        // model_system.load_model(entity_manager, obj, "bin/models/teddy.obj", Models::ModelFormat::obj);
+        // model_system.load_model(entity_manager, obj, "data/models/teddy.obj", Models::ModelFormat::obj);
         model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
-        texture_system.load_texture(entity_manager, obj, "bin/textures/man.png", Textures::TextureFormat::png);
+        texture_system.load_texture(entity_manager, obj, "data/textures/man.png", Textures::TextureFormat::png);
 
         // Do the render
         uint32_t fps = 0;
