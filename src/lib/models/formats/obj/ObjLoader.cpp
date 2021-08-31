@@ -141,8 +141,18 @@ static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t
     } else {
         // Generate the new index
         uint32_t to_return = static_cast<uint32_t>(state.temp_vertices.size());
-        // Insert the new vertex
-        state.temp_vertices.insert(make_pair(index, make_pair(to_return, Rendering::Vertex(glm::vec3(state.vertices[vertex_index - 1]), state.mtl_lib.at(state.mesh.mtl), state.texels[texture_index - 1]))));
+        // Insert the new vertex, with flipped texture coordinates cuz of Vulkan
+        state.temp_vertices.insert(make_pair(
+            index,
+            make_pair(
+                to_return,
+                Rendering::Vertex(
+                    glm::vec3(state.vertices[vertex_index - 1]),
+                    state.mtl_lib.at(state.mesh.mtl),
+                    { state.texels[texture_index - 1].x, -state.texels[texture_index - 1].y }
+                )
+            )
+        ));
         // Return the index
         return to_return;
     }
@@ -167,15 +177,15 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
         case TerminalType::vertex:
             // Start of a vertex
             goto vertex_start;
-        
+
         case TerminalType::normal:
             // Start of a normal
             goto normal_start;
-        
+
         case TerminalType::texture:
             // Start of a texture coordinate
             goto texture_start;
-        
+
         case TerminalType::face:
             // Start of a face definition
             goto face_start;
@@ -185,7 +195,7 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
             term->debug_info.print_error(cerr, "Encountered stray coordinate.");
             remove_stack_bottom(state.symbol_stack, iter);;
             return "error";
-        
+
         case TerminalType::group:
             // Start of a new group definition
             goto group_start;
@@ -201,7 +211,11 @@ static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_m
         case TerminalType::usemtl:
             // Start of a material usage
             goto usemtl_start;
-        
+
+        case TerminalType::smooth:
+            // Start of a smooth shading command
+            goto smooth_start;
+
         case TerminalType::eof:
             // Nothing to be done anymore
             return "";
@@ -716,6 +730,9 @@ object_start: {
     Terminal* term = *iter;
     switch(term->type) {
         case TerminalType::name:
+            // Set the name, if any
+            state.mesh.name = ((ValueTerminal<std::string>*) term)->value;
+
             // Remove the token, then we're done
             remove_stack_bottom(state.symbol_stack, iter);
             return "object";
@@ -807,6 +824,45 @@ usemtl_start: {
             state.mesh.mtl_col = glm::vec4((*mtl_iter).second, 1.0f);
             remove_stack_bottom(state.symbol_stack, iter);
             return "usemtl";
+        }
+        
+        default:
+            // Missing filename
+            (*(iter - 1))->debug_info.print_error(cerr, "Missing name after material usage.");
+            remove_stack_bottom(state.symbol_stack, --iter);
+            return "error";
+
+    }
+}
+
+
+
+smooth_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (++iter == state.symbol_stack.end()) { return ""; }
+    ++i;
+
+    // Get the next symbol off the stack
+    Terminal* term = *iter;
+    switch(term->type) {
+        case TerminalType::name: {
+            // Check if the name is what we want
+            std::string value = ((ValueTerminal<std::string>*) term)->value;
+            if (value == "1") {
+                // Do nothing
+
+            } else if (value == "off") {
+                // Do nothing
+
+            } else {
+                term->debug_info.print_error(cerr, "Unknown smooth shading value '" + value + "'");
+                remove_stack_bottom(state.symbol_stack, iter);
+                return "error";
+            }
+
+            // Pop from the stack and return
+            remove_stack_bottom(state.symbol_stack, iter);
+            return "smooth";
         }
         
         default:

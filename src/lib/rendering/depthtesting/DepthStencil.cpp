@@ -176,7 +176,8 @@ void DepthStencil::resize(const VkExtent2D& new_extent) {
     this->draw_pool.free(this->rendering_image);
 
     // Allocate a new image
-    this->rendering_image = this->draw_pool.allocate(new_extent, old_format, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    this->rendering_image = this->draw_pool.allocate(new_extent, old_format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
     // Also re-create the image view
     VkImageViewCreateInfo view_info;
     populate_view_info(view_info, this->rendering_image->image(), this->rendering_image->format());

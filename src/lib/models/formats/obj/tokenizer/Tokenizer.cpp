@@ -173,6 +173,13 @@ start: {
         line_start = this->line;
         col_start = this->col;
         goto u_start;
+    
+    } else if (c == 's') {
+        // Could be a smooth shading command
+        DEBUG_PATH("smooth shading", "going s_start");
+        line_start = this->line;
+        col_start = this->col;
+        goto s_start;
 
     } else if (c >= '0' && c <= '9') {
         // It's a digit, but we do not yet known which
@@ -202,6 +209,11 @@ start: {
             // cout << ' ' << pad_spaces(this->line, 4) << " | " << get_line(file, this->last_sentence_start) << endl;
             this->col = 0;
             ++this->line;
+        } else if (c == '\r') {
+            // See if this matches \r\n
+            line_start = this->line;
+            col_start = this->col;
+            goto carriage_return_start;
         }
 
         // Try again
@@ -649,6 +661,34 @@ usemtl: {
         DEBUG_PATH("other", "parsing as unknown token");
         UNGET_CHAR(this->file, this->col);
         goto unknown_token;
+    }
+}
+
+
+
+s_start: {
+    // Possibly store the sentence start
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
+
+    // Get a character from the stream
+    GET_CHAR(c, this->file, this->col, i);
+    DEBUG_LABEL(s_start, c);
+
+    // If not whitespace, parse as unknown keyword
+    if (IS_WHITESPACE(c)) {
+        // It's the start of a groupname; we can parse the group token already
+        DEBUG_PATH("whitespace", "going name_start");
+        UNGET_CHAR(this->file, this->col);
+        to_return = new Terminal(TerminalType::smooth, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
+        goto name_start;
+
+    } else {
+        // Parse as some other, unknown token
+        DEBUG_PATH("other", "parsing as unknown token");
+        UNGET_CHAR(this->file, this->col);
+        sstr << 's';
+        goto unknown_token;
+
     }
 }
 
@@ -1198,7 +1238,7 @@ filename_contd: {
         // That's the filename, apparently; store the filename token on the unget stack
         DEBUG_PATH("newline", "done");
         UNGET_CHAR(this->file, this->col);
-        ++this->line;
+        // ++this->line;
         this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::filename, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
         return to_return;
 
@@ -1266,7 +1306,7 @@ name_contd: {
         // Reached the endof the filename
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        if (c == '\n') { ++this->line; }
+        // if (c == '\n') { ++this->line; }
         this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
         return to_return;
 
@@ -1287,6 +1327,28 @@ name_contd: {
 }
 
 
+
+carriage_return_start: {
+    // Possibly store the sentence start
+    if (this->col == 0) { this->last_sentence_start = this->file->tellg(); }
+
+    // Get a character from the stream
+    GET_CHAR(c, this->file, this->col, i);
+    DEBUG_LABEL(carriage_return_start, c);
+
+    // Switch on its value
+    if (c == '\n') {
+        // It's a carriage return newline; leave the newline, then go to start
+        DEBUG_PATH("newline", "going to start");
+        UNGET_CHAR(this->file, this->col);
+        goto start;
+    } else {
+        // Undo that char, then parse as normal whitespace
+        DEBUG_PATH("other", "going to start");
+        UNGET_CHAR(this->file, this->col);
+        goto start;
+    }
+}
 
 comment_start: {
     // Possibly store the sentence start

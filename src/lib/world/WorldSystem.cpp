@@ -83,8 +83,7 @@ static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, flo
 WorldSystem::WorldSystem(float time_ratio) :
     time_ratio(time_ratio),
 
-    start(std::chrono::system_clock::now()),
-    last_update(this->start),
+    last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
 {
     logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
@@ -98,8 +97,7 @@ WorldSystem::WorldSystem(float time_ratio) :
 WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
     time_ratio(time_ratio),
 
-    start(std::chrono::system_clock::now()),
-    last_update(this->start),
+    last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
 {
     logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
@@ -114,8 +112,7 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
 WorldSystem::WorldSystem(ECS::EntityManager& entity_manager, const std::string& scene_path, float time_ratio) :
     time_ratio(time_ratio),
 
-    start(std::chrono::system_clock::now()),
-    last_update(this->start),
+    last_update(std::chrono::system_clock::now()),
     last_mouse(0.0f, 0.0f)
 {
     logger.logc(Verbosity::important, WorldSystem::channel, "Initializing...");
@@ -220,9 +217,13 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
     glm::vec2 mouse = window.mouse_pos();
     float xspeed = mouse.x - this->last_mouse.x;
     float yspeed = mouse.y - this->last_mouse.y;
+    if (xspeed > WorldSystem::max_mouse_speed) { xspeed = WorldSystem::max_mouse_speed; }
+    else if (xspeed < -WorldSystem::max_mouse_speed) { xspeed = -WorldSystem::max_mouse_speed; }
+    if (yspeed > WorldSystem::max_mouse_speed) { yspeed = WorldSystem::max_mouse_speed; }
+    else if (yspeed < -WorldSystem::max_mouse_speed) { yspeed = -WorldSystem::max_mouse_speed; }
 
     // First, handle Controllable updates
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(now - this->start).count() > 250 && window.has_focus()) {
+    if (window.has_focus()) {
         ComponentList<Controllable>& controllables = entity_manager.get_list<Controllable>();
         for (component_list_size_t i = 0; i < controllables.size(); i++) {
             entity_t entity = controllables.get_entity(i);

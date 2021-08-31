@@ -44,23 +44,25 @@ namespace Rasterizer::Models::Obj {
         mtllib = 8,
         /* The usemtl keyword, referencing a material defined in another file. */
         usemtl = 9,
+        /* The smooth shading keyword, which determines whether it's on or off. */
+        smooth = 10,
 
         /* Signed integer value, only occuring for negative values. */
-        sint = 10,
+        sint = 11,
         /* An unsigned integer value. */
-        uint = 11,
+        uint = 12,
         /* A floating-point value. */
-        decimal = 12,
+        decimal = 13,
         /* A combined index of vertex/texture coordinate. */
-        v_vt = 13,
+        v_vt = 14,
         /* A combined index of vertex/texture/normal coordinate. */
-        v_vt_vn = 14,
+        v_vt_vn = 15,
         /* A combined index of vertex/normal coordinate. */
-        v_vn = 15,
+        v_vn = 16,
         /* The name of some external file. */
-        filename = 16,
+        filename = 17,
         /* Some name used internally in the obj file structure. */
-        name = 17
+        name = 18
     };
     /* Converts the given TerminalType to a string. */
     static std::string terminal_type_names[] = {
@@ -75,6 +77,7 @@ namespace Rasterizer::Models::Obj {
         "object",
         "mtllib",
         "usemtl",
+        "smooth",
 
         "sint",
         "uint",

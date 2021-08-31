@@ -254,7 +254,7 @@ int main(int argc, const char** argv) {
 
         // Prepare the teddy bear
         entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
-        world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 1, 1, 1 });
+        world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.5 * M_PI, 0.0, 0.0 }, { 1, 1, 1 });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
         // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);

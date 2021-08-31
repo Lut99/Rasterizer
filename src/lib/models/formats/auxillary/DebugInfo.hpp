@@ -94,7 +94,7 @@ namespace Rasterizer::Models {
         inline const std::string& get_line(int offset) const {  return this->raw_lines[ \
                                                                     offset >= 0 ? \
                                                                     offset : \
-                                                                    this->raw_lines.size() + offset
+                                                                    this->raw_lines.size() + offset \
                                                                 ]; }
 
     };

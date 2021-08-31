@@ -32,6 +32,8 @@ namespace Rasterizer::World {
     public:
         /* Channel name for the WorldSystem class. */
         static constexpr const char* channel = "WorldSystem";
+        /* The maximum speed allowed for the mouse. */
+        static constexpr const float max_mouse_speed = 25.0f;
         /* The up vector for the camera. */
         static const glm::vec3 up;
 
@@ -39,8 +41,6 @@ namespace Rasterizer::World {
         /* The update speed of the world system, i.e., how many faster or slower time should run in the simulation. */
         float time_ratio;
 
-        /* The start time that the WorldSystem was initiated. */
-        std::chrono::system_clock::time_point start;
         /* The last time update() was called. */
         std::chrono::system_clock::time_point last_update;
         /* The last recorded mouse position. */

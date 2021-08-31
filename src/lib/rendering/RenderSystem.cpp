@@ -127,7 +127,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     for (uint32_t i = 0; i < this->window.swapchain().size(); i++) {
         this->framebuffers.push_back(this->window.swapchain().get_framebuffer(i, this->render_pass, this->depth_stencil));
     }
-
+ 
     // Prepare the pipeline by choosing all its settings
     pipeline.init_shader_stage(this->vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
     pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -228,6 +228,7 @@ void RenderSystem::_resize() {
     this->window.resize();
 
     // Re-create the depth stencil with a new size
+    logger.debug("Window size: ", this->window.real_extent().width, 'x', this->window.real_extent().height);
     this->depth_stencil.resize(this->window.real_extent());
 
     // Fetch a new list of framebuffers

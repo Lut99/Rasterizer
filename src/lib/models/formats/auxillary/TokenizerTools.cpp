@@ -21,44 +21,13 @@ using namespace Rasterizer;
 
 
 // /***** LIBRARY FUNCTIONS *****/
-// /* Function that, given a file stream and the start of this line, parses an entire line. */
-// std::string Models::get_line(FILE* file, long sentence_start) {
-//     
-
-//     // Backup the current cursor and go to the start of the line
-//     long old_cursor = ftell(file);
-//     // Go to the start of the line
-//     fseek(file, sentence_start, SEEK_SET);
-
-//     // Loop to assemble the line
-//     char c;
-//     int col = 0;
-//     int i = 0;
-//     std::stringstream sstr;
-//     while (true) {
-//         // Get the character
-//         GET_CHAR(c, file, col, i);
-
-//         // If it's a newline, stop
-//         if (c == '\n' || c == EOF) {
-//             fseek(file, old_cursor, SEEK_SET);
-//             return sstr.str();
-//         }
-
-//         // Otherwise, store and re-try
-//         sstr << c;
-//     }
-
-//     // We should never get here
-//     return "";
-// }
-
 /* Function that, given a file stream and the start of this line, parses an entire line. */
 std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
     // Backup the current cursor and go to the start of the line
     std::streampos old_cursor = is->tellg();
     // Go to the start of the line
     is->seekg(sentence_start);
+    is->clear();
 
     // Loop to assemble the line
     char c;
@@ -257,4 +226,3 @@ void Models::split_string(const std::string& to_split, std::string& part1, std::
     // Done
     return;
 }
-

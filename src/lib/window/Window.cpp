@@ -37,6 +37,12 @@ Window::Window(const Rendering::Instance& instance, const std::string& title, ui
     // Get the window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
 
+    // Update the real window size
+    int tw, th;
+    glfwGetFramebufferSize(this->glfw_window, &tw, &th);
+    this->rw = static_cast<uint32_t>(tw);
+    this->rh = static_cast<uint32_t>(th);
+
     // Set the mouse input mode & register the callbacks
     this->set_input_mode(this->glfw_window);
     this->register_callbacks(this->glfw_window);
@@ -56,8 +62,6 @@ Window::Window(const Window& other) :
     t(other.t),
     w(other.w),
     h(other.h),
-    rw(other.rw),
-    rh(other.rh),
 
     old_mouse_pos(other.old_mouse_pos),
     new_mouse_pos(other.new_mouse_pos),
@@ -70,6 +74,12 @@ Window::Window(const Window& other) :
 
     // First, copy the glfw window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
+
+     // Update the real window size
+    int tw, th;
+    glfwGetFramebufferSize(this->glfw_window, &tw, &th);
+    this->rw = static_cast<uint32_t>(tw);
+    this->rh = static_cast<uint32_t>(th);
 
     // Set the mouse input mode & register the callbacks
     this->set_input_mode(this->glfw_window);
@@ -221,6 +231,12 @@ void Window::resize() {
 
     // Wait until the device is idle
     this->rendering_gpu->wait_for_idle();
+    
+    // Update the internal sizes
+    this->w = static_cast<uint32_t>(width);
+    this->h = static_cast<uint32_t>(height);
+    this->rw = static_cast<uint32_t>(width);
+    this->rh = static_cast<uint32_t>(height);
 
     // Then, resize the swapchain (which also updates the image views)
     this->rendering_gpu->refresh_swapchain_info();
@@ -246,6 +262,12 @@ void Window::resize(uint32_t new_width, uint32_t new_height) {
 
     // Wait until the device is idle
     this->rendering_gpu->wait_for_idle();
+
+    // Update the internal sizes
+    this->w = static_cast<uint32_t>(width);
+    this->h = static_cast<uint32_t>(height);
+    this->rw = static_cast<uint32_t>(width);
+    this->rh = static_cast<uint32_t>(height);
 
     // Then, resize the swapchain (which also updates the image views)
     this->rendering_gpu->refresh_swapchain_info();

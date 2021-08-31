@@ -226,6 +226,7 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
     uint32_t number_width = (uint32_t) ceil(log10(this->line_end + 1));
     for (size_t y = this->line_start; y <= this->line_end; y++) {
         // Get the line
+        if (y - this->line_start >= this->raw_lines.size()) { break; }
         std::string line = this->get_line((uint32_t) (y - this->line_start));
 
         // Skip if empty
