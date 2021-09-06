@@ -17,6 +17,8 @@
 #ifndef RENDERING_RENDER_SYSTEM_HPP
 #define RENDERING_RENDER_SYSTEM_HPP
 
+#include "tools/StaticArray.hpp"
+
 #include "ecs/EntityManager.hpp"
 #include "window/Window.hpp"
 #include "memory/MemoryManager.hpp"
@@ -43,7 +45,15 @@ namespace Rasterizer::Rendering {
         /* Channel name for the RenderSystem class. */
         static constexpr const char* channel = "RenderSystem";
         /* The maximum number of frames in flight we allow. */
-        static const constexpr uint32_t max_frames_in_flight = 2;
+        static constexpr const uint32_t max_frames_in_flight = 2;
+        /* Defines the descriptor set used for engine-global resources (i.e., bound once per frame). */
+        static constexpr const uint32_t desc_set_global = 0;
+        /* Defines the descriptor set used for per-renderpass resources (i.e., bound once per render pass). */
+        static constexpr const uint32_t desc_set_pass = 1;
+        /* Defines the descriptor set used for material resources (i.e., bound per kind of material we use). */
+        static constexpr const uint32_t desc_set_material = 2;
+        /* Defines the descriptor set used for per-object resources (i.e., bound very often). */
+        static constexpr const uint32_t desc_set_object = 3;
 
         /* The Window which we render to. */
         Window& window;
@@ -53,30 +63,58 @@ namespace Rasterizer::Rendering {
         const Models::ModelSystem& model_system;
         /* The TextureSystem which we use to schedule the texture buffers with. */
         const Textures::TextureSystem& texture_system;
+    
+    private:
+        /* Struct for transferring camera data to the GPU. */
+        struct CameraData {
+            /* The projection matrix for the camera. */
+            glm::mat4 proj;
+            /* The view matrix for the camera. */
+            glm::mat4 view;
+        };
+
+        /* Struct that groups per-frame information together. */
+        struct FrameData {
+            /* The framebuffer for this frame. */
+            Rendering::Framebuffer framebuffer;
+            /* The draw command buffer for this frame. */
+            Rendering::CommandBuffer* draw_cmd;
+            /* Link to the fence that tells us whether this frame is being rendered to or not. */
+            Rendering::Fence* in_flight_fence;
+            
+            /* The descriptor set that is global to this frame. */
+            Rendering::DescriptorSet* global_set;
+            /* The local descriptor pool used for all per-frame descriptors. */
+            Rendering::DescriptorPool descr_pool;
+            /* The descriptor sets for the objects. */
+            Tools::Array<Rendering::DescriptorSet*> object_sets;
+
+            /* The uniform buffer that holds the camera data for this frame. */
+            Rendering::Buffer* camera_buffer;
+            /* The per-object uniform buffers we'll use. */
+            Tools::Array<Rendering::Buffer*> object_buffers;
+        };
 
     private:
-        /* Descriptor set layout for the textures. */
-        Rendering::DescriptorSetLayout texture_layout;
-        /* Descriptor sets for the textures (we have one per swapchain image). */
-        Tools::Array<Rendering::DescriptorSet*> texture_sets;
+        /* Descriptor set layout for general data, such as the camera information. */
+        Rendering::DescriptorSetLayout global_descriptor_layout;
+        /* Descriptor set layout for per-object data, such as its position. */
+        Rendering::DescriptorSetLayout object_descriptor_layout;
 
         /* The depth stencil we attach to the pipeline. */
         Rendering::DepthStencil depth_stencil;
-        /* List of framebuffers we'll draw to. */
-        Tools::Array<Rendering::Framebuffer> framebuffers;
-        
+
         /* The vertex shader we use. */
         Rendering::Shader vertex_shader;
         /* The fragment shader we use. */
         Rendering::Shader fragment_shader;
-        
         /* The render pass which we use to draw. */
         Rendering::RenderPass render_pass;
         /* The graphics pipeline we use to render. */
         Rendering::Pipeline pipeline;
 
-        /* Handles for the command buffer to use. */
-        Tools::Array<CommandBuffer*> draw_cmds;
+        /* Per-frame data. */
+        Tools::Array<FrameData> frame_data;
 
         /* Contains the semaphores that signal when a new image is available in the swapchain. */
         Tools::Array<Rendering::Semaphore> image_ready_semaphores;
@@ -84,21 +122,21 @@ namespace Rasterizer::Rendering {
         Tools::Array<Rendering::Semaphore> render_ready_semaphores;
         /* Contains the fences that are used to synchronize the CPU to be sure that we're not already using one of the frames that are in flight. */
         Tools::Array<Rendering::Fence> frame_in_flight_fences;
-        /* Contains the fences that are used to avoid using a swapchain image (not a conceptual frame) more than once at a time. Does not physically contain fences, but rather references existing ones from frame_in_flight_fences. */
-        Tools::Array<Rendering::Fence*> image_in_flight_fences;
 
         /* Counter keeping track of which frame we should currently render to. */
         uint32_t current_frame;
-    
+
     private:
+        /* Private helper function that creates the framedatas. */
+        void _create_frames(uint32_t n_frames);
         /* Private helper function that resizes all required structures for a new window size. */
         void _resize();
 
     public:
         /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a model system to schedule the model buffers with and a texture system to schedule texture images with. */
         RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system, const Textures::TextureSystem& texture_system);
-        /* Copy constructor for the RenderSystem class. */
-        RenderSystem(const RenderSystem& other);
+        /* Copy constructor for the RenderSystem class, which is deleted. */
+        RenderSystem(const RenderSystem& other) = delete;
         /* Move constructor for the RenderSystem class. */
         RenderSystem(RenderSystem&& other);
         /* Destructor for the RenderSystem class. */
@@ -107,8 +145,8 @@ namespace Rasterizer::Rendering {
         /* Runs a single iteration of the game loop. Returns whether or not the RenderSystem is asked to close the window (false) or not (true). */
         bool render_frame(const ECS::EntityManager& entity_manager);
 
-        /* Copy assignment operator for the RenderSystem class. */
-        inline RenderSystem& operator=(const RenderSystem& other) { return *this = RenderSystem(other); }
+        /* Copy assignment operator for the RenderSystem class, which is deleted. */
+        RenderSystem& operator=(const RenderSystem& other) = delete;
         /* Move assignment operator for the RenderSystem class. */
         inline RenderSystem& operator=(RenderSystem&& other) { if (this != &other) { swap(*this, other); } return *this; }
         /* Swap operator for the RenderSystem class. */

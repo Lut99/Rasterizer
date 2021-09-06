@@ -24,14 +24,17 @@ namespace Rasterizer::Textures {
         unsupported = 0,
 
         /* PNG textures. */
-        png = 1
+        png = 1,
+        /* JPG/JPEG textures. */
+        jpg = 2
     };
 
     /* Maps TextureFormat values to readable strings. */
     static const std::string texture_format_names[] = {
         "unsupported",
 
-        "png"
+        "png",
+        "jpg"
     };
 
 }

@@ -254,7 +254,7 @@ int main(int argc, const char** argv) {
 
         // Prepare the teddy bear
         entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
-        world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.5 * M_PI, 0.0, 0.0 }, { 1, 1, 1 });
+        world_system.set(entity_manager, obj, { 0.0f, 0.0f, 0.0f }, { 0.5f * M_PI, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
         // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
@@ -263,6 +263,12 @@ int main(int argc, const char** argv) {
         texture_system.load_texture(entity_manager, obj, "data/textures/viking_room.png", Textures::TextureFormat::png);
         // model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
         // texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
+
+        // // Prepare the second object
+        // entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
+        // world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
+        // model_system.load_model(entity_manager, obj2, "data/models/capsule.obj", Models::ModelFormat::obj);
+        // texture_system.load_texture(entity_manager, obj2, "data/textures/capsule.jpg", Textures::TextureFormat::jpg);
 
         // Do the render
         uint32_t fps = 0;

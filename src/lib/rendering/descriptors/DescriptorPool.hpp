@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 14:39:16
  * Last edited:
- *   25/08/2021, 17:34:28
+ *   06/09/2021, 17:10:42
  * Auto updated?
  *   Yes
  *
@@ -74,6 +74,8 @@ namespace Rasterizer::Rendering {
         void free(const DescriptorSet* set);
         /* Deallocates an array of given descriptors sets. */
         void nfree(const Tools::Array<DescriptorSet*>& descriptor_sets);
+        /* Resets the pool in its entirety, quickly deallocating everything. */
+        void reset();
 
         /* Returns the current number of sets allocated in this pool. */
         inline size_t size() const { return this->descriptor_sets.size(); }

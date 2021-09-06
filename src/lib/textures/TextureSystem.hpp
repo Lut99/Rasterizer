@@ -34,7 +34,7 @@ namespace Rasterizer::Textures {
 
         /* The MemoryManager class used for allocating new images and stage buffers and the like. */
         Rendering::MemoryManager& memory_manager;
-    
+
     private:
         /* The Sampler to use for all textures. */
         Rendering::Sampler sampler;

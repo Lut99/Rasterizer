@@ -398,6 +398,18 @@ void DescriptorPool::nfree(const Tools::Array<DescriptorSet*>& sets) {
     }
 }
 
+/* Resets the pool in its entirety, quickly deallocating everything. */
+void DescriptorPool::reset() {
+    // Call the reset quickly (note the 0, the flags, is reserved for future use and thus fixed for us)
+    vkResetDescriptorPool(this->gpu, this->vk_descriptor_pool, 0);
+
+    // Delete all internal pointers
+    for (uint32_t i = 0; i < this->descriptor_sets.size(); i++) {
+        delete this->descriptor_sets[i];
+    }
+    this->descriptor_sets.clear();
+}
+
 
 
 /* Swap operator for the DescriptorPool class. */

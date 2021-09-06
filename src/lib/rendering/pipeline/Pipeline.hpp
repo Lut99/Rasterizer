@@ -129,7 +129,7 @@ namespace Rasterizer::Rendering {
          */
         void init_color_logic(VkBool32 enable_logic, VkLogicOp logic_op);
         /* Initiates the pipeline layout based on the list of descriptor set layouts and on the list of push constants. The latter is a list of pairs, each describing the shader stages where they can be accessed and the size of each constant. */
-        void init_pipeline_layout(const Tools::Array<DescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants);
+        void init_pipeline_layout(const Tools::Array<VkDescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants);
         /* When called, completes the pipeline with the settings given by the other initialization functions. */
         void finalize(const Rendering::RenderPass& render_pass, uint32_t first_subpass);
 

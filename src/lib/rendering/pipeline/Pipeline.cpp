@@ -395,11 +395,12 @@ void Pipeline::init_color_logic(VkBool32 enable_logic, VkLogicOp logic_op) {
 }
 
 /* Initiates the pipeline layout based on the list of descriptor set layouts and on the list of push constants. */
-void Pipeline::init_pipeline_layout(const Tools::Array<DescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants) {
+void Pipeline::init_pipeline_layout(const Tools::Array<VkDescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants) {
     // Begin by converting the list of layouts to vulkan VkDescriptorSetLayouts
-    this->vk_descriptor_set_layouts.resize(layouts.size());
-    for (uint32_t i = 0; i < layouts.size(); i++) {
-        this->vk_descriptor_set_layouts[i] = layouts[i];
+    this->vk_descriptor_set_layouts = layouts;
+    logger.debug("Pipeline bound layouts:");
+    for (uint32_t i = 0; i < this->vk_descriptor_set_layouts.size(); i++) {
+        logger.debug(" - ", this->vk_descriptor_set_layouts[i]);
     }
 
     // Next, convert the push constants to a usable format

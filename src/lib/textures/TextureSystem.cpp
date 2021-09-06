@@ -16,6 +16,7 @@
 #include "tools/Logger.hpp"
 
 #include "formats/png/PngLoader.hpp"
+#include "formats/jpg/JpgLoader.hpp"
 #include "TextureSystem.hpp"
 
 using namespace std;
@@ -75,9 +76,15 @@ void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t en
     // Load the model according to the given format
     switch (format) {
         case TextureFormat::png:
-            // Use the load function from the modelloader
+            // Use the load function from the pngloader
             logger.logc(Verbosity::details, TextureSystem::channel, "Loading '", path, "' as .png file...");
             load_png_texture(this->memory_manager, texture, path);
+            break;
+
+        case TextureFormat::jpg:
+            // Use the load function from the jpgloader
+            logger.logc(Verbosity::details, TextureSystem::channel, "Loading '", path, "' as .jpg/.jpeg file...");
+            load_jpg_texture(this->memory_manager, texture, path);
             break;
 
         default:
@@ -88,7 +95,7 @@ void TextureSystem::load_texture(ECS::EntityManager& entity_manager, entity_t en
     // Do a debug print just for fun
     logger.logc(Verbosity::debug, TextureSystem::channel, "Loaded texture of ", texture.extent.width, 'x', texture.extent.height, " pixels.");
 
-    // Finally, initialize the image view for this image
+    // Initialize the image view for this image
     texture.view = this->memory_manager.view_pool.allocate(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
 }
 

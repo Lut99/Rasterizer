@@ -28,8 +28,10 @@ namespace Rasterizer::ECS {
         float fov;
         /* The aspect ratio of the camera. */
         float ratio;
-        /* The projection & view matrix for the camera, combined. */
-        glm::mat4 proj_view;
+        /* The projection matrix for the camera. */
+        glm::mat4 proj;
+        /* The view matrix for the camera. */
+        glm::mat4 view;
     };
 
     /* Hash function for the Camera struct, which returns its 'hash' code. */

@@ -23,6 +23,7 @@
 #include "tools/Typenames.hpp"
 #include "rendering/memory/Image.hpp"
 #include "rendering/views/ImageView.hpp"
+// #include "rendering/descriptors/DescriptorSet.hpp"
 
 #include "../auxillary/ComponentHash.hpp"
 
@@ -35,6 +36,9 @@ namespace Rasterizer::ECS {
         Rendering::ImageView* view;
         /* The dimension of the texture. */
         VkExtent2D extent;
+
+        // /* The DescriptorSet that carries information about the texture (most noteably its sampler etc). */
+        // Rendering::DescriptorSet* set;
     };
     // /* Shortcut for the list of Meshes. */
     // using Textures = Tools::Array<Texture>;

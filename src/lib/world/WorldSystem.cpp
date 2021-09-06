@@ -60,18 +60,20 @@ static glm::mat4 compute_translation_matrix(const glm::vec3& position, const glm
     return result;
 }
 
-/* Computes the camera matrix given a position, a yaw and pitch (in degrees), a field of view and an aspect ratio. */
-static glm::mat4 compute_camera_matrix(const glm::vec3& position, float yaw, float pitch, float fov, float aspect_ratio) {
+/* Computes the camera projection matrix given a certain field-of-view and aspect ratio. */
+static glm::mat4 compute_camera_proj_matrix(float fov, float aspect_ratio) {
+    glm::mat4 proj = glm::perspective(fov, aspect_ratio, 0.001f, 10.0f);
+    proj[1][1] *= -1;
+    return proj;
+}
+
+/* Computes the camera view matrix given a position, a yaw and a pitch (latter two in degrees). */
+static glm::mat4 compute_camera_view_matrix(const glm::vec3& position, float yaw, float pitch) {
     // Compute the direction vector from the yaw and the pitch
     glm::vec3 direction = compute_direction_vector(yaw, pitch);
 
     // Use that to compute the projection and the view matrices
-    glm::mat4 proj = glm::perspective(fov, aspect_ratio, 0.001f, 10.0f);
-    glm::mat4 view = glm::lookAt(position, position + direction, WorldSystem::up);
-    proj[1][1] *= -1;
-
-    // Done, so multiple and return
-    return proj * view;
+    return glm::lookAt(position, position + direction, WorldSystem::up);
 }
 
 
@@ -141,16 +143,19 @@ void WorldSystem::set_cam(ECS::EntityManager& entity_manager, entity_t entity, c
     Transform& transform = entity_manager.get_component<Transform>(entity);
     Camera& camera = entity_manager.get_component<Camera>(entity);
 
-    // Set the values
-    transform.position = position;
-    transform.rotation = rotation;
-    transform.scale    = { 1.0f, 1.0f, 1.0f };
-    camera.fov = fov;
+    // First, compute the projection matrix for the camera
+    camera.fov   = fov;
     camera.ratio = aspect_ratio;
+    camera.proj  = compute_camera_proj_matrix(camera.fov, camera.ratio);
 
-    // Compute the transform translation matrix and the camera matrices
+    // Next, compute the translation matrix for the camera
+    transform.position    = position;
+    transform.rotation    = rotation;
+    transform.scale       = { 1.0f, 1.0f, 1.0f };
     transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
-    camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
+
+    // With the data from the translation matrix, compute the camera's view matrix too
+    camera.view = compute_camera_view_matrix(transform.position, transform.rotation.y, transform.rotation.x);
 }
 
 
@@ -295,7 +300,8 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
             if (entity_manager.has_component(entity, ComponentFlags::camera)) {
                 Camera& camera = entity_manager.get_component<Camera>(entity);
-                camera.proj_view = compute_camera_matrix(transform.position, transform.rotation.y, transform.rotation.x, camera.fov, camera.ratio);
+                camera.proj = compute_camera_proj_matrix(camera.fov, camera.ratio);
+                camera.view = compute_camera_view_matrix(transform.position, transform.rotation.y, transform.rotation.x);
             }
         }
     }
