@@ -4,7 +4,7 @@
  * Created:
  *   01/07/2021, 16:24:17
  * Last edited:
- *   01/07/2021, 16:24:17
+ *   07/09/2021, 17:26:49
  * Auto updated?
  *   Yes
  *
@@ -55,23 +55,33 @@ freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
 
             // Otherwise, shrink the free block
             result = align_bytes + this->blocks[i].offset;
-            this->blocks[i].offset += align_bytes + size;
-            this->blocks[i].size   -= align_bytes + size;
+            if (align_bytes + size == this->blocks[i].size) {
+                // We can simply use the entire block as a whole
+                this->blocks[i].used = true;
+                this->blocks[i].offset = result;
+                this->blocks[i].size = size;
+            } else {
+                // Otherwise, shrink the current block
+                this->blocks[i].offset += align_bytes + size;
+                this->blocks[i].size   -= align_bytes + size;
+                printf("Block %u: offset %lu, size %lu\n", i, this->blocks[i].offset, this->blocks[i].size);
 
-            // Spawn in the new used block
-            this->blocks.resize(this->blocks.size() + 1);
-            for (uint32_t j = i; j < this->blocks.size() - 1; j++) {
-                this->blocks[j + 1] = this->blocks[j];
+                // Spawn in a new block before it
+                this->blocks.insert(i, MemoryBlock({ true, result, size }));
             }
-            this->blocks[i] = MemoryBlock({ true, result, size });
 
-            // Done
+            // Done, update the internal size
+            this->current_size += size;
             break;
         }
     }
 
-    // Update the size, then return the found (or not found) index
-    this->current_size += size;
+    // Return the found index (or the error code if no such index is found)
+    std::cout << endl << "Freelist " << this << " layout after allocate:" << endl;
+    for (uint32_t i = 0; i < this->blocks.size(); i++) {
+        std::cout << " - Block @ " << this->blocks[i].offset << ", size " << this->blocks[i].size << ": " << (this->blocks[i].used ? "used" : "free") << std::endl;
+    }
+    std::cout << "Printed " << this->blocks.size() << " blocks." << endl << endl;
     return result;
 }
 
@@ -114,6 +124,13 @@ void Freelist::release(freelist_size_t offset) {
 
             // Update the size with the block size
             this->current_size -= block_size;
+
+            // Print the freelist update
+            std::cout << endl << "Freelist " << this << " layout after free:" << endl;
+            for (uint32_t i = 0; i < this->blocks.size(); i++) {
+                std::cout << " - Block @ " << this->blocks[i].offset << ", size " << this->blocks[i].size << ": " << (this->blocks[i].used ? "used" : "free") << std::endl;
+            }
+            std::cout << "Printed " << this->blocks.size() << " blocks." << endl << endl;
 
             // Done
             return;

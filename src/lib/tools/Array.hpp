@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 16:45:17
  * Last edited:
- *   7/28/2021, 9:23:17 PM
+ *   07/09/2021, 17:13:05
  * Auto updated?
  *   Yes
  *
@@ -150,24 +150,47 @@ namespace Tools {
         template <typename U = Array<T>&>
         auto operator+=(Array<T>&& elems) -> std::enable_if_t<M, U>;
 
-        /* Adds a new element of type T to the array, initializing it with its default constructor. Only needs a default constructor to be present, but cannot resize itself without a move constructor. */
+        /* Adds a new element of type T to the front of the array, pushing the rest back. The element is initialized with with its default constructor. Needs a default constructor to be present, but also to be move assignable in some way to be moved around in the array. */
+        template <typename U = void>
+        auto push_front() -> std::enable_if_t<D && std::is_move_assignable<T>::value, U>;
+        /* Adds a new element of type T to the front of the array, pushing the rest back. The element is copied using its copy constructor, which it is required to have. Also required to be move assignable to be moved around. */
+        template <typename U = void>
+        auto push_front(const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U>;
+        /* Adds a new element of type T to the front of the array, pushing the rest back. The element is left in an usused state (moving it). Note that this requires the element to be move constructible. Also required to be move assignable to be moved around. */
+        template <typename U = void>
+        auto push_front(T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U>;
+        /* Removes the first element from the array, moving the rest one index to the front. Needs to be move assignable to do the moving. */
+        template <typename U = void>
+        auto pop_front() -> std::enable_if_t<std::is_move_assignable<T>::value, U>;
+
+        /* Inserts a new element at the given location, pushing all elements coming after it one index back. Since we initialise the element with its default constructor, we need that to be present for the Array's element type. Also required is a move assign operator, so the element van be moved around in the array. */
+        template <typename U = void>
+        auto insert(array_size_t index) -> std::enable_if_t<D && std::is_move_assignable<T>::value, U>;
+        /* Inserts a copy of the given element at the given location, pushing all elements coming after it one index back. Requires the element to be copy constructible, and to also be move assignable to be moved around in the array. */
+        template <typename U = void>
+        auto insert(array_size_t index, const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U>;
+        /* Inserts the given element at the given location, pushing all elements coming after it one index back. Requires the element to be move constructible _and_ move assignable. */
+        template <typename U = void>
+        auto insert(array_size_t index, T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U>;
+        /* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. */
+        template <typename U = void>
+        auto erase(array_size_t index) -> std::enable_if_t<std::is_move_assignable<T>::value, U>;
+        /* Erases multiple elements in the given (inclusive) range from the array. Does nothing if the any index is out-of-bounds or if the start_index is larger than the stop_index. */
+        template <typename U = void>
+        auto erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<std::is_move_assignable<T>::value, U>;
+
+        /* Adds a new element of type T to the back of array, initializing it with its default constructor. Only needs a default constructor to be present, but cannot resize itself without a move constructor. */
         template <typename U = void>
         auto push_back() -> std::enable_if_t<D, U>;
-        /* Adds a new element of type T to the array, copying it. Note that this requires the element to be copy constructible. */
+        /* Adds a new element of type T to the back of array, copying it. Note that this requires the element to be copy constructible. */
         template <typename U = void>
         auto push_back(const T& elem) -> std::enable_if_t<C, U>;
-        /* Adds a new element of type T to the array, leaving it in an usused state (moving it). Note that this requires the element to be move constructible. */
+        /* Adds a new element of type T to the back of array, leaving it in an usused state (moving it). Note that this requires the element to be move constructible. */
         template <typename U = void>
         auto push_back(T&& elem) -> std::enable_if_t<M, U>;
         /* Removes the last element from the array. */
         void pop_back();
 
-        /* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. */
-        template <typename U = void>
-        auto erase(array_size_t index) -> std::enable_if_t<M, U>;
-        /* Erases multiple elements in the given (inclusive) range from the array. Does nothing if the any index is out-of-bounds or if the start_index is larger than the stop_index. */
-        template <typename U = void>
-        auto erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<M, U>;
         /* Erases everything from the array, but leaves the internally located array intact. */
         void clear();
         /* Erases everything from the array, even removing the internal allocated array. */

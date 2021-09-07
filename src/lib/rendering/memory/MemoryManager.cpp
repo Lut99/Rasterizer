@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 16:29:22
  * Last edited:
- *   8/1/2021, 5:06:15 PM
+ *   07/09/2021, 15:51:13
  * Auto updated?
  *   Yes
  *
@@ -32,7 +32,9 @@ MemoryManager::MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_s
     draw_pool(this->gpu, draw_pool_size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
     stage_pool(this->gpu, stage_pool_size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT),
 
-    descr_pool(this->gpu, { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 } }, 8),
+    descr_pool(this->gpu, {
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
+    }, 10),
 
     view_pool(this->gpu),
 

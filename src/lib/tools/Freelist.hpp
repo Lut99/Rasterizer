@@ -4,7 +4,7 @@
  * Created:
  *   01/07/2021, 16:24:20
  * Last edited:
- *   01/07/2021, 16:24:20
+ *   07/09/2021, 16:17:52
  * Auto updated?
  *   Yes
  *
@@ -17,6 +17,7 @@
 #define TOOLS_FREELIST_HPP
 
 #include <cstdint>
+#include <iostream>
 #include "Array.hpp"
 
 namespace Tools {

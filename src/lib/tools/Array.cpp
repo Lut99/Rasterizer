@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 17:11:02
  * Last edited:
- *   7/28/2021, 9:24:31 PM
+ *   07/09/2021, 17:21:03
  * Auto updated?
  *   Yes
  *
@@ -200,6 +200,266 @@ auto Array<T, D, C, M>::operator+=(Array<T>&& elems) -> std::enable_if_t<M, U> {
 
 
 
+/* Adds a new element of type T to the front of the array, pushing the rest back. The element is initialized with with its default constructor. Needs a default constructor to be present, but also to be move assignable in some way to be moved around in the array. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::push_front() -> std::enable_if_t<D && std::is_move_assignable<T>::value, U> {
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        if constexpr (M) {
+            this->reserve(this->storage.length + 1);
+        } else {
+            throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+        }
+    }
+
+    // Move all elements one place back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + 1, this->storage.elements, this->storage.length * sizeof(T));
+    } else {
+        for (uint32_t i = this->storage.length; i-- > 1; i++) {
+            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+        }
+    }
+
+    // Insert the new element, also increasing our own size
+    new(this->storage.elements) T();
+    ++this->storage.length;
+}
+
+/* Adds a new element of type T to the front of the array, pushing the rest back. The element is copied using its copy constructor, which it is required to have. Also required to be move assignable to be moved around. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::push_front(const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U> {
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        if constexpr (M) {
+            this->reserve(this->storage.length + 1);
+        } else {
+            throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+        }
+    }
+
+    // Move all elements one place back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + 1, this->storage.elements, this->storage.length * sizeof(T));
+    } else {
+        for (uint32_t i = this->storage.length; i-- > 1; i++) {
+            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+        }
+    }
+
+    // Insert the new element, also increasing our own size
+    new(this->storage.elements) T(elem);
+    ++this->storage.length;
+}
+
+/* Adds a new element of type T to the front of the array, pushing the rest back. The element is left in an usused state (moving it). Note that this requires the element to be move constructible. Also required to be move assignable to be moved around. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::push_front(T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U> {
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        if constexpr (M) {
+            this->reserve(this->storage.length + 1);
+        } else {
+            throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+        }
+    }
+
+    // Move all elements one place back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + 1, this->storage.elements, this->storage.length * sizeof(T));
+    } else {
+        for (uint32_t i = this->storage.length; i-- > 1; i++) {
+            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+        }
+    }
+
+    // Insert the new element, also increasing our own size
+    new(this->storage.elements) T(std::move(elem));
+    ++this->storage.length;
+}
+
+/* Removes the first element from the array, moving the rest one index to the front. Needs to be move assignable to do the moving. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::pop_front() -> std::enable_if_t<std::is_move_assignable<T>::value, U> {
+    // Check if there are any elements
+    if (this->storage.length == 0) { return; }
+
+    // Delete the first element if we need to
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
+        this->storage.elements[0].~T();
+    }
+
+    // If there are other elements, move them forward
+    if (this->storage.length > 1) {
+        if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+            memmove(this->storage.elements, this->storage.elements + 1, this->storage.length * sizeof(T));
+        } else {
+            for (uint32_t i = 0; i < this->storage.length - 1; i++) {
+                this->storage.elements[i] = std::move(this->storage.elements[i + 1]);
+            }
+        }
+    }
+
+    // Decrement the length
+    --this->storage.length;
+}
+
+
+
+/* Inserts a new element at the given location, pushing all elements coming after it one index back. Since we initialise the element with its default constructor, we need that to be present for the Array's element type. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::insert(array_size_t index) -> std::enable_if_t<D && std::is_move_assignable<T>::value, U> {
+    // Check if the index is within bounds
+    if (index >= this->storage.length) {
+        throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->storage.length));
+    }
+
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        if constexpr (M) {
+            this->reserve(this->storage.length + 1);
+        } else {
+            throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+        }
+    }
+
+    // Move all elements following the index one place back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index - 1) * sizeof(T));
+    } else {
+        for (uint32_t i = this->storage.length; i-- > index + 1; i++) {
+            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+        }
+    }
+
+    // Insert the new element, also increasing our own size
+    new(this->storage.elements + index) T();
+    ++this->storage.length;
+}
+
+/* Inserts a copy of the given element at the given location, pushing all elements coming after it one index back. Requires the element to be copy constructible. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::insert(array_size_t index, const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U> {
+    // Check if the index is within bounds
+    if (index >= this->storage.length) {
+        throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->storage.length));
+    }
+
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        if constexpr (M) {
+            this->reserve(this->storage.length + 1);
+        } else {
+            throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+        }
+    }
+
+    // Move all elements following the index one place back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index - 1) * sizeof(T));
+    } else {
+        for (uint32_t i = this->storage.length; i-- > index + 1; i++) {
+            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+        }
+    }
+
+    // Insert the new element, also increasing our own size
+    new(this->storage.elements + index) T(elem);
+    ++this->storage.length;
+}
+
+/* Inserts the given element at the given location, pushing all elements coming after it one index back. Requires the element to be move constructible. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::insert(array_size_t index, T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U> {
+    // Check if the index is within bounds
+    if (index >= this->storage.length) {
+        throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->storage.length));
+    }
+
+    // Make sure the array has enough size
+    if (this->storage.length >= this->storage.max_length) {
+        if constexpr (M) {
+            this->reserve(this->storage.length + 1);
+        } else {
+            throw std::out_of_range("Cannot add more elements to Array than reserved for without move constructor (Array has space for " + std::to_string(this->storage.length) + " elements).");
+        }
+    }
+
+    // Move all elements following the index one place back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index - 1) * sizeof(T));
+    } else {
+        for (uint32_t i = this->storage.length; i-- > index + 1; i++) {
+            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+        }
+    }
+
+    // Insert the new element, also increasing our own size
+    new(this->storage.elements + index) T(std::move(elem));
+    ++this->storage.length;
+}
+
+/* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. Because the elements need to be moved forward, the element is required to be move constructible. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<std::is_move_assignable<T>::value, U> {
+    // Check if the index is within bounds
+    if (index >= this->storage.length) { return; }
+
+    // Otherwise, delete the element if needed
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
+        this->storage.elements[index].~T();
+    }
+
+    // Move the other elements one back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + index, this->storage.elements + index + 1, (this->storage.length - index - 1) * sizeof(T));
+    } else {
+        for (array_size_t i = index; i < this->storage.length - 1; i++) {
+            this->storage.elements[i] = std::move(this->storage.elements[i + 1]);
+        }
+    }
+
+    // Decrease the length
+    --this->storage.length;
+}
+
+/* Erases multiple elements in the given (inclusive) range from the array. Does nothing if the any index is out-of-bounds or if the start_index is larger than the stop_index. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<std::is_move_assignable<T>::value, U> {
+    // Check if in bounds
+    if (start_index >= this->storage.length || stop_index >= this->storage.length || start_index > stop_index) { return; }
+
+    // Otherwise, delete the elements if needed
+    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
+        for (array_size_t i = start_index; i <= stop_index; i++) {
+            this->storage.elements[i].~T();
+        }
+    }
+
+    // Move all elements following it back
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(this->storage.elements + start_index, this->storage.elements + stop_index + 1, (this->storage.length - stop_index - 1) * sizeof(T));
+    } else {
+        for (array_size_t i = stop_index + 1; i < this->storage.length; i++) {
+            this->storage.elements[i - (stop_index - start_index) - 1] = std::move(this->storage.elements[i]);
+        }
+    }
+
+    // Decrease the length
+    this->storage.length -= 1 + stop_index - start_index;
+}
+
+
+
 /* Adds a new element of type T to the array, initializing it with its default constructor. Only needs a default constructor to be present, but cannot resize itself without a move constructor. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
@@ -259,58 +519,6 @@ void Array<T, D, C, M>::pop_back() {
 }
 
 
-
-/* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. Because the elements need to be moved forward, the element is required to be move constructible. */
-template <class T, bool D, bool C, bool M>
-template <typename U>
-auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<M, U> {
-    // Check if the index is within bounds
-    if (index >= this->storage.length) { return; }
-
-    // Otherwise, delete the element if needed
-    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
-        this->storage.elements[index].~T();
-    }
-
-    // Move the other elements one back
-    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
-        memmove(this->storage.elements + index, this->storage.elements + index + 1, (this->storage.length - index - 1) * sizeof(T));
-    } else {
-        for (array_size_t i = index; i < this->storage.length - 1; i++) {
-            new(this->storage.elements + i) T(std::move(this->storage.elements[i + 1]));
-        }
-    }
-
-    // Decrease the length
-    --this->storage.length;
-}
-
-/* Erases multiple elements in the given (inclusive) range from the array. Does nothing if the any index is out-of-bounds or if the start_index is larger than the stop_index. */
-template <class T, bool D, bool C, bool M>
-template <typename U>
-auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<M, U> {
-    // Check if in bounds
-    if (start_index >= this->storage.length || stop_index >= this->storage.length || start_index > stop_index) { return; }
-
-    // Otherwise, delete the elements if needed
-    if constexpr (std::conjunction<std::is_destructible<T>, std::negation<std::is_trivially_destructible<T>>>::value) {
-        for (array_size_t i = start_index; i <= stop_index; i++) {
-            this->storage.elements[i].~T();
-        }
-    }
-
-    // Move all elements following it back
-    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
-        memmove(this->storage.elements + start_index, this->storage.elements + stop_index + 1, (this->storage.length - stop_index - 1) * sizeof(T));
-    } else {
-        for (array_size_t i = stop_index + 1; i < this->storage.length; i++) {
-            new(this->storage.elements + (i - (stop_index - start_index) - 1)) T(std::move(this->storage.elements[i]));
-        }
-    }
-
-    // Decrease the length
-    this->storage.length -= 1 + stop_index - start_index;
-}
 
 /* Erases everything from the array, but leaves the internally located array intact. */
 template <class T, bool D, bool C, bool M>
