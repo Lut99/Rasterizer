@@ -41,5 +41,8 @@ build/
 # All weird windows build stuff
 *.pdb
 
+# All weird valgrind core stuff
+vgcore.*
+
 # Skip uploading the old library
 src/lib_old
