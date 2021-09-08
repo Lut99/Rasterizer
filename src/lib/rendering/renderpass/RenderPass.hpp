@@ -22,7 +22,6 @@
 #include "tools/Array.hpp"
 #include "../gpu/GPU.hpp"
 #include "../commandbuffers/CommandBuffer.hpp"
-#include "../swapchain/Framebuffer.hpp"
 
 #include "Subpass.hpp"
 

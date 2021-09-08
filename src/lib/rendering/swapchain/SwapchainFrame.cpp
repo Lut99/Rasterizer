@@ -75,19 +75,16 @@ static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info,
 
 
 /***** SWAPCHAINFRAME CLASS *****/
-/* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, a MemoryManager to allocate stuff with, a swapchain image to wrap around, its format, its size and a depth-aspect image view originating from a DepthStencil. */
-SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, Rendering::MemoryManager& memory_manager, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view):
+/* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, a swapchain image to wrap around, its format, its size and a depth-aspect image view originating from a DepthStencil. */
+SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view):
     gpu(gpu),
     render_pass(render_pass),
-    command_pool(memory_manager.draw_cmd_pool),
 
     vk_image(vk_image),
     vk_format(vk_image_format),
     vk_extent(vk_image_extent),
 
-    vk_depth_view(vk_depth_view),
-
-    in_flight_fence(nullptr)
+    vk_depth_view(vk_depth_view)
 {
     logger.logc(Verbosity::details, SwapchainFrame::channel, "Initializing...");
     VkResult vk_result;
@@ -108,10 +105,6 @@ SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::Rende
     if ((vk_result = vkCreateFramebuffer(this->gpu, &framebuffer_info, nullptr, &this->vk_framebuffer)) != VK_SUCCESS) {
         logger.fatalc(SwapchainFrame::channel, "Could not create framebuffer: ", vk_error_map[vk_result]);
     }
-
-    // Allocate the command buffer
-    logger.logc(Verbosity::details, SwapchainFrame::channel, "Allocating command buffer...");
-    this->draw_cmd = this->command_pool.allocate();
     
     logger.logc(Verbosity::details, SwapchainFrame::channel, "Init success.");
 }
@@ -120,7 +113,6 @@ SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::Rende
 SwapchainFrame::SwapchainFrame(SwapchainFrame&& other) :
     gpu(other.gpu),
     render_pass(other.render_pass),
-    command_pool(other.command_pool),
 
     vk_image(other.vk_image),
     vk_format(other.vk_format),
@@ -128,27 +120,18 @@ SwapchainFrame::SwapchainFrame(SwapchainFrame&& other) :
 
     vk_color_view(other.vk_color_view),
     vk_depth_view(other.vk_depth_view),
-    vk_framebuffer(other.vk_framebuffer),
-
-    draw_cmd(other.draw_cmd),
-    in_flight_fence(other.in_flight_fence)
+    vk_framebuffer(other.vk_framebuffer)
 {
     // Mark the color image view as non-deallocatable
     other.vk_color_view = nullptr;
     // Also the framebuffer
     other.vk_framebuffer = nullptr;
-    // Also the commandbuffer
-    other.draw_cmd = nullptr;
 }
 
 /* Destructor for the SwapchainFrame class. */
 SwapchainFrame::~SwapchainFrame() {
     logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning...");
 
-    if (this->draw_cmd != nullptr) {
-        logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning command buffer...");
-        this->command_pool.free(this->draw_cmd);
-    }
     if (this->vk_framebuffer != nullptr) {
         logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning framebuffer...");
         vkDestroyFramebuffer(this->gpu, this->vk_framebuffer, nullptr);
@@ -168,7 +151,6 @@ void Rendering::swap(SwapchainFrame& sf1, SwapchainFrame& sf2) {
     #ifndef NDEBUG
     if (sf1.gpu != sf2.gpu) { logger.fatalc(SwapchainFrame::channel, "Cannot swap swapchain frames with different GPUs."); }
     if (&sf1.render_pass != &sf2.render_pass) { logger.fatalc(SwapchainFrame::channel, "Cannot swap swapchain frames with different render passes."); }
-    if (&sf1.command_pool != &sf2.command_pool) { logger.fatalc(SwapchainFrame::channel, "Cannot swap swapchain frames with different command pools."); }
     #endif
 
     using std::swap;
@@ -180,7 +162,4 @@ void Rendering::swap(SwapchainFrame& sf1, SwapchainFrame& sf2) {
     swap(sf1.vk_color_view, sf2.vk_color_view);
     swap(sf1.vk_depth_view, sf2.vk_depth_view);
     swap(sf1.vk_framebuffer, sf2.vk_framebuffer);
-
-    swap(sf1.draw_cmd, sf2.draw_cmd);
-    swap(sf1.in_flight_fence, sf2.in_flight_fence);
 }

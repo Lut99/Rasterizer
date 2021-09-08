@@ -204,9 +204,6 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
     vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, this->vk_swapchain_images.wdata(this->vk_actual_image_count));
     logger.logc(Verbosity::debug, Swapchain::channel, "Retrieved ", this->vk_actual_image_count, " images");
 
-    // Also re-create the image views and framebuffers
-    this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
-
 
 
     logger.logc(Verbosity::important, Swapchain::channel, "Init success.");
@@ -216,9 +213,11 @@ Swapchain::Swapchain(const GPU& gpu, GLFWwindow* glfw_window, const Surface& sur
 Swapchain::Swapchain(const Swapchain& other) :
     gpu(other.gpu),
     surface(other.surface),
+
     vk_surface_format(other.vk_surface_format),
     vk_surface_present_mode(other.vk_surface_present_mode),
     vk_surface_extent(other.vk_surface_extent),
+
     vk_actual_image_count(other.vk_actual_image_count),
     vk_desired_image_count(other.vk_desired_image_count)
 {
@@ -239,9 +238,7 @@ Swapchain::Swapchain(const Swapchain& other) :
     this->vk_swapchain_images.reserve(this->vk_actual_image_count);
     vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, this->vk_swapchain_images.wdata(this->vk_actual_image_count));
 
-    // Also re-create the image views and framebuffers
-    this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
-    
+    // Done
     logger.logc(Verbosity::debug, Swapchain::channel, "Copy success.");
 }
 
@@ -255,24 +252,15 @@ Swapchain::Swapchain(Swapchain&& other) :
     vk_surface_extent(other.vk_surface_extent),
     vk_actual_image_count(other.vk_actual_image_count),
     vk_desired_image_count(other.vk_desired_image_count),
-    vk_swapchain_images(other.vk_swapchain_images),
-    vk_swapchain_views(other.vk_swapchain_views)
+    vk_swapchain_images(other.vk_swapchain_images)
 {
     // Set the deallocatable objects to nullptrs to avoid them, well, being deallocation
     other.vk_swapchain = nullptr;
-    other.vk_swapchain_views.clear();
 }
 
 /* Destructor for the Swapchain class. */
 Swapchain::~Swapchain() {
     logger.logc(Verbosity::important, Swapchain::channel, "Cleaning...");
-
-    if (this->vk_swapchain_views.size() > 0) {
-        logger.logc(Verbosity::details, Swapchain::channel, "Destroying image views...");
-        for (uint32_t i = 0; i < this->vk_swapchain_views.size(); i++) {
-            vkDestroyImageView(this->gpu, this->vk_swapchain_views[i], nullptr);
-        }
-    }
 
     if (this->vk_swapchain != nullptr) {
         logger.logc(Verbosity::details, Swapchain::channel, "Destroying internal swapchain object...");
@@ -284,22 +272,23 @@ Swapchain::~Swapchain() {
 
 
 
-/* Private helper function that re-creates image views and frame buffers from the given list of images. */
-void Swapchain::create_views(const Tools::Array<VkImage>& vk_images, const VkFormat& vk_format) {
-    // Create new image views for these fellers
-    logger.logc(Verbosity::details, Swapchain::channel, "Creating swapchain image views...");
-    this->vk_swapchain_views.resize(vk_images.size());
-    for (uint32_t i = 0; i < vk_images.size(); i++) {
-        // First, create the create info
-        VkImageViewCreateInfo view_info;
-        populate_view_info(view_info, vk_images[i], vk_format);
-
-        // Create 'em
-        VkResult vk_result;
-        if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &this->vk_swapchain_views[i])) != VK_SUCCESS) {
-            logger.fatalc(Swapchain::channel, "Could not create image view for image ", i, ": ", vk_error_map[vk_result]);
-        }
+/* Returns a list of SwapchainFrames from the internal images. They will be bound to the given RenderPass and DepthStencil. */
+Tools::Array<Rendering::SwapchainFrame> Swapchain::get_frames(const Rendering::RenderPass& render_pass, const Rendering::DepthStencil& depth_stencil) const {
+    // Create the list with the initial size
+    Tools::Array<Rendering::SwapchainFrame> result(this->vk_actual_image_count);
+    for (uint32_t i = 0; i < this->vk_actual_image_count; i++) {
+        result.push_back(Rendering::SwapchainFrame(
+            this->gpu,
+            render_pass,
+            this->vk_swapchain_images[i],
+            this->vk_surface_format.format,
+            this->vk_surface_extent,
+            depth_stencil.view()
+        ));
     }
+
+    // Return the list
+    return result;
 }
 
 
@@ -312,10 +301,6 @@ void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
 
     // First, delete old stuff
     logger.logc(Verbosity::details, Swapchain::channel, "Deallocating old swapchain...");
-    for (uint32_t i = 0; i < this->vk_swapchain_views.size(); i++) {
-        vkDestroyImageView(this->gpu, this->vk_swapchain_views[i], nullptr);
-    }
-    this->vk_swapchain_views.clear();
     this->vk_swapchain_images.clear();
     vkDestroySwapchainKHR(this->gpu, this->vk_swapchain, nullptr);
 
@@ -345,9 +330,6 @@ void Swapchain::resize(uint32_t new_width, uint32_t new_height) {
     vkGetSwapchainImagesKHR(this->gpu, this->vk_swapchain, &this->vk_actual_image_count, this->vk_swapchain_images.wdata(this->vk_actual_image_count));
     logger.logc(Verbosity::debug, Swapchain::channel, "Retrieved ", this->vk_actual_image_count, " images");
 
-    // Also re-create the image views and framebuffers
-    this->create_views(this->vk_swapchain_images, this->vk_surface_format.format);
-
 
 
     logger.logc(Verbosity::important, Swapchain::channel, "Re-creation success.");
@@ -376,11 +358,13 @@ void Rendering::swap(Swapchain& s1, Swapchain& s2) {
     using std::swap;
     
     swap(s1.vk_swapchain, s2.vk_swapchain);
+
     swap(s1.vk_surface_format, s2.vk_surface_format);
     swap(s1.vk_surface_present_mode, s2.vk_surface_present_mode);
     swap(s1.vk_surface_extent, s2.vk_surface_extent);
+
     swap(s1.vk_actual_image_count, s2.vk_actual_image_count);
     swap(s1.vk_desired_image_count, s2.vk_desired_image_count);
+
     swap(s1.vk_swapchain_images, s2.vk_swapchain_images);
-    swap(s1.vk_swapchain_views, s2.vk_swapchain_views);
 }

@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   08/09/2021, 16:19:24
+ *   08/09/2021, 17:51:53
  * Auto updated?
  *   Yes
  *
@@ -24,7 +24,7 @@
 #include "../gpu/Surface.hpp"
 #include "../renderpass/RenderPass.hpp"
 #include "../depthtesting/DepthStencil.hpp"
-#include "Framebuffer.hpp"
+#include "SwapchainFrame.hpp"
 
 namespace Rasterizer::Rendering {
     /* The Swapchain class, which wraps and manages the swapchain and all images related to it. */
@@ -35,13 +35,13 @@ namespace Rasterizer::Rendering {
 
         /* Immutable reference to the GPU where we got the swapchain from. */
         const GPU& gpu;
+        /* The surface to which this swapchain is bound. */
+        const Surface& surface;
 
     private:
         /* The internal VkSwapchainKHR object that we wrap. */
         VkSwapchainKHR vk_swapchain;
 
-        /* The surface to which this swapchain is bound. */
-        const Surface& surface;
         /* The chosen format for this swapchain. */
         VkSurfaceFormatKHR vk_surface_format;
         /* The chosen presentation mode for this swapchain. */
@@ -56,12 +56,6 @@ namespace Rasterizer::Rendering {
 
         /* The images part of the swapchain. Will be variable in size. */
         Tools::Array<VkImage> vk_swapchain_images;
-        /* Image views to the images created with the swapchain. */
-        Tools::Array<VkImageView> vk_swapchain_views;
-
-
-        /* Private helper function that re-creates image views from the given list of images. */
-        void create_views(const Tools::Array<VkImage>& vk_images, const VkFormat& vk_format);
 
     public:
         /* Constructor for the Swapchain class, which takes the GPU where it will be constructed and the window to which it shall present. */
@@ -73,10 +67,8 @@ namespace Rasterizer::Rendering {
         /* Destructor for the Swapchain class. */
         ~Swapchain();
 
-        /* Returns a the internal image at the given location. */
-        inline VkImage operator[](uint32_t index) const { return this->vk_swapchain_images[index]; }
-        /* Returns a framebuffer for the image at the given location, the given render pass and that also references the given depth stencil. */
-        inline Rendering::Framebuffer get_framebuffer(uint32_t index, const Rendering::RenderPass& render_pass, const Rendering::DepthStencil& depth_stencil) const { return Framebuffer(this->gpu, render_pass, this->vk_swapchain_views[index], depth_stencil.view(), this->vk_surface_extent); }
+        /* Returns a list of SwapchainFrames from the internal images. They will be bound to the given RenderPass and DepthStencil. */
+        Tools::Array<Rendering::SwapchainFrame> get_frames(const Rendering::RenderPass& render_pass, const Rendering::DepthStencil& depth_stencil) const;
 
         /* Resizes the swapchain to the given size. Note that this also re-creates it, so any existing handle to the internal VkSwapchain will be invalid. */
         void resize(uint32_t new_width, uint32_t new_height);

@@ -21,10 +21,6 @@
 #include "../gpu/GPU.hpp"
 #include "../renderpass/RenderPass.hpp"
 
-#include "../memory/MemoryManager.hpp"
-#include "../commandbuffers/CommandBuffer.hpp"
-#include "../synchronization/Fence.hpp"
-
 namespace Rasterizer::Rendering {
     /* The SwapchainFrame class, which is a collection of data that can be used to draw to a single frame. */
     class SwapchainFrame {
@@ -36,9 +32,6 @@ namespace Rasterizer::Rendering {
         const Rendering::GPU& gpu;
         /* The RenderPass associated with this SwapchainFrame. */
         const Rendering::RenderPass& render_pass;
-
-        /* The CommandPool used to allocate the internal commandbuffer with. */
-        Rendering::CommandPool& command_pool;
 
     private:
         /* The image that we wrap. */
@@ -56,14 +49,8 @@ namespace Rasterizer::Rendering {
         VkFramebuffer vk_framebuffer;
 
     public:
-        /* A command queue to schedule draw commands to this frame on. */
-        Rendering::CommandBuffer* draw_cmd;
-        /* Reference to the fence currently tracking if this frame is being used or not. */
-        Rendering::Fence* in_flight_fence;
-
-    public:
-        /* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, a MemoryManager to allocate stuff with, a swapchain image to wrap around, its format, its size and a depth-aspect image view originating from a DepthStencil. */
-        SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, Rendering::MemoryManager& memory_manager, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view);
+        /* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, a swapchain image to wrap around, its format, its size and a depth-aspect image view originating from a DepthStencil. */
+        SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view);
         /* Copy constructor for the SwapchainFrame class, which is deleted. */
         SwapchainFrame(const SwapchainFrame& other) = delete;
         /* Move constructor for the SwapchainFrame class. */

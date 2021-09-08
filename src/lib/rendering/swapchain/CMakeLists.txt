@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanSwapchain STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Swapchain.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Framebuffer.cpp)
+add_library(VulkanSwapchain STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Swapchain.cpp ${CMAKE_CURRENT_SOURCE_DIR}/SwapchainFrame.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ConceptualFrame.cpp ${CMAKE_CURRENT_SOURCE_DIR}/FrameManager.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanSwapchain PUBLIC
