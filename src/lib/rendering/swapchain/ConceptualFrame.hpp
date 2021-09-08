@@ -95,10 +95,8 @@ namespace Rasterizer::Rendering {
         void schedule_global();
         /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
         void schedule_object(uint32_t object_index);
-        /* Schedules the given Mesh component to the internal draw queue. */
-        void schedule_mesh(const ECS::Mesh& mesh);
-        /* Schedules a draw command on the internal draw queue. */
-        void schedule_draw();
+        /* Schedules a draw command for the given mesh on the internal draw queue. */
+        void schedule_draw(const ECS::Mesh& mesh);
         /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
         void schedule_stop();
 
