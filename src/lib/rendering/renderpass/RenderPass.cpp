@@ -244,26 +244,26 @@ void RenderPass::finalize() {
 
 
 /* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and a background colour for the image. */
-void RenderPass::start_scheduling(const Rendering::CommandBuffer* cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour, const VkClearValue& vk_clear_depth) {
+void RenderPass::start_scheduling(const Rendering::CommandBuffer* cmd, const VkFramebuffer& vk_framebuffer, const VkExtent2D& vk_extent, const VkClearValue& vk_clear_colour, const VkClearValue& vk_clear_depth) const {
     // First, create the rect that we shall render to
     VkRect2D render_area = {};
     render_area.offset.x = 0;
     render_area.offset.y = 0;
-    render_area.extent = framebuffer.extent();
+    render_area.extent = vk_extent;
 
     // Define the list of clear colours
     Tools::Array<VkClearValue> clear_values = { vk_clear_colour, vk_clear_depth };
 
     // Create the begin info and populate it
     VkRenderPassBeginInfo begin_info;
-    populate_begin_info(begin_info, this->vk_render_pass, framebuffer.framebuffer(), render_area, clear_values);
+    populate_begin_info(begin_info, this->vk_render_pass, vk_framebuffer, render_area, clear_values);
 
     // Schedule it in the command buffer (and tell it to schedule everything in the primary command buffers instead of secondary ones)
     vkCmdBeginRenderPass(cmd->command_buffer(), &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 /* Finishes scheduling the RenderPass. */
-void RenderPass::stop_scheduling(const Rendering::CommandBuffer* cmd) {
+void RenderPass::stop_scheduling(const Rendering::CommandBuffer* cmd) const {
     // Simply call the stop
     vkCmdEndRenderPass(cmd->command_buffer());
 }

@@ -134,16 +134,16 @@ namespace Rasterizer::Rendering {
         void finalize(const Rendering::RenderPass& render_pass, uint32_t first_subpass);
 
         /* Schedules the pipeline to be run in the given command buffer. Optionally takes another bind point. */
-        void schedule(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        void schedule(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS) const;
         /* Schedules a new push constant to be pushed to the shader(s) in the pipeline. */
-        void schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data);
+        void schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data) const;
         /* Schedules a new push constant to be pushed to the shader(s) in the pipeline. This overload provides some more convencience by assuming an offset of 0 and automatically deducing the type's size. */
         template <class T>
-        inline void schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, const T& value) { return this->schedule_push_constants(cmd, shader_stage, 0, sizeof(T), (void*) &value); }
+        inline void schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, const T& value) const { return this->schedule_push_constants(cmd, shader_stage, 0, sizeof(T), (void*) &value); }
         /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
-        void schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0);
+        void schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0) const;
         /* Schedules the draw call for the pipeline, except that is uses an index buffer instead of just a list of vertices. Takes the number of indices, the number of instances, the first vertex, the first index and the first instance. */
-        void schedule_draw_indexed(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_index = 0, uint32_t first_instance = 0);
+        void schedule_draw_indexed(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_index = 0, uint32_t first_instance = 0) const;
 
         /* Explicitly returns the internal VkPipelineLayout object. */
         inline const VkPipelineLayout& layout() const { return this->vk_pipeline_layout; }

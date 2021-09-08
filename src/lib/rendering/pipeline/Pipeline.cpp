@@ -482,25 +482,25 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
 
 
 /* Schedules the pipeline to be run and thus drawn in the given command buffer. Optionally takes another bind point. */
-void Pipeline::schedule(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point) {
+void Pipeline::schedule(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point) const {
     // Simply bind the pipeline at this point in the command buffer
     vkCmdBindPipeline(cmd->command_buffer(), vk_bind_point, this->vk_pipeline);
 }
 
 /* Schedules a new push constant to be pushed to the shader(s) in the pipeline. */
-void Pipeline::schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data) {
+void Pipeline::schedule_push_constants(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, uint32_t size, void* data) const {
     // Simply schedule it
     vkCmdPushConstants(cmd->command_buffer(), this->vk_pipeline_layout, shader_stage, offset, size, data);
 }
 
 /* Schedules the draw call for the pipeline, with the given numer of vertices, instances and vertex & instance offset. */
-void Pipeline::schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) {
+void Pipeline::schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) const {
     // Simply do the draw call
     vkCmdDraw(cmd->command_buffer(), vertex_count, instance_count, first_vertex, first_instance);
 }
 
 /* Schedules the draw call for the pipeline, except that is uses an index buffer instead of just a list of vertices. Takes the number of indices, the number of instances, the first vertex, the first index and the first instance. */
-void Pipeline::schedule_draw_indexed(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_index, uint32_t first_instance) {
+void Pipeline::schedule_draw_indexed(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_index, uint32_t first_instance) const {
     // Simply do the draw call
     vkCmdDrawIndexed(cmd->command_buffer(), index_count, instance_count, first_index, first_vertex, first_instance);
 }

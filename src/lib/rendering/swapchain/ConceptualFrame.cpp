@@ -15,6 +15,7 @@
 
 #include "glm/glm.hpp"
 #include "tools/Logger.hpp"
+#include "../auxillary/ErrorCodes.hpp"
 
 #include "ConceptualFrame.hpp"
 
@@ -42,20 +43,25 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
     memory_manager(memory_manager),
 
     swapchain_frame(nullptr),
-    stage_buffer(nullptr),
 
     global_layout(global_layout),
-    object_layout(object_layout),
-
-    descriptor_pool(new DescriptorPool(this->memory_manager.gpu, {
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
-    }, 10))
+    object_layout(object_layout)
 {
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing...");
+
+    // Initialize the stage buffer
+    logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
+    this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(ObjectData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
 
     // Initialize the commandbuffer
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating command buffer...");
     this->draw_cmd = this->memory_manager.draw_cmd_pool.allocate();
+
+    // Initialize the pool
+    logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing descriptor pool...");
+    this->descriptor_pool = new DescriptorPool(this->memory_manager.gpu, {
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
+    }, 10);
 
     // Initialize the global descriptor set & camera buffer
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing global frame data...");
@@ -123,6 +129,113 @@ ConceptualFrame::~ConceptualFrame() {
     }
 
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaned.");
+}
+
+
+
+/* Prepares rendering the frame as new by throwing out old data preparing to render at most the given number of objects. */
+void ConceptualFrame::prepare_render(uint32_t n_objects) {
+    // Rescale the internal array to the desired number of objects
+    if (this->object_buffers.size() < n_objects) {
+        // Extent the object buffer to more space and allocate new buffers
+        this->object_buffers.reserve(n_objects);
+        for (uint32_t i = this->object_buffers.size(); i < n_objects; i++) {
+            this->object_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(ObjectData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+        }
+    } else if (this->object_buffers.size() > n_objects) {
+        // Remove the obsolete ones
+        for (uint32_t i = n_objects; i < this->object_buffers.size(); i++) {
+            this->memory_manager.draw_pool.free(this->object_buffers[i]);
+        }
+        this->object_buffers.reserve(n_objects);
+    }
+
+    // Allocate n_objects new descriptors, since we always reset the pool
+    this->descriptor_pool->reset();
+    this->object_sets = this->descriptor_pool->nallocate(n_objects, this->object_layout);
+}
+
+
+
+/* Populates the internal camera buffer with the given projection and view matrices. */
+void ConceptualFrame::upload_camera_data(const glm::mat4& proj_matrix, const glm::mat4& view_matrix) {
+    // Prepare the struct to send
+    CameraData data{ proj_matrix, view_matrix };
+
+    // Send it to the camera buffer using the staging buffer
+    this->camera_buffer->set((void*) &data, sizeof(CameraData), this->stage_buffer, this->memory_manager.copy_cmd);
+}
+
+/* Uploads object data for the given object to its buffer. */
+void ConceptualFrame::upload_object_data(uint32_t object_index, const Rendering::ObjectData& object_data) {
+    #ifndef NDEBUG
+    // Throw errors if out-of-range
+    if (object_index > this->object_buffers.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Object index ", object_index, " is out of range (prepared for only ", this->object_buffers.size(), " objects)");
+    }
+    #endif
+
+    // Otherwise, set the correct buffer using the staging buffer
+    this->object_buffers[object_index]->set((void*) &object_data, sizeof(ObjectData), this->stage_buffer, this->memory_manager.copy_cmd);
+}
+
+
+
+/* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue, followed by binding the given pipeline. */
+void ConceptualFrame::schedule_start(const Rendering::Pipeline& pipeline) {
+    #ifndef NDEBUG
+    // Check if the swapchain frame is set
+    if (this->swapchain_frame == nullptr) {
+        logger.fatalc(ConceptualFrame::channel, "Cannot start scheduling without assigned swapchain frame.");
+    }
+    #endif
+
+    // Begin the command buffer
+    this->draw_cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    // First, schedule the render pass start
+    this->swapchain_frame->render_pass.start_scheduling(this->draw_cmd, this->swapchain_frame->framebuffer(), this->swapchain_frame->extent());
+    // Then the pipeline bind
+    pipeline.schedule(this->draw_cmd);
+}
+
+/* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
+void ConceptualFrame::schedule_global(const Rendering::Pipeline& pipeline) {
+    // Add the camera to the descriptor
+    this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
+    // Bind the descriptor itself
+    this->global_set->schedule(this->draw_cmd, pipeline.layout());
+}
+
+/* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
+void ConceptualFrame::schedule_object(const Rendering::Pipeline& pipeline, uint32_t object_index) {
+    #ifndef NDEBUG
+    // Throw errors if out-of-range
+    if (object_index > this->object_buffers.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Object index ", object_index, " is out of range (prepared for only ", this->object_buffers.size(), " objects)");
+    }
+    #endif
+
+    // Bind the correct object buffer to the correct set
+    this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
+    // Schedule the object's descriptor set
+    this->object_sets[object_index]->schedule(this->draw_cmd, pipeline.layout());
+}
+
+/* Schedules a draw command for the given mesh on the internal draw queue. */
+void ConceptualFrame::schedule_draw(const Rendering::Pipeline& pipeline, const Models::ModelSystem& model_system, const ECS::Mesh& mesh) {
+    // First, schedule the mesh as an indexed vertex buffer
+    model_system.schedule(this->draw_cmd, mesh);
+    // Next, schedule the draw call
+    pipeline.schedule_draw_indexed(this->draw_cmd, mesh.n_indices, 1);
+}
+
+/* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
+void ConceptualFrame::schedule_stop() {
+    // Stop scheduling the render pass
+    this->swapchain_frame->render_pass.stop_scheduling(this->draw_cmd);
+    // Stop the buffer altogether
+    this->draw_cmd->end();
 }
 
 

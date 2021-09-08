@@ -18,6 +18,7 @@
 
 #include "tools/Array.hpp"
 #include "ecs/components/Meshes.hpp"
+#include "models/ModelSystem.hpp"
 
 #include "../data/ObjectData.hpp"
 #include "../memory/MemoryManager.hpp"
@@ -92,11 +93,11 @@ namespace Rasterizer::Rendering {
         /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue, followed by binding the given pipeline. */
         void schedule_start(const Rendering::Pipeline& pipeline);
         /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
-        void schedule_global();
+        void schedule_global(const Rendering::Pipeline& pipeline);
         /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
-        void schedule_object(uint32_t object_index);
+        void schedule_object(const Rendering::Pipeline& pipeline, uint32_t object_index);
         /* Schedules a draw command for the given mesh on the internal draw queue. */
-        void schedule_draw(const ECS::Mesh& mesh);
+        void schedule_draw(const Rendering::Pipeline& pipeline, const Models::ModelSystem& model_system, const ECS::Mesh& mesh);
         /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
         void schedule_stop();
 

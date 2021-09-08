@@ -66,9 +66,9 @@ namespace Rasterizer::Rendering {
         void finalize();
 
         /* Schedules the RenderPass to run in the given CommandBuffer. Also takes a framebuffer to render to and optionally a background colour for the image. */
-        void start_scheduling(const Rendering::CommandBuffer* cmd, const Rendering::Framebuffer& framebuffer, const VkClearValue& vk_clear_colour = { 0.749f, 1.0f, 0.992f, 1.0f }, const VkClearValue& vk_clear_depth = { 1.0f, 0.0 });
+        void start_scheduling(const Rendering::CommandBuffer* cmd, const VkFramebuffer& vk_framebuffer, const VkExtent2D& vk_extent, const VkClearValue& vk_clear_colour = { 0.749f, 1.0f, 0.992f, 1.0f }, const VkClearValue& vk_clear_depth = { 1.0f, 0.0 }) const;
         /* Finishes scheduling the RenderPass. */
-        void stop_scheduling(const Rendering::CommandBuffer* cmd);
+        void stop_scheduling(const Rendering::CommandBuffer* cmd) const;
 
         /* Expliticly returns the internal VkRenderPass object. */
         inline const VkRenderPass& render_pass() const { return this->vk_render_pass; }
