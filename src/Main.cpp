@@ -4,7 +4,7 @@
  * Created:
  *   11/06/2021, 18:03:12
  * Last edited:
- *   07/08/2021, 23:05:59
+ *   9/8/2021, 3:27:16 PM
  * Auto updated?
  *   Yes
  *
@@ -58,6 +58,12 @@ struct Options {
 
 
 /***** HELPER FUNCTIONS *****/
+/* Listens and reports GLFW errors. */
+void glfw_error_callback(int code, const char* message) {
+    // Simply throw them into the debugger
+    logger.fatalc("GLFW", message, " (error code: ", code, ')');
+}
+
 /* Returns a Tools::Array with the required extensions for GLFW. */
 static Tools::Array<const char*> get_glfw_extensions() {
     // We first collect a list of GLFW extensions
@@ -212,6 +218,7 @@ int main(int argc, const char** argv) {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwSetErrorCallback(glfw_error_callback);
 
         // Prepare the Vulkan instance first
         Rendering::Instance instance(Rendering::instance_extensions + get_glfw_extensions());
@@ -324,14 +331,18 @@ int main(int argc, const char** argv) {
         // Wait for the GPU to be idle before we stop
         logger.logc(Verbosity::important, "main", "Cleaning up...");
         window.gpu().wait_for_idle();
-
-        // We're done
-        glfwTerminate();
-        return EXIT_SUCCESS;
+    
+    } catch (Tools::Logger::Fatal&) {
+        // Do nothing, the debugger already handled it
+        return EXIT_FAILURE;
 
     } catch (std::exception& e) {
         // Otherwise, print the error and return
         logger.error(e.what());
         return EXIT_FAILURE;
     }
+
+    // We're done
+    glfwTerminate();
+    return EXIT_SUCCESS;
 }

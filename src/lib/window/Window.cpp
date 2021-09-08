@@ -4,7 +4,7 @@
  * Created:
  *   02/07/2021, 13:44:58
  * Last edited:
- *   07/08/2021, 18:22:26
+ *   9/8/2021, 3:12:06 PM
  * Auto updated?
  *   Yes
  *
@@ -36,6 +36,9 @@ Window::Window(const Rendering::Instance& instance, const std::string& title, ui
 
     // Get the window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
+    if (this->glfw_window == NULL) {
+        logger.fatalc(Window::channel, "Could not create GLFW window.");
+    }
 
     // Update the real window size
     int tw, th;
@@ -74,6 +77,9 @@ Window::Window(const Window& other) :
 
     // First, copy the glfw window
     this->glfw_window = glfwCreateWindow(this->w, this->h, this->t.c_str(), NULL, NULL);
+    if (this->glfw_window == NULL) {
+        logger.fatalc(Window::channel, "Could not re-create GLFW window.");
+    }
 
      // Update the real window size
     int tw, th;
