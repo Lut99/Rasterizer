@@ -394,7 +394,7 @@ auto Array<T, D, C, M>::insert(array_size_t index, T&& elem) -> std::enable_if_t
 
     // Move all elements following the index one place back
     if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
-        memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index - 1) * sizeof(T));
+        memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index) * sizeof(T));
     } else {
         for (uint32_t i = this->storage.length; i-- > index + 1; i++) {
             this->storage.elements[i] = std::move(this->storage.elements[i - 1]);

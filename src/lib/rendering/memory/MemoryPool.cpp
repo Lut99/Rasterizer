@@ -429,6 +429,26 @@ void MemoryPool::free(const MemoryObject* object) {
     delete object;
 }
 
+/* Resets the memory pool, freeing all allocated buffers and junk. */
+void MemoryPool::reset() {
+    // Go through the list to deallocate it all
+    for (uint32_t i = 0; i < this->objects.size(); i++) {
+        // Destroy the wrapped Vulkan object
+        if (this->objects[i]->type == MemoryObjectType::buffer) {
+            vkDestroyBuffer(this->gpu, ((Buffer*) this->objects[i])->vk_buffer, nullptr);
+        } else {
+            vkDestroyImage(this->gpu, ((Image*) this->objects[i])->vk_image, nullptr);
+        }
+
+        // Destroy the pointer itself
+        delete this->objects[i];
+    }
+
+    // Clear the list and the freelist
+    this->objects.clear();
+    this->free_list.clear();
+}
+
 
 
 /* Swap operator for the MemoryPool class. */

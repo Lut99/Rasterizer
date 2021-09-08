@@ -78,6 +78,8 @@ namespace Rasterizer::Rendering {
 
         /* Deallocates the given MemoryObject. */
         void free(const MemoryObject* object);
+        /* Resets the memory pool, freeing all allocated buffers and junk. */
+        void reset();
 
         /* Returns the number of bytes used in the MemoryPool. */
         inline VkDeviceSize size() const { return static_cast<VkDeviceSize>(this->free_list.size()); }

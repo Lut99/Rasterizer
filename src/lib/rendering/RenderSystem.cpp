@@ -375,7 +375,9 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
 
     // Done with this iteration
+    this->memory_manager.stage_pool.free(stage);
     this->current_frame = (this->current_frame + 1) % RenderSystem::max_frames_in_flight;
+    // printf("Rendered frame.\n");
     return true;
 }
 
