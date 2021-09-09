@@ -210,7 +210,9 @@ Pipeline::Pipeline(const Pipeline& other) :
     vk_rasterizer_state_info(other.vk_rasterizer_state_info),
     vk_multisample_state_info(other.vk_multisample_state_info),
     vk_color_blending(other.vk_color_blending),
-    vk_color_state_info(other.vk_color_state_info)
+    vk_color_state_info(other.vk_color_state_info),
+
+    vk_pipeline_info(other.vk_pipeline_info)
 {
     logger.logc(Verbosity::debug, Pipeline::channel, "Copying...");
 
@@ -222,6 +224,26 @@ Pipeline::Pipeline(const Pipeline& other) :
         }
     }
 
+    // Re-create the list of Vulkan shader stages
+    this->vk_shader_stages.reserve(this->shader_stages.size());
+    for (uint32_t i = 0; i < this->shader_stages.size(); i++) {
+        this->vk_shader_stages.push_back(this->shader_stages[i].shader_stage());
+    }
+
+    // Remap the pointers in the pipeline info
+    this->vk_pipeline_info.stageCount = this->vk_shader_stages.size();
+    this->vk_pipeline_info.pStages = this->vk_shader_stages.rdata();
+    this->vk_pipeline_info.pVertexInputState = &this->vertex_state_info.vertex_state_info();
+    this->vk_pipeline_info.pInputAssemblyState = &this->vk_assembly_state_info;
+    this->vk_pipeline_info.pViewportState = &this->vk_viewport_state_info;
+    this->vk_pipeline_info.pRasterizationState = &this->vk_rasterizer_state_info;
+    this->vk_pipeline_info.pMultisampleState = &this->vk_multisample_state_info;
+    this->vk_pipeline_info.pDepthStencilState = &this->vk_depth_stencil_state_info;
+    this->vk_pipeline_info.pColorBlendState = &this->vk_color_state_info;
+    this->vk_pipeline_info.pDynamicState = nullptr;
+    this->vk_pipeline_info.layout = this->vk_pipeline_layout;
+
+    // Done
     logger.logc(Verbosity::debug, Pipeline::channel, "Copy success.");
 }
 
@@ -247,7 +269,9 @@ Pipeline::Pipeline(Pipeline&& other) :
     vk_rasterizer_state_info(std::move(other.vk_rasterizer_state_info)),
     vk_multisample_state_info(std::move(other.vk_multisample_state_info)),
     vk_color_blending(std::move(other.vk_color_blending)),
-    vk_color_state_info(std::move(other.vk_color_state_info))
+    vk_color_state_info(std::move(other.vk_color_state_info)),
+
+    vk_pipeline_info(other.vk_pipeline_info)
 {
     // Set the deallocatable fields to nullptrs
     other.vk_pipeline = nullptr;
@@ -319,7 +343,7 @@ void Pipeline::init_viewport_transformation(const Rectangle& viewport, const Rec
     populate_viewport_state_info(this->vk_viewport_state_info, this->vk_viewport, this->vk_scissor);
 
     // D0ne
-    logger.logc(Verbosity::details, Pipeline::channel, "Initialized Pipeline viewport");
+    logger.logc(Verbosity::details, Pipeline::channel, "Initialized Pipeline viewport to a viewport of ", this->vk_viewport.width, "x", this->vk_viewport.height, ", and a scissor of ", this->vk_scissor.extent.width, "x", this->vk_scissor.extent.height);
 }
 
 /* Tells the Pipeline how to configure the Rasterizer stage.
@@ -428,46 +452,80 @@ void Pipeline::init_pipeline_layout(const Tools::Array<VkDescriptorSetLayout>& l
 /* When called, completes the pipeline with the settings given by the other initialization functions. */
 void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
     // Finally, begin prepare the create info
-    VkGraphicsPipelineCreateInfo pipeline_info = {};
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    this->vk_pipeline_info = {};
+    this->vk_pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 
     // First, attach the shaders
-    Tools::Array<VkPipelineShaderStageCreateInfo> vk_shader_stages(this->shader_stages.size());
+    this->vk_shader_stages.reserve(this->shader_stages.size());
     for (uint32_t i = 0; i < this->shader_stages.size(); i++) {
-        vk_shader_stages.push_back(this->shader_stages[i].shader_stage());
+        this->vk_shader_stages.push_back(this->shader_stages[i].shader_stage());
     }
-    pipeline_info.stageCount = vk_shader_stages.size();
-    pipeline_info.pStages = vk_shader_stages.rdata();
+    this->vk_pipeline_info.stageCount = this->vk_shader_stages.size();
+    this->vk_pipeline_info.pStages = this->vk_shader_stages.rdata();
 
     // Next, attach the fixed-function structures
-    pipeline_info.pVertexInputState = &this->vertex_state_info.vertex_state_info();
-    pipeline_info.pInputAssemblyState = &this->vk_assembly_state_info;
-    pipeline_info.pViewportState = &this->vk_viewport_state_info;
-    pipeline_info.pRasterizationState = &this->vk_rasterizer_state_info;
-    pipeline_info.pMultisampleState = &this->vk_multisample_state_info;
-    pipeline_info.pDepthStencilState = &this->vk_depth_stencil_state_info;
-    pipeline_info.pColorBlendState = &this->vk_color_state_info;
-    pipeline_info.pDynamicState = nullptr;
+    this->vk_pipeline_info.pVertexInputState = &this->vertex_state_info.vertex_state_info();
+    this->vk_pipeline_info.pInputAssemblyState = &this->vk_assembly_state_info;
+    this->vk_pipeline_info.pViewportState = &this->vk_viewport_state_info;
+    this->vk_pipeline_info.pRasterizationState = &this->vk_rasterizer_state_info;
+    this->vk_pipeline_info.pMultisampleState = &this->vk_multisample_state_info;
+    this->vk_pipeline_info.pDepthStencilState = &this->vk_depth_stencil_state_info;
+    this->vk_pipeline_info.pColorBlendState = &this->vk_color_state_info;
+    this->vk_pipeline_info.pDynamicState = nullptr;
 
     // We next set the pipeline layout
-    pipeline_info.layout = this->vk_pipeline_layout;
+    this->vk_pipeline_info.layout = this->vk_pipeline_layout;
 
     // Finally, set the renderpass and its first subpass
-    pipeline_info.renderPass = render_pass.render_pass();
-    pipeline_info.subpass = first_subpass;
+    this->vk_pipeline_info.renderPass = render_pass.render_pass();
+    this->vk_pipeline_info.subpass = first_subpass;
 
     // Note: we won't use pipeline derivation for now
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-    pipeline_info.basePipelineIndex = -1;
+    this->vk_pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+    this->vk_pipeline_info.basePipelineIndex = -1;
 
     // And that's it! Time to create it!
     VkResult vk_result;
-    if ((vk_result = vkCreateGraphicsPipelines(this->gpu, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &this->vk_pipeline)) != VK_SUCCESS) {
+    if ((vk_result = vkCreateGraphicsPipelines(this->gpu, VK_NULL_HANDLE, 1, &this->vk_pipeline_info, nullptr, &this->vk_pipeline)) != VK_SUCCESS) {
         logger.fatalc(Pipeline::channel, "Could not create graphics pipeline: ", vk_error_map[vk_result]);
     }
 
     // Done :)
     logger.logc(Verbosity::important, Pipeline::channel, "Init success.");
+}
+
+
+
+/* Redefines the viewport transformation and re-creates the pipeline. */
+void Pipeline::resize_viewport(const Rectangle& viewport, const Rectangle& scissor) {
+    // First, prepare the VkViewport object
+    this->vk_viewport = {};
+    this->vk_viewport.x = viewport.x;
+    this->vk_viewport.y = viewport.y;
+    this->vk_viewport.width = viewport.w;
+    this->vk_viewport.height = viewport.h;
+    this->vk_viewport.minDepth = 0.0f;
+    this->vk_viewport.maxDepth = 1.0f;
+
+    // Then, prepare the scissor rectangle
+    this->vk_scissor = {};
+    this->vk_scissor.offset = scissor.offset();
+    this->vk_scissor.extent = scissor.extent();
+
+    // Finally, use those to populate the ViewportState struct
+    populate_viewport_state_info(this->vk_viewport_state_info, this->vk_viewport, this->vk_scissor);
+
+    // Re-bind the viewport info
+    this->vk_pipeline_info.pViewportState = &this->vk_viewport_state_info;
+    
+    // Re-create the pipeline
+    VkResult vk_result;
+    if ((vk_result = vkCreateGraphicsPipelines(this->gpu, VK_NULL_HANDLE, 1, &this->vk_pipeline_info, nullptr, &this->vk_pipeline)) != VK_SUCCESS) {
+        logger.fatalc(Pipeline::channel, "Could not re-create graphics pipeline after viewport resize: ", vk_error_map[vk_result]);
+    }
+
+    // D0ne
+    logger.logc(Verbosity::details, Pipeline::channel, "Recreated Pipeline viewport to a viewport of ", this->vk_viewport.width, "x", this->vk_viewport.height, ", and a scissor of ", this->vk_scissor.extent.width, "x", this->vk_scissor.extent.height);
 }
 
 
@@ -526,4 +584,6 @@ void Rendering::swap(Pipeline& p1, Pipeline& p2) {
     swap(p1.vk_multisample_state_info, p2.vk_multisample_state_info);
     swap(p1.vk_color_blending, p2.vk_color_blending);
     swap(p1.vk_color_state_info, p2.vk_color_state_info);
+    
+    swap(p1.vk_pipeline_info, p2.vk_pipeline_info);
 }

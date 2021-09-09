@@ -300,8 +300,9 @@ void WorldSystem::update(ECS::EntityManager& entity_manager, const Window& windo
             transform.translation = compute_translation_matrix(transform.position, transform.rotation, transform.scale);
             if (entity_manager.has_component(entity, ComponentFlags::camera)) {
                 Camera& camera = entity_manager.get_component<Camera>(entity);
-                camera.proj = compute_camera_proj_matrix(camera.fov, camera.ratio);
-                camera.view = compute_camera_view_matrix(transform.position, transform.rotation.y, transform.rotation.x);
+                camera.ratio = (float) window.real_width() / (float) window.real_height();
+                camera.proj  = compute_camera_proj_matrix(camera.fov, camera.ratio);
+                camera.view  = compute_camera_view_matrix(transform.position, transform.rotation.y, transform.rotation.x);
             }
         }
     }

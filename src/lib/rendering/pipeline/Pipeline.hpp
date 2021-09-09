@@ -54,6 +54,8 @@ namespace Rasterizer::Rendering {
 
         /* Lists all the shader stages that we have. */
         Tools::Array<Rendering::ShaderStage> shader_stages;
+        /* Vulkan-casted version of the shader stage list. */
+        Tools::Array<VkPipelineShaderStageCreateInfo> vk_shader_stages;
 
         /* Describes how the vertex input looks like. */
         Rendering::VertexState vertex_state_info;
@@ -75,6 +77,9 @@ namespace Rasterizer::Rendering {
         Tools::Array<VkPipelineColorBlendAttachmentState> vk_color_blending;
         /* Describes how the general color blending works. */
         VkPipelineColorBlendStateCreateInfo vk_color_state_info;
+
+        /* The final VkGraphicsPipelineCreateInfo struct that is used to create the pipeline. */
+        VkGraphicsPipelineCreateInfo vk_pipeline_info;
 
     public:
         /* Constructor for the Pipeline class, which takes the GPU on which it should be created. Note that, unlike in other modules, the Pipeline's constructor does not leave it usable; instead, call the series of other initalizations functions as well, after which finalize() can be called. */
@@ -130,6 +135,9 @@ namespace Rasterizer::Rendering {
         void init_pipeline_layout(const Tools::Array<VkDescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants);
         /* When called, completes the pipeline with the settings given by the other initialization functions. */
         void finalize(const Rendering::RenderPass& render_pass, uint32_t first_subpass);
+
+        /* Redefines the viewport transformation and re-creates the pipeline. */
+        void resize_viewport(const Rectangle& viewport, const Rectangle& scissor);
 
         /* Schedules the pipeline to be run in the given command buffer. Optionally takes another bind point. */
         void schedule(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS) const;

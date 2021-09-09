@@ -143,6 +143,9 @@ void RenderSystem::_resize() {
 
     // Re-create all frames in the frame manager
     this->frame_manager->bind(this->render_pass, this->depth_stencil);
+
+    // Also resize the pipeline scissor area and junk
+    this->pipeline.resize_viewport(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
 }
 
 
