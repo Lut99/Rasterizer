@@ -12,6 +12,8 @@
  *   <Todo>
 **/
 
+#include <sstream>
+
 #include "tools/Logger.hpp"
 #include "tools/Common.hpp"
 #include "../auxillary/ErrorCodes.hpp"
@@ -173,13 +175,18 @@ MemoryPool::MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemo
     #ifndef NDEBUG
     if (logger.get_verbosity() >= Verbosity::debug) {
         // Do some debug printing first
-        logger.logc(Verbosity::debug, MemoryPool::channel, "Memory property flags for this pool:");
+        std::stringstream sstr;
+        sstr << "Memory property flags for this pool: ";
+        bool first = true;
         for (size_t i = 0; i < 8 * sizeof(uint32_t); i++) {
             VkMemoryPropertyFlagBits bit = (VkMemoryPropertyFlagBits) (memory_properties & (0x1 << i));
             if (bit) {
-                logger.logc(Verbosity::debug, MemoryPool::channel, vk_memory_property_map.at(bit));
+                if (first) { first = false; }
+                else { sstr << ", "; }
+                sstr << vk_memory_property_map.at(bit);
             }
         }
+        logger.logc(Verbosity::debug, MemoryPool::channel, sstr.str());
     }
     #endif
 

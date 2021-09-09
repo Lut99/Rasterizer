@@ -37,50 +37,6 @@ using namespace Rasterizer::ECS;
 using namespace Rasterizer::Rendering;
 
 
-/***** POPULATE FUNCTIONS *****/
-/* Populates the given VkSubmitInfo struct. */
-static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer* cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
-    // Set to default
-    submit_info = {};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-    // Attach the command buffer
-    submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &cmd->command_buffer();
-
-    // Attach the data for which we wait
-    submit_info.waitSemaphoreCount = 1;
-    submit_info.pWaitSemaphores = &wait_for_semaphore.semaphore();
-    submit_info.pWaitDstStageMask = wait_for_stages.rdata();
-
-    // Attach the semaphores which we signal when done
-    submit_info.signalSemaphoreCount = 1;
-    submit_info.pSignalSemaphores = &signal_after_semaphore.semaphore();
-}
-
-/* Populates the given VkPresentInfo struct. */
-static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchain& swapchain, const uint32_t& swapchain_index, const Semaphore& wait_for_semaphore) {
-    // Set to default
-    present_info = {};
-    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-    // Add which swapchain and which image to use
-    present_info.swapchainCount = 1;
-    present_info.pSwapchains = &swapchain.swapchain();
-    present_info.pImageIndices = &swapchain_index;
-    
-    // Set the semaphore count
-    present_info.waitSemaphoreCount = 1;
-    present_info.pWaitSemaphores = &wait_for_semaphore.semaphore();
-
-    // Also set the results validation handlers to not needed, since we only have one swapchain
-    present_info.pResults = nullptr;
-}
-
-
-
-
-
 /***** RENDERSYSTEM CLASS *****/
 /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a model system to schedule the model buffers with and a texture system to schedule texture images with. */
 RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system, const Textures::TextureSystem& texture_system) :
@@ -97,16 +53,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     vertex_shader(this->window.gpu(), "bin/shaders/vertex_v5.spv"),
     fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
     render_pass(this->window.gpu()),
-    pipeline(this->window.gpu()),
-
-    frame_data(this->window.swapchain().size()),
-
-    image_ready_semaphores(Semaphore(this->window.gpu()), RenderSystem::max_frames_in_flight),
-    render_ready_semaphores(Semaphore(this->window.gpu()), RenderSystem::max_frames_in_flight),
-    frame_in_flight_fences(Fence(this->window.gpu(), VK_FENCE_CREATE_SIGNALED_BIT), RenderSystem::max_frames_in_flight),
-    // image_in_flight_fences((Fence*) nullptr, this->window.swapchain().size()),
-
-    current_frame(0)
+    pipeline(this->window.gpu())
 {
 
     // Initialize the descriptor set layout for the global data
@@ -136,9 +83,10 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
     this->pipeline.init_pipeline_layout({ this->global_descriptor_layout, this->object_descriptor_layout }, {});
     this->pipeline.finalize(this->render_pass, 0);
-    
-    // Prepare the per-frame data
-    this->_create_frames(this->window.swapchain().size());
+
+    // Initialize the frame manager
+    this->frame_manager = new FrameManager(this->memory_manager, this->window.swapchain(), this->global_descriptor_layout, this->object_descriptor_layout);
+    this->frame_manager->bind(this->render_pass, this->depth_stencil);
 
     // Done initializing
     logger.logc(Verbosity::important, RenderSystem::channel, "Init success.");
@@ -161,57 +109,25 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
     render_pass(other.render_pass),
     pipeline(other.pipeline),
 
-    frame_data(other.frame_data),
-
-    image_ready_semaphores(other.image_ready_semaphores),
-    render_ready_semaphores(other.render_ready_semaphores),
-    frame_in_flight_fences(other.frame_in_flight_fences),
-    // image_in_flight_fences((Fence*) nullptr, this->window.swapchain().size()),
-
-    current_frame(other.current_frame)
-{}
+    frame_manager(other.frame_manager)
+{
+    // Prevent the frame manager from being deallocated
+    this->frame_manager = nullptr;
+}
 
 /* Destructor for the RenderSystem class. */
 RenderSystem::~RenderSystem() {
     logger.logc(Verbosity::important, RenderSystem::channel, "Cleaning...");
 
-    // Nothing as of yet
+    // Deallocate the frame manager if needed
+    if (this->frame_manager != nullptr) {
+        delete this->frame_manager;
+    }
 
     logger.logc(Verbosity::important, RenderSystem::channel, "Cleaned.");
 }
 
 
-
-/* Private helper function that creates the framedatas. */
-void RenderSystem::_create_frames(uint32_t n_frames) {
-    for (uint32_t i = 0; i < n_frames; i++) {
-        this->frame_data.push_back({
-            // Get the framebuffer for this frame from the swapchain
-            this->window.swapchain().get_framebuffer(i, this->render_pass, this->depth_stencil),
-            // Allocate a command buffer for draw calls to this frame
-            this->memory_manager.draw_cmd_pool.allocate(),
-            // Initialize the fence for this frame to not yet used.
-            nullptr,
-            
-            // Allocate a descriptor set for this frame's global resources
-            this->memory_manager.descr_pool.allocate(this->global_descriptor_layout),
-            // Prepare the descriptor pool for this frame
-            Rendering::DescriptorPool(
-                this->window.gpu(), {
-                    { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
-                    { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 10 }
-                }, 10, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT
-            ),
-            // Declare the empty list for the per-object sets
-            {},
-
-            // Allocate the buffer for the camera data
-            this->memory_manager.draw_pool.allocate(sizeof(RenderSystem::CameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-            // Declare the empty list for the per-object buffers
-            {}
-        });
-    }
-}
 
 /* Private helper function that resizes all required structures for a new window size. */
 void RenderSystem::_resize() {
@@ -225,9 +141,8 @@ void RenderSystem::_resize() {
     logger.debug("Window size: ", this->window.real_extent().width, 'x', this->window.real_extent().height);
     this->depth_stencil.resize(this->window.real_extent());
 
-    // Re-create all frames
-    this->frame_data.clear();
-    this->_create_frames(this->window.swapchain().size());
+    // Re-create all frames in the frame manager
+    this->frame_manager->bind(this->render_pass, this->depth_stencil);
 }
 
 
@@ -241,143 +156,75 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         return false;
     }
 
-    // Before we get the swapchain images, be sure to wait for the current frame to be available
-    vkWaitForFences(this->window.gpu(), 1, &this->frame_in_flight_fences[this->current_frame].fence(), VK_TRUE, UINT64_MAX);
-
-    // Next, try to get a new swapchain image
-    uint32_t swapchain_index;
-    VkResult vk_result = vkAcquireNextImageKHR(this->window.gpu(), this->window.swapchain(), UINT64_MAX, this->image_ready_semaphores[this->current_frame], VK_NULL_HANDLE, &swapchain_index);
-    if (vk_result == VK_ERROR_OUT_OF_DATE_KHR || vk_result == VK_SUBOPTIMAL_KHR) {
-        // The swapchain is outdated or suboptimal (probably a resize); we resize to fit again
+    // Next, get a conceptual frame to render to
+    ConceptualFrame* frame = this->frame_manager->get_frame();
+    if (frame == nullptr) {
+        // Resize, then stop this iteration
         this->_resize();
-
-        // Next, we early quit, to make sure that the proper images are acquired
         return true;
-    } else if (vk_result != VK_SUCCESS) {
-        logger.fatalc(RenderSystem::channel, "Could not get image from swapchain: ", vk_error_map[vk_result]);
     }
 
-    // If another frame is already using this image, then wait for it to become available
-    if (this->frame_data[swapchain_index].in_flight_fence != (Fence*) nullptr) {
-        vkWaitForFences(this->window.gpu(), 1, &this->frame_data[swapchain_index].in_flight_fence->fence(), VK_TRUE, UINT64_MAX);
-    }
-    // Mark the swapchain to be used by the current conceptual frame
-    this->frame_data[swapchain_index].in_flight_fence = &this->frame_in_flight_fences[this->current_frame];
+    // Prepare rendering to the frame
+    const ECS::ComponentList<ECS::Meshes>& objects = entity_manager.get_list<ECS::Meshes>();
+    frame->prepare_render(objects.size());
 
-
-
-    /***** FRAME PREPARATION *****/
-    RenderSystem::FrameData& frame_data = this->frame_data[swapchain_index];
-
-    // Prepare a staging buffer to use throughout the preparation
-    VkDeviceSize stage_size = std::max({ sizeof(RenderSystem::CameraData), sizeof(glm::mat4) });
-    Rendering::Buffer* stage = this->memory_manager.stage_pool.allocate(stage_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-
-    // Get the camera matrices and send them to the GPU in a uniform buffer
+    // Populate the frame's camera data
     const Camera& cam = entity_manager.get_list<Camera>()[0];
-    RenderSystem::CameraData cam_data{ cam.proj, cam.view };
-    frame_data.camera_buffer->set((void*) &cam_data, sizeof(RenderSystem::CameraData), stage, this->memory_manager.copy_cmd);
-
-    // Bind it to the descriptor set in the framebuffer
-    frame_data.global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { frame_data.camera_buffer });
-
-    // Next, get the list of meshes to render
-    const ECS::ComponentList<ECS::Meshes>& meshes = entity_manager.get_list<ECS::Meshes>();
-
-    // Create enough descriptor sets for the objects, clearing any old ones
-    frame_data.descr_pool.reset();
-    frame_data.object_sets = frame_data.descr_pool.nallocate(meshes.size(), this->object_descriptor_layout);
-    // And the same for the buffers
-    for (uint32_t i = 0; i < frame_data.object_buffers.size(); i++) {
-        this->memory_manager.draw_pool.free(frame_data.object_buffers[i]);
-    }
-    frame_data.object_buffers.clear();
-    for (uint32_t i = 0; i < meshes.size(); i++) {
-        frame_data.object_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(glm::mat4), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-    }
+    frame->upload_camera_data(cam.proj, cam.view);
 
 
 
-    /***** RECORDING *****/
-    // Begin recording the command buffer and its render pass, already scheduling the pipeline
-    frame_data.draw_cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    this->render_pass.start_scheduling(frame_data.draw_cmd, frame_data.framebuffer);
-    this->pipeline.schedule(frame_data.draw_cmd);
 
-    // Bind the global descriptor set for this frame
-    frame_data.global_set->schedule(frame_data.draw_cmd, this->pipeline.layout());
 
-    // Next, schedule draw calls, which is one per entity mesh
-    for (ECS::component_list_size_t i = 0; i < meshes.size(); i++) {
+    /* RECORDING */
+    // Start recording the frame's command buffer
+    frame->schedule_start(this->pipeline);
+
+    // Schedule the global data too
+    frame->schedule_global();
+
+    // Next, loop through all objects
+    for (uint32_t i = 0; i < objects.size(); i++) {
         // Get the relevant components for this entity
-        entity_t entity = meshes.get_entity(i);
-        const ECS::Meshes& obj_meshes = meshes[i];
+        entity_t entity = objects.get_entity(i);
+        const ECS::Meshes& meshes = objects[i];
         const ECS::Transform& transform = entity_manager.get_component<Transform>(entity);
-        // const ECS::Texture& texture = entity_manager.get_component<Texture>(entity);
 
         // Populate the buffer for this entity
-        frame_data.object_buffers[i]->set((void*) &transform.translation, sizeof(glm::vec4), stage, this->memory_manager.copy_cmd);
-        // Populate the per-object data for this entity
-        frame_data.object_sets[i]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { frame_data.object_buffers[i] });
-        frame_data.object_sets[i]->schedule(frame_data.draw_cmd, this->pipeline.layout(), 1);
+        frame->upload_object_data(i, ObjectData{ transform.translation });
+        // Schedule the object's buffer too
+        frame->schedule_object(i);
 
-        // Dive into all the meshes bound to this entity
-        for (uint32_t j = 0; j < obj_meshes.size(); j++) {
-            // // // Schedule the texture
-            // this->texture_system.schedule(this->draw_cmds[swapchain_index], texture, this->texture_sets[swapchain_index]);
-            // // // Schedule the descriptor itself
-            // this->texture_sets[swapchain_index]->schedule(this->draw_cmds[swapchain_index], this->pipeline.layout());
-
-            // Schedule the mesh data
-            this->model_system.schedule(frame_data.draw_cmd, obj_meshes[j]);
-
-            // Schedule the draw for this mesh
-            this->pipeline.schedule_draw_indexed(frame_data.draw_cmd, obj_meshes[j].n_indices, 1);
+        // Loop through all meshes of this object to render them
+        for (uint32_t j = 0; j < meshes.size(); j++) {
+            // Schedule its draw
+            frame->schedule_draw(this->model_system, meshes[j]);
         }
     }
 
-    // Finish recording
-    this->render_pass.stop_scheduling(frame_data.draw_cmd);
-    frame_data.draw_cmd->end();
+    // Close off recording
+    frame->schedule_stop();
 
 
-
-    /* SUBMITTING */
-    // Prepare to submit the command buffer
-    Tools::Array<VkPipelineStageFlags> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSubmitInfo submit_info;
-    populate_submit_info(submit_info, frame_data.draw_cmd, this->image_ready_semaphores[this->current_frame], wait_stages, this->render_ready_semaphores[this->current_frame]);
-
-    // Submit to the queue
-    vkResetFences(this->window.gpu(), 1, &frame_in_flight_fences[this->current_frame].fence());
-    Tools::Array<VkQueue> graphics_queues = this->window.gpu().queues(QueueType::graphics);
-    if ((vk_result = vkQueueSubmit(graphics_queues[0], 1, &submit_info, this->frame_in_flight_fences[this->current_frame])) != VK_SUCCESS) {
-        logger.fatalc(RenderSystem::channel, "Could not submit to queue: ", vk_error_map[vk_result]);
-    }
 
 
 
     /* PRESENTING */
-    // Prepare the present info
-    VkPresentInfoKHR present_info;
-    populate_present_info(present_info, this->window.swapchain(), swapchain_index, this->render_ready_semaphores[this->current_frame]);
+    // 'Render' the frame by submitting it
+    VkQueue graphics_queue = this->window.gpu().queues(QueueType::graphics)[0];
+    frame->submit(graphics_queue);
 
-    // Present it using the queue present function
-    Tools::Array<VkQueue> present_queues = this->window.gpu().queues(QueueType::present);
-    vk_result = vkQueuePresentKHR(present_queues[0], &present_info);
-    if (this->window.needs_resize() || vk_result == VK_ERROR_OUT_OF_DATE_KHR || vk_result == VK_SUBOPTIMAL_KHR) {
-        // The swapchain is outdated or suboptimal (probably a resize); we resize to fit again
+    // Schedule the frame for presentation once it's done rendering
+    if (this->window.needs_resize() || this->frame_manager->present_frame(frame)) {
+        // Resize the window
         this->_resize();
-    } else if (vk_result != VK_SUCCESS) {
-        logger.fatalc(RenderSystem::channel, "Could not present result: ", vk_error_map[vk_result]);
     }
 
 
 
-    // Done with this iteration
-    this->memory_manager.stage_pool.free(stage);
-    this->current_frame = (this->current_frame + 1) % RenderSystem::max_frames_in_flight;
-    // printf("Rendered frame.\n");
+
+
+    /* RETURNING */
     return true;
 }
 
@@ -405,12 +252,5 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
     swap(rs1.render_pass, rs2.render_pass);
     swap(rs1.pipeline, rs2.pipeline);
 
-    swap(rs1.frame_data, rs2.frame_data);
-
-    swap(rs1.image_ready_semaphores, rs2.image_ready_semaphores);
-    swap(rs1.render_ready_semaphores, rs2.render_ready_semaphores);
-    swap(rs1.frame_in_flight_fences, rs2.frame_in_flight_fences);
-    // image_in_flight_fences((Fence*) nullptr, this->window.swapchain().size()),
-
-    swap(rs1.current_frame, rs2.current_frame);
+    swap(rs1.frame_manager, rs2.frame_manager);
 }

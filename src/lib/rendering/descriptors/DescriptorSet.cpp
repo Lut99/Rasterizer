@@ -62,8 +62,8 @@ static void populate_write_info(VkWriteDescriptorSet& write_info, VkDescriptorSe
     write_info.dstArrayElement = 0;
 
     // Next, set which type of descriptor this is and how many
-    write_info.descriptorCount = static_cast<uint32_t>(buffer_infos.size());
     write_info.descriptorType = vk_descriptor_type;
+    write_info.descriptorCount = static_cast<uint32_t>(buffer_infos.size());
 
     // Then, the data to pass. This can be of multiple forms, but we pass a buffer.
     write_info.pBufferInfo = buffer_infos.rdata();
@@ -179,7 +179,7 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 }
 
 /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
-void DescriptorSet::schedule(const CommandBuffer* buffer, VkPipelineLayout pipeline_layout, uint32_t first_set) const {
+void DescriptorSet::schedule(const CommandBuffer* buffer, VkPipelineLayout pipeline_layout, uint32_t set_index) const {
     // Add the binding
-    vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, first_set, 1, &this->vk_descriptor_set, 0, nullptr);
+    vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, set_index, 1, &this->vk_descriptor_set, 0, nullptr);
 }

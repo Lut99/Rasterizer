@@ -52,8 +52,6 @@ namespace Rasterizer::Rendering {
         /* The memory layout of the pipeline. */
         VkPipelineLayout vk_pipeline_layout;
 
-        /* Lists all the shader modules that this pipeline uses. */
-        Tools::Array<Rendering::Shader> shaders;
         /* Lists all the shader stages that we have. */
         Tools::Array<Rendering::ShaderStage> shader_stages;
 

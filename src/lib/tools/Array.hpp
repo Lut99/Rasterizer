@@ -152,32 +152,32 @@ namespace Tools {
 
         /* Adds a new element of type T to the front of the array, pushing the rest back. The element is initialized with with its default constructor. Needs a default constructor to be present, but also to be move assignable in some way to be moved around in the array. */
         template <typename U = void>
-        auto push_front() -> std::enable_if_t<D && std::is_move_assignable<T>::value, U>;
+        auto push_front() -> std::enable_if_t<D && M, U>;
         /* Adds a new element of type T to the front of the array, pushing the rest back. The element is copied using its copy constructor, which it is required to have. Also required to be move assignable to be moved around. */
         template <typename U = void>
-        auto push_front(const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U>;
+        auto push_front(const T& elem) -> std::enable_if_t<C && M, U>;
         /* Adds a new element of type T to the front of the array, pushing the rest back. The element is left in an usused state (moving it). Note that this requires the element to be move constructible. Also required to be move assignable to be moved around. */
         template <typename U = void>
-        auto push_front(T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U>;
+        auto push_front(T&& elem) -> std::enable_if_t<M, U>;
         /* Removes the first element from the array, moving the rest one index to the front. Needs to be move assignable to do the moving. */
         template <typename U = void>
-        auto pop_front() -> std::enable_if_t<std::is_move_assignable<T>::value, U>;
+        auto pop_front() -> std::enable_if_t<M, U>;
 
         /* Inserts a new element at the given location, pushing all elements coming after it one index back. Since we initialise the element with its default constructor, we need that to be present for the Array's element type. Also required is a move assign operator, so the element van be moved around in the array. */
         template <typename U = void>
-        auto insert(array_size_t index) -> std::enable_if_t<D && std::is_move_assignable<T>::value, U>;
+        auto insert(array_size_t index) -> std::enable_if_t<D && M, U>;
         /* Inserts a copy of the given element at the given location, pushing all elements coming after it one index back. Requires the element to be copy constructible, and to also be move assignable to be moved around in the array. */
         template <typename U = void>
-        auto insert(array_size_t index, const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U>;
+        auto insert(array_size_t index, const T& elem) -> std::enable_if_t<C && M, U>;
         /* Inserts the given element at the given location, pushing all elements coming after it one index back. Requires the element to be move constructible _and_ move assignable. */
         template <typename U = void>
-        auto insert(array_size_t index, T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U>;
+        auto insert(array_size_t index, T&& elem) -> std::enable_if_t<M, U>;
         /* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. */
         template <typename U = void>
-        auto erase(array_size_t index) -> std::enable_if_t<std::is_move_assignable<T>::value, U>;
+        auto erase(array_size_t index) -> std::enable_if_t<M, U>;
         /* Erases multiple elements in the given (inclusive) range from the array. Does nothing if the any index is out-of-bounds or if the start_index is larger than the stop_index. */
         template <typename U = void>
-        auto erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<std::is_move_assignable<T>::value, U>;
+        auto erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<M, U>;
 
         /* Adds a new element of type T to the back of array, initializing it with its default constructor. Only needs a default constructor to be present, but cannot resize itself without a move constructor. */
         template <typename U = void>
@@ -199,9 +199,12 @@ namespace Tools {
         /* Re-allocates the internal array to the given size. Any leftover elements will be left unitialized, and elements that won't fit will be deallocated. */
         template <typename U = void>
         auto reserve(array_size_t new_size) -> std::enable_if_t<M, U>;
+        /* Guarantees that the Array has at least min_size capacity after the call. Does so by reallocating the internal array if we currently have less, but leaving it untouched otherwise. Any new elements will be left unitialized. */
+        template <typename U = void>
+        auto reserve_opt(array_size_t min_size) -> std::enable_if_t<M, U>;
         /* Resizes the array to the given size. Any leftover elements will be initialized with their default constructor (and thus requires the type to have one), and elements that won't fit will be deallocated. */
         template <typename U = void>
-        auto resize(array_size_t new_size) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U>;
+        auto resize(array_size_t new_size) -> std::enable_if_t<D && M, U>;
 
         /* Returns a muteable reference to the element at the given index. Does not perform any in-of-bounds checking. */
         inline T& operator[](array_size_t index) { return this->storage.elements[index]; }

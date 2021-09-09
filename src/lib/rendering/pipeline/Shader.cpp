@@ -49,10 +49,11 @@ static void populate_shader_module_info(VkShaderModuleCreateInfo& shader_module_
 /* Constructor for the Shader class, which takes the device to compile for and the path of the shader. Optionally also takes the entry function to the shader. */
 Shader::Shader(const GPU& gpu, const std::string& path, const std::string& entry_function) :
     gpu(gpu),
-    path(path),
+    path_name(path.substr(path.find_last_of("/") != string::npos ? path.find_last_of("/") + 1 : 0)),
+    filepath(path),
     entry(entry_function)
 {
-    logger.logc(Verbosity::important, Shader::channel, "Initializing shader '", path.substr(path.find_last_of("/") != string::npos ? path.find_last_of("/") + 1 : 0), '\'');
+    logger.logc(Verbosity::important, Shader::channel, "Initializing shader '", this->path_name, '\'');
 
     // Simply call reload to do the work
     this->reload();
@@ -63,13 +64,16 @@ Shader::Shader(const GPU& gpu, const std::string& path, const std::string& entry
 /* Copy constructor for the Shader class. */
 Shader::Shader(const Shader& other) :
     gpu(other.gpu),
-    path(other.path),
+
+    shader_data(other.shader_data),
+    path_name(other.path_name),
+    filepath(other.filepath),
     entry(other.entry)
 {
-    logger.logc(Verbosity::important, Shader::channel, "Copying...");
+    logger.logc(Verbosity::important, Shader::channel, "Copying shader '", this->path_name, "'...");
     
-    // Once again we rely on reload
-    this->reload();
+    // We only have to recompile
+    this->compile();
 
     logger.logc(Verbosity::important, Shader::channel, "Copy success.");
 }
@@ -77,8 +81,11 @@ Shader::Shader(const Shader& other) :
 /* Move constructor for the Shader class. */
 Shader::Shader(Shader&& other) :
     gpu(other.gpu),
+
+    shader_data(other.shader_data),
     vk_shader_module(other.vk_shader_module),
-    path(other.path),
+    path_name(other.path_name),
+    filepath(other.filepath),
     entry(other.entry)
 {
     // Set the shader module to nullptr to avoid deallocation
@@ -87,7 +94,7 @@ Shader::Shader(Shader&& other) :
 
 /* Destructor for the Shader class. */
 Shader::~Shader() {
-    logger.logc(Verbosity::important, Shader::channel, "Cleaning...");
+    logger.logc(Verbosity::important, Shader::channel, "Cleaning shader '", this->path_name, "'...");
     
     if (this->vk_shader_module != nullptr) {
         vkDestroyShaderModule(this->gpu, this->vk_shader_module, nullptr);
@@ -101,10 +108,10 @@ Shader::~Shader() {
 /* Reloads the shader from disk, and recompiles it. */
 void Shader::reload() {
     // Start by loading the file
-    logger.logc(Verbosity::details, Shader::channel, "Loading file '", this->path, "'...");
+    logger.logc(Verbosity::details, Shader::channel, "Loading file '", this->filepath, "'...");
 
     // Open a file handle, if at all possible
-    std::ifstream h(this->path, std::ios::ate | std::ios::binary);
+    std::ifstream h(this->filepath, std::ios::ate | std::ios::binary);
     if (!h.is_open()) {
         // Get the error as char array; this is mumumu SaFE oN wINdOwS
         #ifdef _WIN32
@@ -120,31 +127,36 @@ void Shader::reload() {
     size_t file_size = h.tellg();
 
     // Initialize the buffer. We're using the std::vector to get proper alignment
-    std::vector<char> buffer;
-    buffer.resize(file_size);
+    this->shader_data.resize(file_size);
 
     // Next, we read all bytes in one go
     h.seekg(0);
-    h.read(buffer.data(), file_size);
+    h.read(this->shader_data.data(), file_size);
     h.close();
 
     
 
+    // Compile the shader
+    this->compile();
+
+    // Done!
+    return;
+}
+
+/* Compiles the shader using the data read with reload() only. */
+void Shader::compile() {
     // With the bytes read, create the shader module from it
-    logger.logc(Verbosity::details, Shader::channel, "Compiling ", Tools::bytes_to_string(file_size), " of shader code...");
+    logger.logc(Verbosity::details, Shader::channel, "Compiling ", Tools::bytes_to_string(this->shader_data.size()), " of shader code...");
 
     // Populate the create info
     VkShaderModuleCreateInfo shader_module_info;
-    populate_shader_module_info(shader_module_info, buffer);
+    populate_shader_module_info(shader_module_info, this->shader_data);
 
     // With the struct populated, create the actual module
     VkResult vk_result;
     if ((vk_result = vkCreateShaderModule(this->gpu, &shader_module_info, nullptr, &this->vk_shader_module)) != VK_SUCCESS) {
         logger.fatalc(Shader::channel, "Could not compile shader: ", vk_error_map[vk_result]);
     }
-
-    // Done!
-    return;
 }
 
 
@@ -159,7 +171,9 @@ void Rendering::swap(Shader& s1, Shader& s2) {
     using std::swap;
 
     // Swap all fields
+    swap(s1.shader_data, s2.shader_data);
     swap(s1.vk_shader_module, s2.vk_shader_module);
-    swap(s1.path, s2.path);
+    swap(s1.path_name, s2.path_name);
+    swap(s1.filepath, s2.filepath);
     swap(s1.entry, s2.entry);
 }

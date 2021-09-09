@@ -4,7 +4,7 @@
  * Created:
  *   27/04/2021, 14:56:30
  * Last edited:
- *   24/08/2021, 23:38:07
+ *   09/09/2021, 14:44:33
  * Auto updated?
  *   Yes
  *
@@ -32,10 +32,14 @@ namespace Rasterizer::Rendering {
         const Rendering::GPU& gpu;
 
     private:
+        /* The raw shader data we read from a file. */
+        std::vector<char> shader_data;
         /* The VkShaderModule object that we wrap and will compile. */
         VkShaderModule vk_shader_module;
+        /* The name of the shader, extruded from the path. */
+        std::string path_name;
         /* The path where the shader resides that we're managing. */
-        std::string path;
+        std::string filepath;
         /* The entry function of the shader. */
         std::string entry;
     
@@ -51,7 +55,13 @@ namespace Rasterizer::Rendering {
 
         /* Reloads the shader from disk, and recompiles it. */
         void reload();
+        /* Compiles the shader using the data read with reload() only. */
+        void compile();
 
+        /* Returns the name of the shader. */
+        inline const std::string& name() const { return this->path_name; }
+        /* Returns the path of the shader. */
+        inline const std::string& path() const { return this->filepath; }
         /* Returns the entry function of the shader. */
         inline const std::string& entry_function() const { return this->entry; }
         /* Explicitly returns the internal VkShaderModule object. */

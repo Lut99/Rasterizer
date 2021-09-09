@@ -17,9 +17,11 @@
 #define RENDERING_FRAME_HPP
 
 #include <vulkan/vulkan.h>
+#include <cstdint>
 
 #include "../gpu/GPU.hpp"
 #include "../renderpass/RenderPass.hpp"
+#include "../synchronization/Fence.hpp"
 
 namespace Rasterizer::Rendering {
     /* The SwapchainFrame class, which is a collection of data that can be used to draw to a single frame. */
@@ -34,6 +36,8 @@ namespace Rasterizer::Rendering {
         const Rendering::RenderPass& render_pass;
 
     private:
+        /* The index of the image that we wrap. */
+        uint32_t vk_image_index;
         /* The image that we wrap. */
         VkImage vk_image;
         /* The format of the image. */
@@ -47,10 +51,14 @@ namespace Rasterizer::Rendering {
         VkImageView vk_depth_view;
         /* The framebuffer wrapping the image and its various aspects. */
         VkFramebuffer vk_framebuffer;
+    
+    public:
+        /* Reference to a Fence so we can keep track if this frame is not secretly being used by a ConceptualFrame. */
+        Rendering::Fence* in_flight_fence;
 
     public:
-        /* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, a swapchain image to wrap around, its format, its size and a depth-aspect image view originating from a DepthStencil. */
-        SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view);
+        /* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, the index of the swapchain image we wrap, the image itself, its format, its size and a depth-aspect image view originating from a DepthStencil. */
+        SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, uint32_t vk_image_index, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view);
         /* Copy constructor for the SwapchainFrame class, which is deleted. */
         SwapchainFrame(const SwapchainFrame& other) = delete;
         /* Move constructor for the SwapchainFrame class. */
@@ -58,6 +66,8 @@ namespace Rasterizer::Rendering {
         /* Destructor for the SwapchainFrame class. */
         ~SwapchainFrame();
 
+        /* Returns the index of the internal image in the swapchain we came from. */
+        inline uint32_t index() const { return this->vk_image_index; }
         /* Returns the format of the internal image. */
         inline VkFormat format() const { return this->vk_format; }
         /* Returns the extent of the internal image. */

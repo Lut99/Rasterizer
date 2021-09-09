@@ -75,7 +75,7 @@ freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
         }
     }
 
-    // // Return the found index (or the error code if no such index is found)
+    // Return the found index (or the error code if no such index is found)
     // std::cout << endl << "Freelist " << this << " layout after allocate:" << endl;
     // for (uint32_t i = 0; i < this->blocks.size(); i++) {
     //     std::cout << " - Block @ " << this->blocks[i].offset << ", size " << this->blocks[i].size << ": " << (this->blocks[i].used ? "used" : "free") << std::endl;
@@ -88,10 +88,10 @@ freelist_size_t Freelist::reserve(freelist_size_t size, freelist_size_t align) {
 void Freelist::release(freelist_size_t offset) {
     // Find the block where the offset belongs in
     for (array_size_t i = 0; i < this->blocks.size(); i++) {
-        if (offset >= this->blocks[i].offset && offset <= this->blocks[i].offset + this->blocks[i].size) {
+        if (offset >= this->blocks[i].offset && offset < this->blocks[i].offset + this->blocks[i].size) {
             // If it's a free block, fail
             freelist_size_t block_size = this->blocks[i].size;
-            if (!this->blocks[i].used) { logger.fatalc(Freelist::channel, "Cannot free block with offset ", offset, " as it's already a free block (", bytes_to_string(block_size), ", starting at ", this->blocks[i].offset, ")"); }
+            if (!this->blocks[i].used) { logger.fatalc(Freelist::channel, "Cannot free block with offset ", offset, " as it's already a free block (size ", bytes_to_string(block_size), ", starting at ", this->blocks[i].offset, ")"); }
 
             // Otherwise, match on the applicable condition of the block's neighbour
             if (this->blocks.size() == 1) {

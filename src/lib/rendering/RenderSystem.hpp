@@ -26,17 +26,14 @@
 #include "textures/TextureSystem.hpp"
 
 #include "depthtesting/DepthStencil.hpp"
-#include "swapchain/Framebuffer.hpp"
 
 #include "descriptors/DescriptorSetLayout.hpp"
-#include "descriptors/DescriptorSet.hpp"
 
 #include "pipeline/Shader.hpp"
 #include "renderpass/RenderPass.hpp"
 #include "pipeline/Pipeline.hpp"
 
-#include "synchronization/Semaphore.hpp"
-#include "synchronization/Fence.hpp"
+#include "swapchain/FrameManager.hpp"
 
 namespace Rasterizer::Rendering {
     /* The RenderSystem class, which is in charge of rendering the renderable entities in the EntityManager. */
@@ -63,37 +60,6 @@ namespace Rasterizer::Rendering {
         const Models::ModelSystem& model_system;
         /* The TextureSystem which we use to schedule the texture buffers with. */
         const Textures::TextureSystem& texture_system;
-    
-    private:
-        /* Struct for transferring camera data to the GPU. */
-        struct CameraData {
-            /* The projection matrix for the camera. */
-            glm::mat4 proj;
-            /* The view matrix for the camera. */
-            glm::mat4 view;
-        };
-
-        /* Struct that groups per-frame information together. */
-        struct FrameData {
-            /* The framebuffer for this frame. */
-            Rendering::Framebuffer framebuffer;
-            /* The draw command buffer for this frame. */
-            Rendering::CommandBuffer* draw_cmd;
-            /* Link to the fence that tells us whether this frame is being rendered to or not. */
-            Rendering::Fence* in_flight_fence;
-            
-            /* The descriptor set that is global to this frame. */
-            Rendering::DescriptorSet* global_set;
-            /* The local descriptor pool used for all per-frame descriptors. */
-            Rendering::DescriptorPool descr_pool;
-            /* The descriptor sets for the objects. */
-            Tools::Array<Rendering::DescriptorSet*> object_sets;
-
-            /* The uniform buffer that holds the camera data for this frame. */
-            Rendering::Buffer* camera_buffer;
-            /* The per-object uniform buffers we'll use. */
-            Tools::Array<Rendering::Buffer*> object_buffers;
-        };
 
     private:
         /* Descriptor set layout for general data, such as the camera information. */
@@ -113,22 +79,10 @@ namespace Rasterizer::Rendering {
         /* The graphics pipeline we use to render. */
         Rendering::Pipeline pipeline;
 
-        /* Per-frame data. */
-        Tools::Array<FrameData> frame_data;
-
-        /* Contains the semaphores that signal when a new image is available in the swapchain. */
-        Tools::Array<Rendering::Semaphore> image_ready_semaphores;
-        /* Contains the semaphores that signal when a an image is done being rendered. */
-        Tools::Array<Rendering::Semaphore> render_ready_semaphores;
-        /* Contains the fences that are used to synchronize the CPU to be sure that we're not already using one of the frames that are in flight. */
-        Tools::Array<Rendering::Fence> frame_in_flight_fences;
-
-        /* Counter keeping track of which frame we should currently render to. */
-        uint32_t current_frame;
+        /* The FrameManager in charge for giving us frames we can render to. */
+        Rendering::FrameManager* frame_manager;
 
     private:
-        /* Private helper function that creates the framedatas. */
-        void _create_frames(uint32_t n_frames);
         /* Private helper function that resizes all required structures for a new window size. */
         void _resize();
 

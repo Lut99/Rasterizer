@@ -28,6 +28,7 @@
 #include "../descriptors/DescriptorPool.hpp"
 #include "../descriptors/DescriptorSet.hpp"
 #include "../pipeline/Pipeline.hpp"
+#include "../synchronization/Semaphore.hpp"
 #include "../synchronization/Fence.hpp"
 
 #include "SwapchainFrame.hpp"
@@ -47,6 +48,8 @@ namespace Rasterizer::Rendering {
         Rendering::SwapchainFrame* swapchain_frame;
         /* Temporary staging buffer for uploading stuff to the GPU. */
         Rendering::Buffer* stage_buffer;
+        /* Pipeline bound to the ConceptualFrame for a single render pass. */
+        const Rendering::Pipeline* pipeline;
 
         /* Declare the FrameManager as a friend. */
         friend class FrameManager;
@@ -72,6 +75,13 @@ namespace Rasterizer::Rendering {
         /* Buffers for all objects. */
         Tools::Array<Rendering::Buffer*> object_buffers;
 
+        /* Semaphore that signals when the image is ready to be rendered to. */
+        Rendering::Semaphore image_ready_semaphore;
+        /* Semaphore that signals when the image is done being rendered to, i.e., ready to be presented. */
+        Rendering::Semaphore render_ready_semaphore;
+        /* Fence that is used to prevent the CPU from scheduling this frame again if it's still in flight. */
+        Rendering::Fence in_flight_fence;
+
     public:
         /* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor and a descriptor set layout for the per-object descriptors. */
         ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& object_layout);
@@ -93,16 +103,16 @@ namespace Rasterizer::Rendering {
         /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue, followed by binding the given pipeline. */
         void schedule_start(const Rendering::Pipeline& pipeline);
         /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
-        void schedule_global(const Rendering::Pipeline& pipeline);
+        void schedule_global();
         /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
-        void schedule_object(const Rendering::Pipeline& pipeline, uint32_t object_index);
+        void schedule_object(uint32_t object_index);
         /* Schedules a draw command for the given mesh on the internal draw queue. */
-        void schedule_draw(const Rendering::Pipeline& pipeline, const Models::ModelSystem& model_system, const ECS::Mesh& mesh);
+        void schedule_draw(const Models::ModelSystem& model_system, const ECS::Mesh& mesh);
         /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
         void schedule_stop();
 
         /* "Renders" the frame by sending the internal draw queue to the given device queue. */
-        void render(const VkQueue& vk_queue);
+        void submit(const VkQueue& vk_queue);
 
         /* Copy assignment operator for the ConceptualFrame class, which is deleted. */
         ConceptualFrame& operator=(const ConceptualFrame& other) = delete;

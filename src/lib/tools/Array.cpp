@@ -59,6 +59,8 @@ _intern::ArrayStorage<T>::ArrayStorage(_intern::ArrayStorage<T>&& other) :
     max_length(other.max_length)
 {
     other.elements = nullptr;
+    other.length = 0;
+    other.max_length = 0;
 }
 
 /* Destructor for the ArrayStorage class. */
@@ -203,7 +205,7 @@ auto Array<T, D, C, M>::operator+=(Array<T>&& elems) -> std::enable_if_t<M, U> {
 /* Adds a new element of type T to the front of the array, pushing the rest back. The element is initialized with with its default constructor. Needs a default constructor to be present, but also to be move assignable in some way to be moved around in the array. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::push_front() -> std::enable_if_t<D && std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::push_front() -> std::enable_if_t<D && M, U> {
     // Make sure the array has enough size
     if (this->storage.length >= this->storage.max_length) {
         if constexpr (M) {
@@ -218,7 +220,7 @@ auto Array<T, D, C, M>::push_front() -> std::enable_if_t<D && std::is_move_assig
         memmove(this->storage.elements + 1, this->storage.elements, this->storage.length * sizeof(T));
     } else {
         for (uint32_t i = this->storage.length; i-- > 1; i++) {
-            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i - 1]));
         }
     }
 
@@ -230,7 +232,7 @@ auto Array<T, D, C, M>::push_front() -> std::enable_if_t<D && std::is_move_assig
 /* Adds a new element of type T to the front of the array, pushing the rest back. The element is copied using its copy constructor, which it is required to have. Also required to be move assignable to be moved around. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::push_front(const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::push_front(const T& elem) -> std::enable_if_t<C && M, U> {
     // Make sure the array has enough size
     if (this->storage.length >= this->storage.max_length) {
         if constexpr (M) {
@@ -245,7 +247,7 @@ auto Array<T, D, C, M>::push_front(const T& elem) -> std::enable_if_t<C && std::
         memmove(this->storage.elements + 1, this->storage.elements, this->storage.length * sizeof(T));
     } else {
         for (uint32_t i = this->storage.length; i-- > 1; i++) {
-            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i - 1]));
         }
     }
 
@@ -257,7 +259,7 @@ auto Array<T, D, C, M>::push_front(const T& elem) -> std::enable_if_t<C && std::
 /* Adds a new element of type T to the front of the array, pushing the rest back. The element is left in an usused state (moving it). Note that this requires the element to be move constructible. Also required to be move assignable to be moved around. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::push_front(T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::push_front(T&& elem) -> std::enable_if_t<M, U> {
     // Make sure the array has enough size
     if (this->storage.length >= this->storage.max_length) {
         if constexpr (M) {
@@ -272,7 +274,7 @@ auto Array<T, D, C, M>::push_front(T&& elem) -> std::enable_if_t<M && std::is_mo
         memmove(this->storage.elements + 1, this->storage.elements, this->storage.length * sizeof(T));
     } else {
         for (uint32_t i = this->storage.length; i-- > 1; i++) {
-            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i - 1]));
         }
     }
 
@@ -284,7 +286,7 @@ auto Array<T, D, C, M>::push_front(T&& elem) -> std::enable_if_t<M && std::is_mo
 /* Removes the first element from the array, moving the rest one index to the front. Needs to be move assignable to do the moving. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::pop_front() -> std::enable_if_t<std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::pop_front() -> std::enable_if_t<M, U> {
     // Check if there are any elements
     if (this->storage.length == 0) { return; }
 
@@ -299,7 +301,7 @@ auto Array<T, D, C, M>::pop_front() -> std::enable_if_t<std::is_move_assignable<
             memmove(this->storage.elements, this->storage.elements + 1, this->storage.length * sizeof(T));
         } else {
             for (uint32_t i = 0; i < this->storage.length - 1; i++) {
-                this->storage.elements[i] = std::move(this->storage.elements[i + 1]);
+                new(this->storage.elements + i) T(std::move(this->storage.elements[i + 1]));
             }
         }
     }
@@ -313,7 +315,7 @@ auto Array<T, D, C, M>::pop_front() -> std::enable_if_t<std::is_move_assignable<
 /* Inserts a new element at the given location, pushing all elements coming after it one index back. Since we initialise the element with its default constructor, we need that to be present for the Array's element type. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::insert(array_size_t index) -> std::enable_if_t<D && std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::insert(array_size_t index) -> std::enable_if_t<D && M, U> {
     // Check if the index is within bounds
     if (index >= this->storage.length) {
         throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->storage.length));
@@ -333,7 +335,7 @@ auto Array<T, D, C, M>::insert(array_size_t index) -> std::enable_if_t<D && std:
         memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index - 1) * sizeof(T));
     } else {
         for (uint32_t i = this->storage.length; i-- > index + 1; i++) {
-            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i - 1]));
         }
     }
 
@@ -345,7 +347,7 @@ auto Array<T, D, C, M>::insert(array_size_t index) -> std::enable_if_t<D && std:
 /* Inserts a copy of the given element at the given location, pushing all elements coming after it one index back. Requires the element to be copy constructible. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::insert(array_size_t index, const T& elem) -> std::enable_if_t<C && std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::insert(array_size_t index, const T& elem) -> std::enable_if_t<C && M, U> {
     // Check if the index is within bounds
     if (index >= this->storage.length) {
         throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->storage.length));
@@ -365,7 +367,7 @@ auto Array<T, D, C, M>::insert(array_size_t index, const T& elem) -> std::enable
         memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index - 1) * sizeof(T));
     } else {
         for (uint32_t i = this->storage.length; i-- > index + 1; i++) {
-            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i - 1]));
         }
     }
 
@@ -377,7 +379,7 @@ auto Array<T, D, C, M>::insert(array_size_t index, const T& elem) -> std::enable
 /* Inserts the given element at the given location, pushing all elements coming after it one index back. Requires the element to be move constructible. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::insert(array_size_t index, T&& elem) -> std::enable_if_t<M && std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::insert(array_size_t index, T&& elem) -> std::enable_if_t<M, U> {
     // Check if the index is within bounds
     if (index >= this->storage.length) {
         throw std::out_of_range("Index " + std::to_string(index) + " is out-of-bounds for Array with size " + std::to_string(this->storage.length));
@@ -397,7 +399,7 @@ auto Array<T, D, C, M>::insert(array_size_t index, T&& elem) -> std::enable_if_t
         memmove(this->storage.elements + index + 1, this->storage.elements + index, (this->storage.length - index) * sizeof(T));
     } else {
         for (uint32_t i = this->storage.length; i-- > index + 1; i++) {
-            this->storage.elements[i] = std::move(this->storage.elements[i - 1]);
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i - 1]));
         }
     }
 
@@ -409,7 +411,7 @@ auto Array<T, D, C, M>::insert(array_size_t index, T&& elem) -> std::enable_if_t
 /* Erases an element with the given index from the array. Does nothing if the index is out-of-bounds. Because the elements need to be moved forward, the element is required to be move constructible. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<M, U> {
     // Check if the index is within bounds
     if (index >= this->storage.length) { return; }
 
@@ -423,7 +425,7 @@ auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<std::is_mo
         memmove(this->storage.elements + index, this->storage.elements + index + 1, (this->storage.length - index - 1) * sizeof(T));
     } else {
         for (array_size_t i = index; i < this->storage.length - 1; i++) {
-            this->storage.elements[i] = std::move(this->storage.elements[i + 1]);
+            new(this->storage.elements + i) T(std::move(this->storage.elements[i + 1]));
         }
     }
 
@@ -434,7 +436,7 @@ auto Array<T, D, C, M>::erase(array_size_t index) -> std::enable_if_t<std::is_mo
 /* Erases multiple elements in the given (inclusive) range from the array. Does nothing if the any index is out-of-bounds or if the start_index is larger than the stop_index. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<std::is_move_assignable<T>::value, U> {
+auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index) -> std::enable_if_t<M, U> {
     // Check if in bounds
     if (start_index >= this->storage.length || stop_index >= this->storage.length || start_index > stop_index) { return; }
 
@@ -450,7 +452,7 @@ auto Array<T, D, C, M>::erase(array_size_t start_index, array_size_t stop_index)
         memmove(this->storage.elements + start_index, this->storage.elements + stop_index + 1, (this->storage.length - stop_index - 1) * sizeof(T));
     } else {
         for (array_size_t i = stop_index + 1; i < this->storage.length; i++) {
-            this->storage.elements[i - (stop_index - start_index) - 1] = std::move(this->storage.elements[i]);
+            new(this->storage.elements + (i - (stop_index - start_index) - 1)) T(std::move(this->storage.elements[i]));
         }
     }
 
@@ -595,10 +597,45 @@ auto Array<T, D, C, M>::reserve(array_size_t new_size) -> std::enable_if_t<M, U>
     this->storage.max_length = new_size;
 }
 
+/* Guarantees that the Array has at least min_size capacity after the call. Does so by reallocating the internal array if we currently have less, but leaving it untouched otherwise. Any new elements will be left unitialized. */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::reserve_opt(array_size_t min_size) -> std::enable_if_t<M, U> {
+    // Do some special cases for the new_size
+    if (min_size == 0) {
+        // Simply call reset
+        this->reset();
+        return;
+    } else if (min_size <= this->storage.max_length) {
+        // Do nothing
+        return;
+    }
+
+    // Start by allocating space for a new array
+    T* new_elements = (T*) malloc(min_size * sizeof(T));
+    if (new_elements == nullptr) { throw std::bad_alloc(); }
+
+    // Copy the elements over using their move constructor
+    if constexpr (std::conjunction<std::is_trivially_move_constructible<T>, std::is_trivially_move_assignable<T>>::value) {
+        memmove(new_elements, this->storage.elements, this->storage.length * sizeof(T));
+    } else {
+        for (array_size_t i = 0; i < this->storage.length; i++) {
+            new(new_elements + i) T(std::move(this->storage.elements[i]));
+        }
+    }
+
+    // Clear the old list
+    free(this->storage.elements);
+
+    // Finally, put the Array to the internal slot
+    this->storage.elements = new_elements;
+    this->storage.max_length = min_size;
+}
+
 /* Resizes the array to the given size. Any leftover elements will be initialized with their default constructor (and thus requires the type to have one), and elements that won't fit will be deallocated. */
 template <class T, bool D, bool C, bool M>
 template <typename U>
-auto Array<T, D, C, M>::resize(array_size_t new_size) -> std::enable_if_t<std::conjunction<std::integral_constant<bool, D>, std::integral_constant<bool, M>>::value, U> {
+auto Array<T, D, C, M>::resize(array_size_t new_size) -> std::enable_if_t<D && M, U> {
     // Simply reserve the space
     this->reserve(new_size);
 

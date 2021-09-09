@@ -280,6 +280,7 @@ Tools::Array<Rendering::SwapchainFrame> Swapchain::get_frames(const Rendering::R
         result.push_back(Rendering::SwapchainFrame(
             this->gpu,
             render_pass,
+            i,
             this->vk_swapchain_images[i],
             this->vk_surface_format.format,
             this->vk_surface_extent,

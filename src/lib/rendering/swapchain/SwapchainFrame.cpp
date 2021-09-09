@@ -75,16 +75,19 @@ static void populate_framebuffer_info(VkFramebufferCreateInfo& framebuffer_info,
 
 
 /***** SWAPCHAINFRAME CLASS *****/
-/* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, a swapchain image to wrap around, its format, its size and a depth-aspect image view originating from a DepthStencil. */
-SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view):
+/* Constructor for the SwapchainFrame class, which takes a GPU where it lives, a renderpass to bind to, the index of the swapchain image we wrap, the image itself, its format, its size and a depth-aspect image view originating from a DepthStencil. */
+SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::RenderPass& render_pass, uint32_t vk_image_index, const VkImage& vk_image, VkFormat vk_image_format, const VkExtent2D& vk_image_extent, const VkImageView& vk_depth_view) :
     gpu(gpu),
     render_pass(render_pass),
 
+    vk_image_index(vk_image_index),
     vk_image(vk_image),
     vk_format(vk_image_format),
     vk_extent(vk_image_extent),
 
-    vk_depth_view(vk_depth_view)
+    vk_depth_view(vk_depth_view),
+
+    in_flight_fence(nullptr)
 {
     logger.logc(Verbosity::details, SwapchainFrame::channel, "Initializing...");
     VkResult vk_result;
@@ -114,13 +117,16 @@ SwapchainFrame::SwapchainFrame(SwapchainFrame&& other) :
     gpu(other.gpu),
     render_pass(other.render_pass),
 
+    vk_image_index(other.vk_image_index),
     vk_image(other.vk_image),
     vk_format(other.vk_format),
     vk_extent(other.vk_extent),
 
     vk_color_view(other.vk_color_view),
     vk_depth_view(other.vk_depth_view),
-    vk_framebuffer(other.vk_framebuffer)
+    vk_framebuffer(other.vk_framebuffer),
+
+    in_flight_fence(other.in_flight_fence)
 {
     // Mark the color image view as non-deallocatable
     other.vk_color_view = nullptr;
@@ -155,6 +161,7 @@ void Rendering::swap(SwapchainFrame& sf1, SwapchainFrame& sf2) {
 
     using std::swap;
 
+    swap(sf1.vk_image_index, sf2.vk_image_index);
     swap(sf1.vk_image, sf2.vk_image);
     swap(sf1.vk_format, sf2.vk_format);
     swap(sf1.vk_extent, sf2.vk_extent);
@@ -162,4 +169,6 @@ void Rendering::swap(SwapchainFrame& sf1, SwapchainFrame& sf2) {
     swap(sf1.vk_color_view, sf2.vk_color_view);
     swap(sf1.vk_depth_view, sf2.vk_depth_view);
     swap(sf1.vk_framebuffer, sf2.vk_framebuffer);
+
+    swap(sf1.in_flight_fence, sf2.in_flight_fence);
 }

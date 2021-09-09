@@ -29,12 +29,12 @@ namespace Rasterizer::Rendering {
         /* Channel name for the ShaderStage class. */
         static constexpr const char* channel = "ShaderStage";
 
+        /* The shader that this object is bound to. */
+        const Shader& shader;
+
     private:
         /* The VkPipelineShaderStageCreateInfo that we in effect wrap. */
         VkPipelineShaderStageCreateInfo vk_shader_stage;
-
-        /* The shader that this object is bound to. */
-        const Shader& shader;
 
         /* Struct describing all the specialization constants together. */
         VkSpecializationInfo* vk_specialization_info;

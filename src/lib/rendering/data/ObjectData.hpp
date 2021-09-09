@@ -22,7 +22,7 @@ namespace Rasterizer::Rendering {
     /* The ObjectData struct, which is used to carry object-specific data to the GPU. */
     struct ObjectData {
         /* The translation matrix of the Object. */
-        glm::mat4 pos;
+        glm::mat4 translation;
     };
 }
 

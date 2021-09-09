@@ -271,10 +271,10 @@ int main(int argc, const char** argv) {
         // model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
         // texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
 
-        // // Prepare the second object
-        // entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
-        // world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
-        // model_system.load_model(entity_manager, obj2, "data/models/capsule.obj", Models::ModelFormat::obj);
+        // Prepare the second object
+        entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
+        world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
+        model_system.load_model(entity_manager, obj2, "data/models/capsule.obj", Models::ModelFormat::obj);
         // texture_system.load_texture(entity_manager, obj2, "data/textures/capsule.jpg", Textures::TextureFormat::jpg);
 
         // Do the render

@@ -37,21 +37,52 @@ struct CameraData {
 
 
 
+/***** POPULATE FUNCTIONS *****/
+/* Populates the given VkSubmitInfo struct. */
+static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer* cmd, const Semaphore& wait_for_semaphore,  const Tools::Array<VkPipelineStageFlags>& wait_for_stages, const Semaphore& signal_after_semaphore) {
+    // Set to default
+    submit_info = {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    // Attach the command buffer
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &cmd->command_buffer();
+
+    // Attach the data for which we wait
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = &wait_for_semaphore.semaphore();
+    submit_info.pWaitDstStageMask = wait_for_stages.rdata();
+
+    // Attach the semaphores which we signal when done
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = &signal_after_semaphore.semaphore();
+}
+
+
+
+
+
 /***** CONCEPTUALFRAME CLASS *****/
 /* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor and a descriptor set layout for the per-object descriptors. */
 ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& object_layout) :
     memory_manager(memory_manager),
 
     swapchain_frame(nullptr),
+    pipeline(nullptr),
 
     global_layout(global_layout),
-    object_layout(object_layout)
+    object_layout(object_layout),
+
+    image_ready_semaphore(this->memory_manager.gpu),
+    render_ready_semaphore(this->memory_manager.gpu),
+    in_flight_fence(this->memory_manager.gpu, VK_FENCE_CREATE_SIGNALED_BIT)
 {
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing...");
 
     // Initialize the stage buffer
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
     this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(ObjectData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    logger.logc(Verbosity::debug, ConceptualFrame::channel, "Allocated stage buffer @ ", this->stage_buffer->offset());
 
     // Initialize the commandbuffer
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating command buffer...");
@@ -65,7 +96,6 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
 
     // Initialize the global descriptor set & camera buffer
     logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing global frame data...");
-    this->global_set = this->descriptor_pool->allocate(this->global_layout);
     this->camera_buffer = this->memory_manager.draw_pool.allocate(sizeof(CameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
     // And that's it
@@ -76,20 +106,25 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
 ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     memory_manager(other.memory_manager),
 
-    swapchain_frame(other.swapchain_frame),
-    stage_buffer(other.stage_buffer),
+    swapchain_frame(std::move(other.swapchain_frame)),
+    stage_buffer(std::move(other.stage_buffer)),
+    pipeline(std::move(other.pipeline)),
 
-    global_layout(other.global_layout),
-    object_layout(other.object_layout),
+    global_layout(std::move(other.global_layout)),
+    object_layout(std::move(other.object_layout)),
 
-    draw_cmd(other.draw_cmd),
-    descriptor_pool(other.descriptor_pool),
+    draw_cmd(std::move(other.draw_cmd)),
+    descriptor_pool(std::move(other.descriptor_pool)),
 
-    global_set(other.global_set),
-    camera_buffer(other.camera_buffer),
+    global_set(std::move(other.global_set)),
+    camera_buffer(std::move(other.camera_buffer)),
 
-    object_sets(other.object_sets),
-    object_buffers(other.object_buffers)
+    object_sets(std::move(other.object_sets)),
+    object_buffers(std::move(other.object_buffers)),
+
+    image_ready_semaphore(std::move(other.image_ready_semaphore)),
+    render_ready_semaphore(std::move(other.render_ready_semaphore)),
+    in_flight_fence(std::move(other.in_flight_fence))
 {
     // Tell the other not to deallocate any of his resources
     other.stage_buffer = nullptr;
@@ -97,8 +132,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     other.descriptor_pool = nullptr;
     other.global_set = nullptr;
     other.camera_buffer = nullptr;
-    other.object_sets.clear();
-    other.object_buffers.clear();
+    // No need to clear the object sets/buffers, as the Array's move function already makes sure they're reset to empty
 }
 
 /* Destructor for the ConceptualFrame class. */
@@ -138,20 +172,21 @@ void ConceptualFrame::prepare_render(uint32_t n_objects) {
     // Rescale the internal array to the desired number of objects
     if (this->object_buffers.size() < n_objects) {
         // Extent the object buffer to more space and allocate new buffers
-        this->object_buffers.reserve(n_objects);
+        this->object_buffers.reserve_opt(n_objects);
         for (uint32_t i = this->object_buffers.size(); i < n_objects; i++) {
             this->object_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(ObjectData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
         }
     } else if (this->object_buffers.size() > n_objects) {
         // Remove the obsolete ones
-        for (uint32_t i = n_objects; i < this->object_buffers.size(); i++) {
+        for (uint32_t i = this->object_buffers.size(); i-- > n_objects ;) {
             this->memory_manager.draw_pool.free(this->object_buffers[i]);
+            this->object_buffers.pop_back();
         }
-        this->object_buffers.reserve(n_objects);
     }
 
     // Allocate n_objects new descriptors, since we always reset the pool
     this->descriptor_pool->reset();
+    this->global_set  = this->descriptor_pool->allocate(this->global_layout);
     this->object_sets = this->descriptor_pool->nallocate(n_objects, this->object_layout);
 }
 
@@ -189,6 +224,9 @@ void ConceptualFrame::schedule_start(const Rendering::Pipeline& pipeline) {
         logger.fatalc(ConceptualFrame::channel, "Cannot start scheduling without assigned swapchain frame.");
     }
     #endif
+    
+    // Store the pipeline internally
+    this->pipeline = &pipeline;
 
     // Begin the command buffer
     this->draw_cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -196,19 +234,19 @@ void ConceptualFrame::schedule_start(const Rendering::Pipeline& pipeline) {
     // First, schedule the render pass start
     this->swapchain_frame->render_pass.start_scheduling(this->draw_cmd, this->swapchain_frame->framebuffer(), this->swapchain_frame->extent());
     // Then the pipeline bind
-    pipeline.schedule(this->draw_cmd);
+    this->pipeline->schedule(this->draw_cmd);
 }
 
 /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
-void ConceptualFrame::schedule_global(const Rendering::Pipeline& pipeline) {
+void ConceptualFrame::schedule_global() {
     // Add the camera to the descriptor
     this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
     // Bind the descriptor itself
-    this->global_set->schedule(this->draw_cmd, pipeline.layout());
+    this->global_set->schedule(this->draw_cmd, this->pipeline->layout(), 0);
 }
 
 /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
-void ConceptualFrame::schedule_object(const Rendering::Pipeline& pipeline, uint32_t object_index) {
+void ConceptualFrame::schedule_object(uint32_t object_index) {
     #ifndef NDEBUG
     // Throw errors if out-of-range
     if (object_index > this->object_buffers.size()) {
@@ -219,15 +257,15 @@ void ConceptualFrame::schedule_object(const Rendering::Pipeline& pipeline, uint3
     // Bind the correct object buffer to the correct set
     this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
     // Schedule the object's descriptor set
-    this->object_sets[object_index]->schedule(this->draw_cmd, pipeline.layout());
+    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
 }
 
 /* Schedules a draw command for the given mesh on the internal draw queue. */
-void ConceptualFrame::schedule_draw(const Rendering::Pipeline& pipeline, const Models::ModelSystem& model_system, const ECS::Mesh& mesh) {
+void ConceptualFrame::schedule_draw(const Models::ModelSystem& model_system, const ECS::Mesh& mesh) {
     // First, schedule the mesh as an indexed vertex buffer
     model_system.schedule(this->draw_cmd, mesh);
     // Next, schedule the draw call
-    pipeline.schedule_draw_indexed(this->draw_cmd, mesh.n_indices, 1);
+    this->pipeline->schedule_draw_indexed(this->draw_cmd, mesh.n_indices, 1);
 }
 
 /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
@@ -236,6 +274,28 @@ void ConceptualFrame::schedule_stop() {
     this->swapchain_frame->render_pass.stop_scheduling(this->draw_cmd);
     // Stop the buffer altogether
     this->draw_cmd->end();
+
+    // Clear the pipeline association as well
+    this->pipeline = nullptr;
+}
+
+
+
+/* "Renders" the frame by sending the internal draw queue to the given device queue. */
+void ConceptualFrame::submit(const VkQueue& vk_queue) {
+    // Prepare to submit the command buffer
+    Tools::Array<VkPipelineStageFlags> wait_stages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSubmitInfo submit_info;
+    populate_submit_info(submit_info, this->draw_cmd, this->image_ready_semaphore, wait_stages, this->render_ready_semaphore);
+
+    // Submit to the queue
+    this->in_flight_fence.reset();
+    VkResult vk_result;
+    if ((vk_result = vkQueueSubmit(vk_queue, 1, &submit_info, this->in_flight_fence)) != VK_SUCCESS) {
+        logger.fatalc(ConceptualFrame::channel, "Could not submit frame to queue: ", vk_error_map[vk_result]);
+    }
+
+    // Done
 }
 
 
@@ -250,6 +310,7 @@ void Rendering::swap(ConceptualFrame& cf1, ConceptualFrame& cf2) {
     
     swap(cf1.swapchain_frame, cf2.swapchain_frame);
     swap(cf1.stage_buffer, cf2.stage_buffer);
+    swap(cf1.pipeline, cf2.pipeline);
 
     swap(cf1.global_layout, cf2.global_layout);
     swap(cf1.object_layout, cf2.object_layout);
@@ -262,4 +323,8 @@ void Rendering::swap(ConceptualFrame& cf1, ConceptualFrame& cf2) {
 
     swap(cf1.object_sets, cf2.object_sets);
     swap(cf1.object_buffers, cf2.object_buffers);
+    
+    swap(cf1.image_ready_semaphore, cf2.image_ready_semaphore);
+    swap(cf1.render_ready_semaphore, cf2.render_ready_semaphore);
+    swap(cf1.in_flight_fence, cf2.in_flight_fence);
 }

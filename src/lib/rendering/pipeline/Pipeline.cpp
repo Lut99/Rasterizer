@@ -199,7 +199,6 @@ Pipeline::Pipeline(const Pipeline& other) :
     vk_layout_info(other.vk_layout_info),
     vk_pipeline_layout(other.vk_pipeline_layout),
 
-    shaders(other.shaders),
     shader_stages(other.shader_stages),
 
     vertex_state_info(other.vertex_state_info),
@@ -237,7 +236,6 @@ Pipeline::Pipeline(Pipeline&& other) :
     vk_layout_info(std::move(other.vk_layout_info)),
     vk_pipeline_layout(std::move(other.vk_pipeline_layout)),
 
-    shaders(std::move(other.shaders)),
     shader_stages(std::move(other.shader_stages)),
 
     vertex_state_info(std::move(other.vertex_state_info)),
@@ -277,9 +275,6 @@ Pipeline::~Pipeline() {
 
 /* Loads a shader in the given shader stage mask. */
 void Pipeline::init_shader_stage(const Rendering::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, BinaryString>& specialization_constants) {
-    // Store the shader
-    this->shaders.push_back(shader);
-
     // Create a new shader stage and store that
     this->shader_stages.push_back(ShaderStage(shader, shader_stage, specialization_constants));
 
@@ -398,10 +393,6 @@ void Pipeline::init_color_logic(VkBool32 enable_logic, VkLogicOp logic_op) {
 void Pipeline::init_pipeline_layout(const Tools::Array<VkDescriptorSetLayout>& layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constants) {
     // Begin by converting the list of layouts to vulkan VkDescriptorSetLayouts
     this->vk_descriptor_set_layouts = layouts;
-    logger.debug("Pipeline bound layouts:");
-    for (uint32_t i = 0; i < this->vk_descriptor_set_layouts.size(); i++) {
-        logger.debug(" - ", this->vk_descriptor_set_layouts[i]);
-    }
 
     // Next, convert the push constants to a usable format
     uint32_t offset = 0;
@@ -523,7 +514,6 @@ void Rendering::swap(Pipeline& p1, Pipeline& p2) {
     swap(p1.vk_layout_info, p2.vk_layout_info);
     swap(p1.vk_pipeline_layout, p2.vk_pipeline_layout);
 
-    swap(p1.shaders, p2.shaders);
     swap(p1.shader_stages, p2.shader_stages);
 
     swap(p1.vertex_state_info, p2.vertex_state_info);

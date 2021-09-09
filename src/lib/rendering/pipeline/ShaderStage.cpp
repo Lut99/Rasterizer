@@ -88,6 +88,7 @@ static void populate_shader_info(VkPipelineShaderStageCreateInfo& shader_info, c
     shader_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 
     // Add the shader module and its entry function
+    logger.debug("ShaderStage: Shader entry function: ", shader.entry_function());
     shader_info.module = shader.shader_module();
     shader_info.pName = shader.entry_function().c_str();
 
@@ -109,6 +110,8 @@ ShaderStage::ShaderStage(const Rendering::Shader& shader, VkShaderStageFlagBits 
     specialization_entries(new VkSpecializationMapEntry[specialization_constants.size()]),
     n_entries(static_cast<uint32_t>(specialization_constants.size()))
 {
+    logger.logc(Verbosity::details, ShaderStage::channel, "Initializing for shader '", shader.name(), "'...");
+
     // First, populate the list of specialization entries
     this->specialization_data_size = generate_specialization_entries(specialization_constants, this->specialization_entries);
     // Next, retrieve the data stored in the dict in one array
@@ -123,18 +126,21 @@ ShaderStage::ShaderStage(const Rendering::Shader& shader, VkShaderStageFlagBits 
     populate_shader_info(this->vk_shader_stage, this->shader, shader_stage, *this->vk_specialization_info);
 
     // Done with this one
+    logger.logc(Verbosity::details, ShaderStage::channel, "Init success.");
 }
 
 /* Copy constructor for the ShaderStage. */
 ShaderStage::ShaderStage(const ShaderStage& other) :
-    vk_shader_stage(other.vk_shader_stage),
     shader(other.shader),
+    vk_shader_stage(other.vk_shader_stage),
     vk_specialization_info(new VkSpecializationInfo(*other.vk_specialization_info)),
     specialization_entries(new VkSpecializationMapEntry[other.n_entries]),
     n_entries(other.n_entries),
     specialization_data(new uint8_t[other.specialization_data_size]),
     specialization_data_size(other.specialization_data_size)
 {
+    logger.logc(Verbosity::debug, ShaderStage::channel, "Copying for shader '", shader.name(), "'...");
+
     // First, copy the entries and constant data over
     memcpy(this->specialization_entries, other.specialization_entries, this->n_entries * sizeof(VkSpecializationMapEntry));
     memcpy(this->specialization_data, other.specialization_data, this->specialization_data_size * sizeof(uint8_t));
@@ -145,12 +151,14 @@ ShaderStage::ShaderStage(const ShaderStage& other) :
 
     // Finally, also update the shader stage info itself
     this->vk_shader_stage.pSpecializationInfo = this->vk_specialization_info;
+    
+    logger.logc(Verbosity::debug, ShaderStage::channel, "Copy success.");
 }
 
 /* Move constructor for the ShaderStage. */
 ShaderStage::ShaderStage(ShaderStage&& other) :
-    vk_shader_stage(other.vk_shader_stage),
     shader(other.shader),
+    vk_shader_stage(other.vk_shader_stage),
     vk_specialization_info(other.vk_specialization_info),
     specialization_entries(other.specialization_entries),
     n_entries(other.n_entries),
@@ -165,16 +173,23 @@ ShaderStage::ShaderStage(ShaderStage&& other) :
 
 /* Destructor for the ShaderStage. */
 ShaderStage::~ShaderStage() {
+    logger.logc(Verbosity::details, ShaderStage::channel, "Cleaning for shader '", shader.name(), "'...");
+
     // Deallocate the data if we need to
     if (this->vk_specialization_info != nullptr) {
+        logger.logc(Verbosity::details, ShaderStage::channel, "Cleaning specilication info...");
         delete this->vk_specialization_info;
     }
     if (this->specialization_data != nullptr) {
+        logger.logc(Verbosity::details, ShaderStage::channel, "Cleaning specilication data...");
         delete[] this->specialization_data;
     }
     if (this->specialization_entries != nullptr) {
+        logger.logc(Verbosity::details, ShaderStage::channel, "Cleaning specilication entries...");
         delete[] this->specialization_entries;
     }
+    
+    logger.logc(Verbosity::details, ShaderStage::channel, "Cleaned.");
 }
 
 

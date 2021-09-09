@@ -45,6 +45,11 @@ namespace Rasterizer::Rendering {
         /* Destructor for the Fence class. */
         ~Fence();
 
+        /* Blocks the CPU until the Fence is signalled. */
+        inline void wait() const { vkWaitForFences(this->gpu, 1, &this->vk_fence, true, UINT64_MAX); }
+        /* Resets the Fence once signalled. */
+        inline void reset() const { vkResetFences(this->gpu, 1, &this->vk_fence); }
+
         /* Expliticly returns the internal VkFence object. */
         inline const VkFence& fence() const { return this->vk_fence; }
         /* Implicitly returns the internal VkFence object. */
