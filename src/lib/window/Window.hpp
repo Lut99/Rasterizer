@@ -27,7 +27,7 @@
 #include "rendering/gpu/GPU.hpp"
 #include "rendering/swapchain/Swapchain.hpp"
 
-namespace Rasterizer {
+namespace Makma3D {
     /* The Window class, which manages the GLFW window and which bundles some base Vulkan classes in one place. */
     class Window {
     public:

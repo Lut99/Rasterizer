@@ -19,7 +19,7 @@
 #include "../auxillary/ComponentHash.hpp"
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* The Controllable component, which allows an entity to be controlled by a keyboard and mouse (or more accurately, which allows its transform position and rotation to be controlled by keyboard and mouse). */
     struct Controllable {
         /* The entity's movement speed. */
@@ -37,7 +37,7 @@ namespace Rasterizer::ECS {
 
 namespace Tools {
     /* The string name of the Controllable component. */
-    template <> inline constexpr const char* type_name<Rasterizer::ECS::Controllable>() { return "ECS::Controllable"; }
+    template <> inline constexpr const char* type_name<Makma3D::ECS::Controllable>() { return "ECS::Controllable"; }
 }
 
 #endif

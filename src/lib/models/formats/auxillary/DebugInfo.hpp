@@ -24,7 +24,7 @@
 
 #include "FileCoord.hpp"
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     /* The DebugInfo class, which keeps track of relevant origin information of the symbol we're looking at. */
     class DebugInfo {
     public:

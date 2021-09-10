@@ -19,7 +19,7 @@
 #include <vulkan/vulkan.h>
 #include "../memory/Image.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The ImageView class, which wraps a single ImageView. */
     class ImageView {
     public:

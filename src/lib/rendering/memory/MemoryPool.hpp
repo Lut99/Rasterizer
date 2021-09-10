@@ -26,7 +26,7 @@
 #include "Buffer.hpp"
 #include "Image.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The MemoryPool class, which manages all Buffers and Images in the Rasterizer. */
     class MemoryPool {
     public:

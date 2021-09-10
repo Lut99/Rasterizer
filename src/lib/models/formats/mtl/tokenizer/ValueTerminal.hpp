@@ -18,7 +18,7 @@
 
 #include "Terminal.hpp"
 
-namespace Rasterizer::Models::Mtl {
+namespace Makma3D::Models::Mtl {
     /* The ValueTerminal class, which is a standard Terminal but with some value T. */
     template <class T>
     class ValueTerminal: public Terminal {

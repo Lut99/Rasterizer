@@ -20,7 +20,7 @@
 
 #include "../../auxillary/DebugInfo.hpp"
 
-namespace Rasterizer::Models::Obj {
+namespace Makma3D::Models::Obj {
     /* Lists all Terminal types. */
     enum class TerminalType {
         /* The undefined symbol. */

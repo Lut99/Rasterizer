@@ -23,7 +23,7 @@
 #include "../commandbuffers/CommandPool.hpp"
 #include "../descriptors/DescriptorPool.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The MemoryManager struct, which bundles different kind of pools into one place. */
     struct MemoryManager {
         /* The GPU on which the MemoryManager is based. */

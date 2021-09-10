@@ -16,8 +16,8 @@
 #include "BinaryString.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::Rendering;
+using namespace Makma3D;
+using namespace Makma3D::Rendering;
 
 
 /***** BINARYSTRING CLASS *****/

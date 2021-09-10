@@ -15,7 +15,7 @@
 #include "Terminal.hpp"
 
 using namespace std;
-using namespace Rasterizer::Models::Mtl;
+using namespace Makma3D::Models::Mtl;
 
 
 /***** TERMINAL CLASS *****/

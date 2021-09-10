@@ -35,7 +35,7 @@
 
 #include "swapchain/FrameManager.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The RenderSystem class, which is in charge of rendering the renderable entities in the EntityManager. */
     class RenderSystem {
     public:

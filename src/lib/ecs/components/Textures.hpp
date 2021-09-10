@@ -27,7 +27,7 @@
 
 #include "../auxillary/ComponentHash.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* The Texture component, which is used to add several model textures to an entity. */
     struct Texture {
         /* The image containing the texture. */
@@ -53,9 +53,9 @@ namespace Rasterizer::ECS {
 
 namespace Tools {
     /* The string name of the Texture component. */
-    template <> inline constexpr const char* type_name<Rasterizer::ECS::Texture>() { return "ECS::Texture"; }
+    template <> inline constexpr const char* type_name<Makma3D::ECS::Texture>() { return "ECS::Texture"; }
     // /* The string name of the Textures list. */
-    // template <> inline constexpr const char* type_name<Rasterizer::ECS::Textures>() { return "ECS::Textures"; }
+    // template <> inline constexpr const char* type_name<Makma3D::ECS::Textures>() { return "ECS::Textures"; }
 }
 
 #endif

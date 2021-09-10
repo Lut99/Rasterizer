@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* An Entity, which is an ID used by the EntityManager to, well, manage all entities. */
     using entity_t = uint32_t;
 

@@ -19,7 +19,7 @@
 
 #include "../gpu/GPU.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Fence class, which wraps a VkFence object and manages its memory. */
     class Fence {
     public:

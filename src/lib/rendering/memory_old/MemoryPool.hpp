@@ -4,7 +4,7 @@
  * Created:
  *   25/04/2021, 11:36:35
  * Last edited:
- *   16/08/2021, 14:56:50
+ *   10/09/2021, 10:55:34
  * Auto updated?
  *   Yes
  *
@@ -28,7 +28,7 @@
 #include "Buffer.hpp"
 #include "Image.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The MemoryPool class serves as a memory manager for our GPU memory. */
     class MemoryPool {
     public:

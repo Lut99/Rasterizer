@@ -18,7 +18,7 @@
 
 #include "glm/glm.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The ObjectData struct, which is used to carry object-specific data to the GPU. */
     struct ObjectData {
         /* The translation matrix of the Object. */

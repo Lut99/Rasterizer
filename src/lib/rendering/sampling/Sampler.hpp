@@ -19,7 +19,7 @@
 #include <vulkan/vulkan.h>
 #include "../gpu/GPU.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Sampler class, which allows shaders to sample texture images. */
     class Sampler {
     public:

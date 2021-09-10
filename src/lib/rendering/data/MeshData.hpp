@@ -18,7 +18,7 @@
 #include "glm/glm.hpp"
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The MeshData struct, which is used to transfer mesh-specific data to the GPU. */
     struct MeshData {
         /* The material colour of the Mesh. */
@@ -31,7 +31,7 @@ namespace Rasterizer::Rendering {
 
 namespace Tools {
     /* The string name of the Model component. */
-    template <> inline constexpr const char* type_name<Rasterizer::Rendering::MeshData>() { return "Rendering::MeshData"; }
+    template <> inline constexpr const char* type_name<Makma3D::Rendering::MeshData>() { return "Rendering::MeshData"; }
 }
 
 #endif

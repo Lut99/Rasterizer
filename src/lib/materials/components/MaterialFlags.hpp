@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace Rasterizer::Materials {
+namespace Makma3D::Materials {
     /* Values for the MaterialFlags enum. */
     namespace MaterialFlagsValues {
         enum component {

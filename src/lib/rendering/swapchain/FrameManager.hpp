@@ -27,7 +27,7 @@
 #include "SwapchainFrame.hpp"
 #include "ConceptualFrame.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The FrameManager class, which manages and synchronizes swapchain frame access. */
     class FrameManager {
     public:

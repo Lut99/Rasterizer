@@ -17,7 +17,7 @@
 
 #include <cstdint>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* "Base" handle for all memory objects allocated in the pool. */
     using memory_h = uint32_t;
 }

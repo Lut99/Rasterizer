@@ -4,7 +4,7 @@
  * Created:
  *   27/04/2021, 14:56:30
  * Last edited:
- *   09/09/2021, 14:44:33
+ *   10/09/2021, 10:55:51
  * Auto updated?
  *   Yes
  *
@@ -21,7 +21,7 @@
 
 #include "../gpu/GPU.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Shader class, which loads, compiles and manages .spv files. */
     class Shader {
     public:

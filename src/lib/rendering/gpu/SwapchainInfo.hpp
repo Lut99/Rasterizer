@@ -20,7 +20,7 @@
 
 #include "tools/Array.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The SwapchainInfo class, which describes the kind of swapchains the GPU supports. */
     class SwapchainInfo {
     public:

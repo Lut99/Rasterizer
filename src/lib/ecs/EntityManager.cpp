@@ -23,8 +23,8 @@
 #include "EntityManager.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::ECS;
+using namespace Makma3D;
+using namespace Makma3D::ECS;
 
 
 /***** ENTITYMANAGER CLASS *****/

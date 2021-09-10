@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:10
  * Last edited:
- *   08/09/2021, 17:51:53
+ *   10/09/2021, 10:55:29
  * Auto updated?
  *   Yes
  *
@@ -26,7 +26,7 @@
 #include "../depthtesting/DepthStencil.hpp"
 #include "SwapchainFrame.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Swapchain class, which wraps and manages the swapchain and all images related to it. */
     class Swapchain {
     public:

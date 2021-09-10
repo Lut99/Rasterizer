@@ -22,7 +22,7 @@
 
 #include "Terminal.hpp"
 
-namespace Rasterizer::Models::Mtl {
+namespace Makma3D::Models::Mtl {
     /* The Tokenizer for .mtl model files. */
     class Tokenizer {
     public:

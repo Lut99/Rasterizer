@@ -17,7 +17,7 @@
 
 #include <cstdint>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The datatype used for indices. */
     using index_t = uint32_t;
 

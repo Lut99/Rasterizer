@@ -24,7 +24,7 @@
 #include "tools/Array.hpp"
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* The Mesh component, which is used to add several model meshes to an entity. */
     struct Mesh {
         /* The buffers containing the vertices. */
@@ -53,9 +53,9 @@ namespace Rasterizer::ECS {
 
 namespace Tools {
     /* The string name of the Mesh component. */
-    template <> inline constexpr const char* type_name<Rasterizer::ECS::Mesh>() { return "ECS::Mesh"; }
+    template <> inline constexpr const char* type_name<Makma3D::ECS::Mesh>() { return "ECS::Mesh"; }
     /* The string name of the Meshes list. */
-    template <> inline constexpr const char* type_name<Rasterizer::ECS::Meshes>() { return "ECS::Meshes"; }
+    template <> inline constexpr const char* type_name<Makma3D::ECS::Meshes>() { return "ECS::Meshes"; }
 }
 
 #endif

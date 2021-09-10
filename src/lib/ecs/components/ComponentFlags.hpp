@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* Values for the ComponentType enum. */
     namespace ComponentFlagsValues {
         enum component {

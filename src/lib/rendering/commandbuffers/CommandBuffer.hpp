@@ -20,7 +20,7 @@
 #include <vulkan/vulkan.h>
 #include <cstdint>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The CommandBuffer class, which acts as a reference to an allocated CommandBuffer in the CommandPool. Can thus be comfortably deallocated and then later re-acquired by its matching handle. */
     class CommandBuffer {
     public:

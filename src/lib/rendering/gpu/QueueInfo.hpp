@@ -22,7 +22,7 @@
 
 #include "tools/Array.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Enum that lists the useful queue families for us. */
     enum class QueueType {
         graphics = 0,

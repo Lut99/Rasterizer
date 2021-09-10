@@ -26,7 +26,7 @@
 #include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "ModelFormat.hpp"
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     /* The ModelSystem class, which is in charge of handling all models in the rasterizer. */
     class ModelSystem {
     public:

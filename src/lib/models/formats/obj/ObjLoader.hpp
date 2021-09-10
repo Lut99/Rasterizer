@@ -21,7 +21,7 @@
 #include "ecs/components/Meshes.hpp"
 #include "tools/Array.hpp"
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     /* Loads the file at the given path as a .obj file, and populates the given list of meshes from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
     void load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path);
 

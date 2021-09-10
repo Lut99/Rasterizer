@@ -20,8 +20,8 @@
 #include "TextureSystem.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::Textures;
+using namespace Makma3D;
+using namespace Makma3D::Textures;
 
 
 /***** TEXTURESYSTEM CLASS *****/
@@ -123,7 +123,7 @@ void TextureSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS
 
 
 /* Swap operator for the TextureSystem class. */
-void Rasterizer::Textures::swap(TextureSystem& ts1, TextureSystem& ts2) {
+void Makma3D::Textures::swap(TextureSystem& ts1, TextureSystem& ts2) {
     #ifndef NDEBUG
     if (&ts1.memory_manager != &ts2.memory_manager) { logger.fatalc(TextureSystem::channel, "Cannot swap texture systems with different memory managers."); }
     #endif

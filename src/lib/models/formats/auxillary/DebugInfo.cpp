@@ -26,8 +26,8 @@
 #include "DebugInfo.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::Models;
+using namespace Makma3D;
+using namespace Makma3D::Models;
 
 
 /***** HELPER FUNCTIONS *****/

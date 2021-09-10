@@ -16,7 +16,7 @@
 #include "SymbolStack.hpp"
 
 using namespace std;
-using namespace Rasterizer::Models;
+using namespace Makma3D::Models;
 
 
 /***** SYMBOLSTACK CONST_ITERATOR *****/

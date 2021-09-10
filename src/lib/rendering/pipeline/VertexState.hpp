@@ -19,7 +19,7 @@
 #include <vulkan/vulkan.h>
 #include "tools/Array.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The VertexState class, which manages associated memory for a VkPipelineVertexInputStateCreateInfo struct. */
     class VertexState {
     private:

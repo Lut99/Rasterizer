@@ -1,4 +1,4 @@
-# CMAKELIST for the RAYTRACER-3 project
+# CMAKELIST for the RASTERIZER project
 #   by Lut99
 
 # Specify the version required

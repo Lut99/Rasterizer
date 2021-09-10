@@ -20,7 +20,7 @@
 
 #include "tools/Array.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Subpass class, which is used to manage memory around a VkSubpassDescription object. */
     class Subpass {
     private:

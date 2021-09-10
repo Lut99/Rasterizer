@@ -19,7 +19,7 @@
 #include <string>
 #include "../gpu/GPU.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The possible types of the MemoryObject class. */
     enum class MemoryObjectType {
         /* No type defined. */

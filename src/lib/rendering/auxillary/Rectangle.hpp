@@ -18,7 +18,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* A very simple Rectangle struct, mostly used to pass the four floats needed to describe one. */
     class Rectangle {
     public:

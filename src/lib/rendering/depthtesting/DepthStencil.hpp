@@ -19,7 +19,7 @@
 #include "../gpu/GPU.hpp"
 #include "../memory/MemoryPool.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The DepthStencil class, which wraps around an image to provide a memory buffer for depth testing. */
     class DepthStencil {
     public:

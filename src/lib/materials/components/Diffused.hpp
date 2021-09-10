@@ -18,7 +18,7 @@
 
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::Materials {
+namespace Makma3D::Materials {
     /* The Diffused material component, which means the material should be rendered using simple diffuse lighting. */
     struct Diffused {
 
@@ -30,7 +30,7 @@ namespace Rasterizer::Materials {
 
 namespace Tools {
     /* The string name of the Mesh component. */
-    template <> inline constexpr const char* type_name<Rasterizer::Materials::Diffused>() { return "Materials::Diffused"; }
+    template <> inline constexpr const char* type_name<Makma3D::Materials::Diffused>() { return "Materials::Diffused"; }
 }
 
 #endif

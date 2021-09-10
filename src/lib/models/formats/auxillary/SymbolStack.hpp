@@ -19,7 +19,7 @@
 #include <cstdlib>
 #include <ostream>
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     /* Stack used to store, access and manage symbols. Is based off the given Symbol class. */
     template <class T>
     class SymbolStack {

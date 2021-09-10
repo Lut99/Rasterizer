@@ -22,7 +22,7 @@
 
 #include "MemoryHandle.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Handle for image objects, which is used to reference images. */
     using image_h = memory_h;
 

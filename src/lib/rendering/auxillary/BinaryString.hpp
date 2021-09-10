@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The datatype used to describe the size of the binary string. */
     using binary_size_t = uint32_t;
 

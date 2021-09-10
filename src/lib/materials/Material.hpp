@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-namespace Rasterizer::Materials {
+namespace Makma3D::Materials {
     /* A Material, which is an ID used by the MaterialSystem to recognize it. */
     using material_t = uint32_t;
 

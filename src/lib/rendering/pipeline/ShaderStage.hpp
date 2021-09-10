@@ -22,7 +22,7 @@
 #include "../auxillary/BinaryString.hpp"
 #include "Shader.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The ShaderStage class, which manages memory for a single shader and its affiliated data in the Pipeline. */
     class ShaderStage {
     public:

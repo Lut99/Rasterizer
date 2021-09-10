@@ -19,7 +19,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Static map of VkResult error codes to human-readable strings. */
     static std::unordered_map<VkResult, std::string> vk_error_map({
         { VK_SUCCESS, "Command successfully completed." },

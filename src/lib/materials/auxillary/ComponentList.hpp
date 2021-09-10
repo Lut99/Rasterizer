@@ -22,7 +22,7 @@
 #include "../components/MaterialFlags.hpp"
 #include "../Material.hpp"
 
-namespace Rasterizer::Materials {
+namespace Makma3D::Materials {
     /* The ComponentList class, which wraps around a normal Array to provide an Array with mapped indices. */
     template <class T>
     class ComponentList {

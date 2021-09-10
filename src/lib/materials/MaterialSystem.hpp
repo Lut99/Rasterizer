@@ -25,7 +25,7 @@
 #include "components/Diffused.hpp"
 #include "components/Textured.hpp"
 
-namespace Rasterizer::Materials {
+namespace Makma3D::Materials {
     /* The MaterialSystem class, which is in charge of loading, managing and rendering materials. */
     class MaterialSystem {
     public:

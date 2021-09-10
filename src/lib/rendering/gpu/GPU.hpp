@@ -26,7 +26,7 @@
 #include "QueueInfo.hpp"
 #include "SwapchainInfo.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Vulkan device extensions we want to be enabled. */
     const Tools::Array<const char*> device_extensions({
         VK_KHR_SWAPCHAIN_EXTENSION_NAME

@@ -21,7 +21,7 @@
 
 #include "../instance/Instance.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Surface class, which wraps a VkSurfaceKHR and manages its lifetime. */
     class Surface {
     public:

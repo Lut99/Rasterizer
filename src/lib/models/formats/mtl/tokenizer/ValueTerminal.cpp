@@ -16,7 +16,7 @@
 #include "ValueTerminal.hpp"
 
 using namespace std;
-using namespace Rasterizer::Models::Mtl;
+using namespace Makma3D::Models::Mtl;
 
 
 /***** VALUETERMINAL CLASS *****/

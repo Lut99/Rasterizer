@@ -15,7 +15,7 @@
 #ifndef MODELS_FILE_COORD_HPP
 #define MODELS_FILE_COORD_HPP
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     /* A simple helper for (line, col) coordinates in some file. */
     struct FileCoord {
         /* The line number. */

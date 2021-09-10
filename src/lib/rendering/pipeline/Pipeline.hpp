@@ -29,7 +29,7 @@
 #include "ShaderStage.hpp"
 #include "VertexState.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Pipeline class, which functions a as a more convenient wrapper for the internal VkPipeline object. */
     class Pipeline {
     public:

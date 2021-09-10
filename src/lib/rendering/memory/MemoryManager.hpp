@@ -24,7 +24,7 @@
 #include "../descriptors/DescriptorPool.hpp"
 #include "../views/ImageViewPool.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The MemoryManager class, which bundles different kind of pools into one place. */
     class MemoryManager {
     public:

@@ -44,9 +44,9 @@
 #include "ObjLoader.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::Models;
-using namespace Rasterizer::Models::Obj;
+using namespace Makma3D;
+using namespace Makma3D::Models;
+using namespace Makma3D::Models::Obj;
 
 
 /***** CONSTANTS *****/
@@ -112,7 +112,6 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
 
     // Allocate a stage memory
     Rendering::Buffer* stage = memory_manager.stage_pool.allocate(std::max({vertices_size, indices_size, data_size}), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-    logger.debug("Got stage buffer @ ", stage->offset());
     void* stage_map;
     stage->map(&stage_map);
 
@@ -128,7 +127,6 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
 
     // We're done, deallocate the stage buffer
     stage->unmap();
-    logger.debug("Freeing stage buffer @ ", stage->offset());
     memory_manager.stage_pool.free(stage);
 }
 

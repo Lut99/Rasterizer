@@ -4,7 +4,7 @@
  * Created:
  *   27/04/2021, 13:03:55
  * Last edited:
- *   24/08/2021, 22:21:27
+ *   10/09/2021, 10:55:56
  * Auto updated?
  *   Yes
  *
@@ -24,7 +24,7 @@
 
 #include "CommandBuffer.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The CommandPool class, which manages CommandBuffers for a single device queue. */
     class CommandPool {
     public:

@@ -36,7 +36,7 @@
 #include "ecs/EntityManager.hpp"
 
 using namespace std;
-using namespace Rasterizer;
+using namespace Makma3D;
 
 
 /***** HELPER STRUCTS *****/

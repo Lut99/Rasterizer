@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 15:33:48
  * Last edited:
- *   24/08/2021, 22:38:45
+ *   10/09/2021, 10:55:54
  * Auto updated?
  *   Yes
  *
@@ -21,7 +21,7 @@
 #include "tools/Array.hpp"
 #include "../gpu/GPU.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The DescriptorSetLayout class, which describes the layout for a single type of buffer. */
     class DescriptorSetLayout {
     private:

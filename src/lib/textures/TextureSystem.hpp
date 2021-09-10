@@ -25,7 +25,7 @@
 
 #include "TextureFormat.hpp"
 
-namespace Rasterizer::Textures {
+namespace Makma3D::Textures {
     /* The TextureSystem class, which is responsible for loading and managing textures. */
     class TextureSystem {
     public:

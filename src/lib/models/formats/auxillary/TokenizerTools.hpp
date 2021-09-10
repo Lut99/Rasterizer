@@ -104,7 +104,7 @@
 
 
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     // /* Function that, given a file stream and the start of this line, parses an entire line. */
     // std::string get_line(FILE* file, long sentence_start);
     /* Function that, given a file stream and the start of this line, parses an entire line. */

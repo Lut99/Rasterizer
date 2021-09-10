@@ -23,7 +23,7 @@
 
 #include "MemoryHandle.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Handle for buffer objects, which is used to reference buffers. */
     using buffer_h = memory_h;
 

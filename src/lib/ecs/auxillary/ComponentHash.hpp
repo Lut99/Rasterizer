@@ -21,7 +21,7 @@
 
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* Function that returns the hash of the given type. Note that the general case throws errors; it relies on specializations alone. */
     template <class T>
     inline constexpr uint32_t hash_component() {  return ~0;  }

@@ -17,8 +17,8 @@
 #include "MaterialSystem.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::Materials;
+using namespace Makma3D;
+using namespace Makma3D::Materials;
 
 
 /***** MODELSYSTEM CLASS *****/

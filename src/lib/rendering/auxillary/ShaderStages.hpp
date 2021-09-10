@@ -20,7 +20,7 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Static map of VkFormats to their respective string representations. */
     static std::unordered_map<VkShaderStageFlagBits, std::string> vk_shader_stage_map({
         { VK_SHADER_STAGE_VERTEX_BIT, "vertex" },

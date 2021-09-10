@@ -24,7 +24,7 @@
 #define MAP_VK_FORMAT(FORMAT) \
     { (FORMAT), (#FORMAT) }
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Static map of VkFormats to their respective string representations. */
     static std::unordered_map<VkFormat, std::string> vk_format_map({
         MAP_VK_FORMAT(VK_FORMAT_UNDEFINED),

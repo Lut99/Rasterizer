@@ -26,7 +26,7 @@
 #include "ecs/EntityManager.hpp"
 #include "window/Window.hpp"
 
-namespace Rasterizer::World {
+namespace Makma3D::World {
     /* The WorldSystem class, which is in charge of placing objects in a scene and letting them do non-physics animations and junk. */
     class WorldSystem {
     public:

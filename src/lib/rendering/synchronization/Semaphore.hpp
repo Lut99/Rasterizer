@@ -19,7 +19,7 @@
 
 #include "../gpu/GPU.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Semaphore class, which wraps a VkSemaphore object and manages its memory. */
     class Semaphore {
     public:

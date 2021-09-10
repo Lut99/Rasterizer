@@ -35,8 +35,8 @@
 #include "Tokenizer.hpp"
 
 using namespace std;
-using namespace Rasterizer::Models;
-using namespace Rasterizer::Models::Obj;
+using namespace Makma3D::Models;
+using namespace Makma3D::Models::Obj;
 
 
 

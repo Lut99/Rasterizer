@@ -17,7 +17,7 @@
 
 #include <cstdint>
 
-namespace Rasterizer {
+namespace Makma3D {
     /* Data type to which the KeyboardKey enum is cast. */
     using keyboardkey_t = uint64_t;
 

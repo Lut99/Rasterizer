@@ -4,7 +4,7 @@
  * Created:
  *   30/04/2021, 14:03:39
  * Last edited:
- *   24/08/2021, 22:58:42
+ *   10/09/2021, 10:55:53
  * Auto updated?
  *   Yes
  *
@@ -21,7 +21,7 @@
 #include "tools/Logger.hpp"
 #include "tools/Array.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Vulkan instance extensions we want to be enabled. */
     const Tools::Array<const char*> instance_extensions({
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME

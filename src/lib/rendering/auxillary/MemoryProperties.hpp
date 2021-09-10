@@ -23,7 +23,7 @@
 #define MAP_VK_PROPERTY(PROPERTY) \
     { (PROPERTY), (#PROPERTY) }
     
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Defines a map from all VkMemoryPropertyFlags to readable names. */
     static std::unordered_map<VkMemoryPropertyFlagBits, std::string> vk_memory_property_map({
         MAP_VK_PROPERTY(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),

@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include "glm/glm.hpp"
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     /* Loads the file at the given path as a .mtl file, and returns a map of material name: color schemes for it. */
     void load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materials, const std::string& path);
 

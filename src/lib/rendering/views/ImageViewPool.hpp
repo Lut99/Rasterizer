@@ -25,7 +25,7 @@
 
 #include "ImageView.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The ImageViewPool class, which is in charge for creating and managing the life cycles of image views. */
     class ImageViewPool {
     public:

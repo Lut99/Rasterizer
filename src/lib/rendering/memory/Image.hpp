@@ -21,7 +21,7 @@
 #include "../commandbuffers/CommandBuffer.hpp"
 #include "MemoryObject.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Image class, which wraps a VkImage object and whos memory is managerd by the MemoryPool class. */
     class Image: public MemoryObject {
     public:

@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 14:39:16
  * Last edited:
- *   06/09/2021, 17:10:42
+ *   10/09/2021, 10:55:55
  * Auto updated?
  *   Yes
  *
@@ -28,7 +28,7 @@
 #include "DescriptorSetLayout.hpp"
 #include "DescriptorSet.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The DescriptorPool class, which is used to generate and manage descriptor(sets) for describing buffers. */
     class DescriptorPool {
     public:

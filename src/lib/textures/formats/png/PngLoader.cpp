@@ -18,8 +18,8 @@
 #include "PngLoader.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::Textures;
+using namespace Makma3D;
+using namespace Makma3D::Textures;
 
 
 /***** CONSTANTS *****/

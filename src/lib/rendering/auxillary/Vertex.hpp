@@ -21,7 +21,7 @@
 
 #include "tools/Array.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* Struct to contain a single Vertex. */
     struct Vertex {
         /* The position of the vertex. */

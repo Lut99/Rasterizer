@@ -21,7 +21,7 @@
 #include "../auxillary/ComponentHash.hpp"
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* The Camera component, which carries the camera matrices around for that camera. Its position and rotation are defined by the Transform component. Also thus determines how many times we have to render a scene. */
     struct Camera {
         /* The field-of-view for the camera. */
@@ -43,7 +43,7 @@ namespace Rasterizer::ECS {
 
 namespace Tools {
     /* The string name of the Camera component. */
-    template <> inline constexpr const char* type_name<Rasterizer::ECS::Camera>() { return "ECS::Camera"; }
+    template <> inline constexpr const char* type_name<Makma3D::ECS::Camera>() { return "ECS::Camera"; }
 }
 
 #endif

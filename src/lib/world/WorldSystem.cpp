@@ -24,9 +24,9 @@
 #include "WorldSystem.hpp"
 
 using namespace std;
-using namespace Rasterizer;
-using namespace Rasterizer::ECS;
-using namespace Rasterizer::World;
+using namespace Makma3D;
+using namespace Makma3D::ECS;
+using namespace Makma3D::World;
 
 
 /***** CONSTANTS *****/

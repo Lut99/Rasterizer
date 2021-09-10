@@ -17,7 +17,7 @@
 
 #include <string>
 
-namespace Rasterizer::Models {
+namespace Makma3D::Models {
     /* Describes the Model formats supported by the ModelManager. */
     enum class ModelFormat {
         /* Meta enum value for unsupported formats. */

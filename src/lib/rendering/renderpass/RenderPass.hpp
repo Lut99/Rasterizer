@@ -25,7 +25,7 @@
 
 #include "Subpass.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The RenderPass class, which wraps a VkRenderPass object. Also used to define subpasses for this render pass. */
     class RenderPass {
     public:

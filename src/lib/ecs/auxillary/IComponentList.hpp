@@ -21,7 +21,7 @@
 #include "../Entity.hpp"
 #include "../components/ComponentFlags.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* Datatype for the indices in a componentlist. */
     using component_list_size_t = uint32_t;
 

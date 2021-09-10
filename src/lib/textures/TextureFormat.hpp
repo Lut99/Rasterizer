@@ -17,7 +17,7 @@
 
 #include <string>
 
-namespace Rasterizer::Textures {
+namespace Makma3D::Textures {
     /* Enum that lists all supported texture formats. */
     enum class TextureFormat {
         /* The meta unsupported format. */

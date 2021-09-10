@@ -23,7 +23,7 @@
 #include "../memory/Buffer.hpp"
 #include "../commandbuffers/CommandBuffer.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The DescriptorSet class, which represents a reference to a single VkDescriptorSet. */
     class DescriptorSet {
     public:

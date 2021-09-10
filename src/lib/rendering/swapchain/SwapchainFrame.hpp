@@ -23,7 +23,7 @@
 #include "../renderpass/RenderPass.hpp"
 #include "../synchronization/Fence.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The SwapchainFrame class, which is a collection of data that can be used to draw to a single frame. */
     class SwapchainFrame {
     public:

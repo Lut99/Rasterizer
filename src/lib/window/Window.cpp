@@ -17,7 +17,7 @@
 #include "Window.hpp"
 
 using namespace std;
-using namespace Rasterizer;
+using namespace Makma3D;
 
 
 /***** WINDOW CLASS *****/
@@ -297,7 +297,7 @@ bool Window::loop() const {
 
 
 /* Swap operator for the Window class. */
-void Rasterizer::swap(Window& w1, Window& w2) {
+void Makma3D::swap(Window& w1, Window& w2) {
     #ifndef NDEBUG
     if (w1.instance != w2.instance) { logger.fatalc(Window::channel, "Cannot swap windows with different instances."); }
     #endif

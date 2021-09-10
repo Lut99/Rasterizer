@@ -23,7 +23,7 @@
 #include "MemoryObject.hpp"
 #include "Image.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The Buffer class, which wraps a VkBuffer object and who's memory is managerd by the MemoryPool class. */
     class Buffer: public MemoryObject {
     public:

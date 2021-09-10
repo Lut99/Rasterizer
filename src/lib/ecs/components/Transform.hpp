@@ -21,7 +21,7 @@
 #include "../auxillary/ComponentHash.hpp"
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* The Transform component, which describes everything needed to position a renderable object in the scene. */
     struct Transform {
         /* The position of the entity in world space. */
@@ -43,7 +43,7 @@ namespace Rasterizer::ECS {
 
 namespace Tools {
     /* The string name of the Transform component. */
-    template <> inline constexpr const char* type_name<Rasterizer::ECS::Transform>() { return "ECS::Transform"; }
+    template <> inline constexpr const char* type_name<Makma3D::ECS::Transform>() { return "ECS::Transform"; }
 }
 
 #endif

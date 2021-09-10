@@ -18,7 +18,7 @@
 
 #include "tools/Typenames.hpp"
 
-namespace Rasterizer::Materials {
+namespace Makma3D::Materials {
     /* The Textured material component, which means the material has a texture to load and sample. */
     struct Textured {
 
@@ -30,7 +30,7 @@ namespace Rasterizer::Materials {
 
 namespace Tools {
     /* The string name of the Mesh component. */
-    template <> inline constexpr const char* type_name<Rasterizer::Materials::Textured>() { return "Materials::Textured"; }
+    template <> inline constexpr const char* type_name<Makma3D::Materials::Textured>() { return "Materials::Textured"; }
 }
 
 #endif

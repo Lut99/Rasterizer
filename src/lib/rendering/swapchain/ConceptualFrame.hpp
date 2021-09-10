@@ -33,7 +33,7 @@
 
 #include "SwapchainFrame.hpp"
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The ConceptualFrame class, which wraps around (different) SwapchainFrames to be able to render linearly to the swapchain. */
     class ConceptualFrame {
     public:

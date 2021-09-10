@@ -18,7 +18,7 @@
 
 #include "IComponentList.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* The ComponentList class, which aims to efficiently associate entity IDs with a single component. Note that the type is required to be at least default constructible, copy constructible and move constructible. */
     template <class T>
     class ComponentList: public IComponentList {

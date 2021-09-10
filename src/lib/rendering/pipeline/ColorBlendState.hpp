@@ -18,7 +18,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace Rasterizer::Rendering {
+namespace Makma3D::Rendering {
     /* The ColorBlendState class, which manages an associated VkPipelineColorBlendStateCreateInfo object. */
     class ColorBlendState {
     private:

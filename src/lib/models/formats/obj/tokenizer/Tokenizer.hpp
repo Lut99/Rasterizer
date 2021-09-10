@@ -22,7 +22,7 @@
 
 #include "Terminal.hpp"
 
-namespace Rasterizer::Models::Obj {
+namespace Makma3D::Models::Obj {
     /* The Tokenizer for .obj model files. */
     class Tokenizer {
     public:

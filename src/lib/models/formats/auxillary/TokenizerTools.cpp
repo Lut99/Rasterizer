@@ -17,7 +17,7 @@
 #include "TokenizerTools.hpp"
 
 using namespace std;
-using namespace Rasterizer;
+using namespace Makma3D;
 
 
 // /***** LIBRARY FUNCTIONS *****/

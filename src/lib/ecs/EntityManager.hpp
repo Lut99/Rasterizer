@@ -26,7 +26,7 @@
 #include "components/ComponentFlags.hpp"
 #include "Entity.hpp"
 
-namespace Rasterizer::ECS {
+namespace Makma3D::ECS {
     /* The EntityManager class, which allows the user to spawn and manage entities. Also manages their models and textures using a ModelManager and TextureManager, respectively. */
     class EntityManager {
     public:
