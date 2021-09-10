@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:06
  * Last edited:
- *   30/08/2021, 20:44:02
+ *   10/09/2021, 11:06:08
  * Auto updated?
  *   Yes
  *
@@ -48,6 +48,7 @@ Logger::Fatal::Fatal(const std::string& message) :
 Logger::Logger(std::ostream& stdos, std::ostream& erros, Verbosity verbosity) :
     stdos(&stdos),
     erros(&erros),
+
     verbosity(verbosity),
     start_time(chrono::system_clock::now())
 {}
@@ -58,7 +59,9 @@ Logger::Logger(const Logger& other) :
     erros(other.erros),
 
     verbosity(other.verbosity),
-    start_time(chrono::system_clock::now())
+    start_time(chrono::system_clock::now()),
+
+    thread_names(other.thread_names)
 {}
 
 /* Move constructor for the Logger class. */
@@ -67,7 +70,9 @@ Logger::Logger(Logger&& other) :
     erros(std::move(other.erros)),
 
     verbosity(std::move(other.verbosity)),
-    start_time(other.start_time)
+    start_time(other.start_time),
+
+    thread_names(other.thread_names)
 {}
 
 /* Destructor for the Logger class. */
@@ -113,6 +118,29 @@ std::string Logger::pad_float(float value) {
 }
 
 
+/* Links the given thread ID to the given name. */
+void Logger::set_thread_name(const std::thread::id& tid, const std::string& name) {
+    // Get a lock
+    std::unique_lock<std::mutex> local_lock(this->lock);
+
+    // Set the name, overwriting it if it exist or else creating a new entry
+    this->thread_names[tid] = name;
+}
+
+/* Removes the name mapping for the given thread ID. */
+void Logger::unset_thread_name(const std::thread::id& tid) {
+    // Get a lock
+    std::unique_lock<std::mutex> local_lock(this->lock);
+
+    // Try to find the ID
+    std::unordered_map<std::thread::id, std::string>::iterator iter = this->thread_names.find(tid);
+    if (iter != this->thread_names.end()) {
+        // Remove it
+        this->thread_names.erase(iter);
+    }
+}
+
+
 
 /* Sets the output stream for this Logger. */
 void Logger::set_output_stream(std::ostream& new_os) {
@@ -149,6 +177,9 @@ void Tools::swap(Logger& l1, Logger& l2) {
 
     swap(l1.stdos, l2.stdos);
     swap(l1.erros, l2.erros);
+
     swap(l1.verbosity, l2.verbosity);
     swap(l1.start_time, l2.start_time);
+
+    swap(l1.thread_names, l2.thread_names);
 }

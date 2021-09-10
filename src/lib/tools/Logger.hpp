@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   30/08/2021, 20:39:25
+ *   10/09/2021, 11:11:41
  * Auto updated?
  *   Yes
  *
@@ -69,10 +69,14 @@ namespace Tools {
         std::ostream* stdos;
         /* The output stream to log error messages to. */
         std::ostream* erros;
+
         /* The verbosity level of logging. */
         Verbosity verbosity;
         /* Start time of the logger. */
         std::chrono::system_clock::time_point start_time;
+
+        /* Map of thread IDs to readable names. */
+        std::unordered_map<std::thread::id, std::string> thread_names;
         /* Mutex to synchronize Logger access. */
         std::mutex lock;
 
@@ -109,6 +113,15 @@ namespace Tools {
         /* Destructor for the Logger class. */
         ~Logger();
 
+        /* Links the current thread ID to the given name. */
+        inline void set_thread_name(const std::string& name) { return this->set_thread_name(std::this_thread::get_id(), name); }
+        /* Links the given thread ID to the given name. */
+        void set_thread_name(const std::thread::id& tid, const std::string& name);
+        /* Removes the name mapping for the current thread. */
+        inline void unset_thread_name() { return this->unset_thread_name(std::this_thread::get_id()); }
+        /* Removes the name mapping for the given thread ID. */
+        void unset_thread_name(const std::thread::id& tid);
+
         /* Sets the output stream for this Logger. */
         void set_output_stream(std::ostream& os);
         /* Returns the output stream for this Logger. */
@@ -135,6 +148,13 @@ namespace Tools {
             // Check if we should print
             if (this->verbosity < Verbosity::debug) { return; }
 
+            // Try to see if this thread has a canonical name
+            std::string tname = "";
+            std::unordered_map<std::thread::id, std::string>::iterator iter = this->thread_names.find(std::this_thread::get_id());
+            if (iter != this->thread_names.end()) {
+                tname = (*iter).second + '/';
+            }
+
             // Otherwise, start constructing the stringstream
             {
                 // Get the lock first
@@ -142,7 +162,7 @@ namespace Tools {
 
                 // Write to the stream now that we have synchronized access
                 *this->stdos << '[' << this->get_time_passed() << ']';
-                *this->stdos << "[DEBUG]";
+                *this->stdos << '[' << tname << "DEBUG]";
                 if (!channel.empty()) { *this->stdos << '[' << channel << ']'; }
                 *this->stdos << ' ';
                 this->_add_args(this->stdos, message...);
@@ -163,6 +183,13 @@ namespace Tools {
             // Check if we should print
             if (this->verbosity < verbosity) { return; }
 
+            // Try to see if this thread has a canonical name
+            std::string tname = "";
+            std::unordered_map<std::thread::id, std::string>::iterator iter = this->thread_names.find(std::this_thread::get_id());
+            if (iter != this->thread_names.end()) {
+                tname = (*iter).second + '/';
+            }
+
             // Otherwise, start constructing the stringstream
             {
                 // Get the lock first
@@ -170,7 +197,7 @@ namespace Tools {
 
                 // Write to the stream now that we have synchronized access
                 *this->stdos << '[' << this->get_time_passed() << ']';
-                *this->stdos << "[INFO]";
+                *this->stdos << '[' << tname << "INFO]";
                 if (!channel.empty()) { *this->stdos << '[' << channel << ']'; }
                 *this->stdos << ' ';
                 this->_add_args(this->stdos, message...);
@@ -191,6 +218,13 @@ namespace Tools {
             // Check if we should print
             if (this->verbosity < Verbosity::important) { return; }
 
+            // Try to see if this thread has a canonical name
+            std::string tname = "";
+            std::unordered_map<std::thread::id, std::string>::iterator iter = this->thread_names.find(std::this_thread::get_id());
+            if (iter != this->thread_names.end()) {
+                tname = (*iter).second + '/';
+            }
+
             // Otherwise, start constructing the stringstream
             {
                 // Get the lock first
@@ -198,7 +232,7 @@ namespace Tools {
 
                 // Write to the stream now that we have synchronized access
                 *this->erros << '[' << this->get_time_passed() << ']';
-                *this->erros << "[WARNING]";
+                *this->erros << '[' << tname << "WARNING]";
                 if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
                 *this->erros << ' ';
                 this->_add_args(this->erros, message...);
@@ -216,6 +250,13 @@ namespace Tools {
         void errorc(const std::string& channel, Ts... message) {
             using namespace date;
 
+            // Try to see if this thread has a canonical name
+            std::string tname = "";
+            std::unordered_map<std::thread::id, std::string>::iterator iter = this->thread_names.find(std::this_thread::get_id());
+            if (iter != this->thread_names.end()) {
+                tname = (*iter).second + '/';
+            }
+
             // Otherwise, start constructing the stringstream
             {
                 // Get the lock first
@@ -223,7 +264,7 @@ namespace Tools {
 
                 // Write to the stream now that we have synchronized access
                 *this->erros << '[' << this->get_time_passed() << ']';
-                *this->erros << "[ERROR]";
+                *this->erros << '[' << tname << "ERROR]";
                 if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
                 *this->erros << ' ';
                 this->_add_args(this->erros, message...);
@@ -250,6 +291,13 @@ namespace Tools {
             std::stringstream sstr;
             this->_add_args((std::ostream*) &sstr, message...);
 
+            // Try to see if this thread has a canonical name
+            std::string tname = "";
+            std::unordered_map<std::thread::id, std::string>::iterator iter = this->thread_names.find(std::this_thread::get_id());
+            if (iter != this->thread_names.end()) {
+                tname = (*iter).second + '/';
+            }
+
             // Always start constructing the stringstream
             {
                 // Get the lock first
@@ -257,7 +305,7 @@ namespace Tools {
 
                 // Write to the stream now that we have synchronized access
                 *this->erros << '[' << this->get_time_passed() << ']';
-                *this->erros << "[FATAL]";
+                *this->erros << '[' << tname << "FATAL]";
                 if (!channel.empty()) { *this->erros << '[' << channel << ']'; }
                 *this->erros << ' ' << sstr.str() << std::endl;
 
