@@ -498,6 +498,11 @@ void Pipeline::finalize(const RenderPass& render_pass, uint32_t first_subpass) {
 
 /* Redefines the viewport transformation and re-creates the pipeline. */
 void Pipeline::resize_viewport(const Rectangle& viewport, const Rectangle& scissor) {
+    // Delete the old pipeline, if any
+    if (this->vk_pipeline != nullptr) {
+        vkDestroyPipeline(this->gpu, this->vk_pipeline, nullptr);
+    }
+
     // First, prepare the VkViewport object
     this->vk_viewport = {};
     this->vk_viewport.x = viewport.x;
