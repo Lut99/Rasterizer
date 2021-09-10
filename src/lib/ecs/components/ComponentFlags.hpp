@@ -4,7 +4,7 @@
  * Created:
  *   18/07/2021, 15:32:11
  * Last edited:
- *   06/08/2021, 13:21:31
+ *   10/09/2021, 17:18:29
  * Auto updated?
  *   Yes
  *
@@ -31,14 +31,12 @@ namespace Makma3D::ECS {
 
             /* The Transform component, which means the entity has a location in world space. */
             transform = 0x1,
-            /* The Meshes component, which means the entity has one or more meshes to render. */
-            meshes = 0x2,
+            /* The Model component, which means the entity has one or more meshes to render. */
+            model = 0x2,
             /* The Camera component, which means the entity defines some camera through which we can render the scene. */
             camera = 0x4,
             /* The Controllable component, which means the entity can listen to mouse/keyboard input. */
-            controllable = 0x8,
-            /* The Texture component, which means the entity has a renderable texture over its meshes. */
-            texture = 0x10
+            controllable = 0x8
 
         };
     };
@@ -51,10 +49,9 @@ namespace Makma3D::ECS {
         { ComponentFlags::all,  "all" },
 
         { ComponentFlags::transform,    "transform" },
-        { ComponentFlags::meshes,       "meshes" },
+        { ComponentFlags::model,        "model" },
         { ComponentFlags::camera,       "camera" },
-        { ComponentFlags::controllable, "controllable" },
-        { ComponentFlags::texture, "texture" }
+        { ComponentFlags::controllable, "controllable" }
     };
 
 }

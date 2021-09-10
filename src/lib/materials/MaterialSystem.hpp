@@ -4,7 +4,7 @@
  * Created:
  *   09/09/2021, 16:28:57
  * Last edited:
- *   09/09/2021, 16:28:57
+ *   10/09/2021, 16:56:37
  * Auto updated?
  *   Yes
  *
@@ -17,6 +17,8 @@
 #ifndef MATERIALS_MATERIAL_SYSTEM_HPP
 #define MATERIALS_MATERIAL_SYSTEM_HPP
 
+#include <unordered_map>
+#include <unordered_set>
 #include "glm/glm.hpp"
 
 #include "tools/Array.hpp"
@@ -25,6 +27,8 @@
 #include "rendering/memory/MemoryManager.hpp"
 
 #include "Material.hpp"
+#include "variants/SimpleColoured.hpp"
+#include "variants/SimpleTextured.hpp"
 
 namespace Makma3D::Materials {
     /* The MaterialSystem class, which is in charge of loading, managing and rendering materials. */
@@ -37,8 +41,12 @@ namespace Makma3D::Materials {
         Rendering::MemoryManager& memory_manager;
 
     private:
+        /* List of all material IDs in use. */
+        std::unordered_set<material_t> material_ids;
         /* List of materials that use the Simple lighting model and that are not textured. */
+        std::unordered_map<material_t, SimpleColoured> simple_coloured;
         /* List of materials that use the Simple lighting model and that are yes textured. */
+        std::unordered_map<material_t, SimpleTextured> simple_textured;
 
     public:
         /* Constructor for the MaterialSystem class, which takes a MemoryManager so it can allocate GPU memory structures. */
@@ -51,7 +59,7 @@ namespace Makma3D::Materials {
         ~MaterialSystem();
 
         /* Adds a new material that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
-        material_t create_simple(const glm::vec3& colour);
+        material_t create_simple_coloured(const glm::vec3& colour);
         /* Adds a new material that uses the simple lighting model with a texture. The texture used is the given one. */
         material_t create_simple_textured(const Textures::Texture& texture);
 
