@@ -24,10 +24,7 @@ using namespace Makma3D::Materials;
 /***** MODELSYSTEM CLASS *****/
 /* Constructor for the MaterialSystem class, which takes a MemoryManager so it can allocate GPU memory structures. */
 MaterialSystem::MaterialSystem(Rendering::MemoryManager& memory_manager) :
-    memory_manager(memory_manager),
-
-    diffused_list(MaterialFlags::diffused),
-    textured_list(MaterialFlags::textured)
+    memory_manager(memory_manager)
 {
     logger.logc(Verbosity::important, MaterialSystem::channel, "Initializing...");
 
@@ -38,11 +35,7 @@ MaterialSystem::MaterialSystem(Rendering::MemoryManager& memory_manager) :
 
 /* Move constructor for the MaterialSystem. */
 MaterialSystem::MaterialSystem(MaterialSystem&& other) :
-    memory_manager(other.memory_manager),
-
-    materials(std::move(other.materials)),
-    diffused_list(std::move(other.diffused_list)),
-    textured_list(std::move(other.textured_list))
+    memory_manager(other.memory_manager)
 {}
 
 /* Destructor for the MaterialSystem. */
@@ -64,7 +57,5 @@ void Materials::swap(MaterialSystem& ms1, MaterialSystem& ms2) {
 
     using std::swap;
 
-    swap(ms1.materials, ms2.materials);
-    swap(ms1.diffused_list, ms2.diffused_list);
-    swap(ms1.textured_list, ms2.textured_list);
+    
 }

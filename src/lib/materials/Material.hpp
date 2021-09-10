@@ -24,8 +24,6 @@ namespace Makma3D::Materials {
 
     /* The null value of the material_t. */
     static constexpr const material_t NullMaterial = 0;
-
 }
 
 #endif
-

@@ -17,13 +17,14 @@
 #ifndef MATERIALS_MATERIAL_SYSTEM_HPP
 #define MATERIALS_MATERIAL_SYSTEM_HPP
 
+#include "glm/glm.hpp"
+
 #include "tools/Array.hpp"
+#include "ecs/EntityManager.hpp"
+#include "textures/Texture.hpp"
 #include "rendering/memory/MemoryManager.hpp"
 
 #include "Material.hpp"
-#include "auxillary/ComponentList.hpp"
-#include "components/Diffused.hpp"
-#include "components/Textured.hpp"
 
 namespace Makma3D::Materials {
     /* The MaterialSystem class, which is in charge of loading, managing and rendering materials. */
@@ -34,14 +35,10 @@ namespace Makma3D::Materials {
 
         /* Reference to the MemoryManager used to allocate structures. */
         Rendering::MemoryManager& memory_manager;
-    
+
     private:
-        /* List of all materials in the MaterialSystem. */
-        Tools::Array<material_t> materials;
-        /* ComponentList in charge of storing all materials that use diffuse lighting. */
-        ComponentList<Materials::Diffused> diffused_list;
-        /* ComponentList in charge of storing all materials that use textures. */
-        ComponentList<Materials::Textured> textured_list;
+        /* List of materials that use the Simple lighting model and that are not textured. */
+        /* List of materials that use the Simple lighting model and that are yes textured. */
 
     public:
         /* Constructor for the MaterialSystem class, which takes a MemoryManager so it can allocate GPU memory structures. */
@@ -53,7 +50,13 @@ namespace Makma3D::Materials {
         /* Destructor for the MaterialSystem. */
         ~MaterialSystem();
 
+        /* Adds a new material that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
+        material_t create_simple(const glm::vec3& colour);
+        /* Adds a new material that uses the simple lighting model with a texture. The texture used is the given one. */
+        material_t create_simple_textured(const Textures::Texture& texture);
 
+        /* Renders the given list of objects with their assigned materials. */
+        void render(const ECS::EntityManager& entity_manager);
 
         /* Copy assignment operator for the MaterialSystem class, which is deleted. */
         MaterialSystem& operator=(const MaterialSystem& other) = delete;

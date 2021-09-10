@@ -213,7 +213,7 @@ namespace Tools {
         /* Returns a muteable reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
         T& at(array_size_t index);
         /* Returns a constant reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */
-        inline const T& at(array_size_t index) const { return this->at(index); }
+        inline const T& at(array_size_t index) const { return const_cast<Array*>(this)->at(index); }
         /* Returns the first element in the list. */
         inline T& first() { return this->storage.elements[0]; }
         /* Returns the first element in the list. */

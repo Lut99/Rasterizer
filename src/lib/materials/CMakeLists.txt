@@ -9,7 +9,7 @@ target_include_directories(MaterialSystem PUBLIC
 list(APPEND EXTRA_LIBS MaterialSystem)
 
 # Add the subdirectories
-add_subdirectory(auxillary)
+add_subdirectory(variants)
 
 # Carry the list to the parent scope
 set(EXTRA_LIBS "${EXTRA_LIBS}" PARENT_SCOPE)
