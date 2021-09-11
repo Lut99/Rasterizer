@@ -23,6 +23,12 @@
 #include "../gpu/GPU.hpp"
 
 #include "properties/ShaderStage.hpp"
+#include "properties/InputAssemblyState.hpp"
+#include "properties/DepthTesting.hpp"
+#include "properties/ViewportTransformation.hpp"
+#include "properties/Rasterization.hpp"
+#include "properties/Multisampling.hpp"
+#include "properties/ColorLogic.hpp"
 
 #include "Pipeline.hpp"
 
@@ -50,8 +56,23 @@ namespace Makma3D::Rendering {
         /* Destructor for the PipelinePool class. */
         ~PipelinePool();
 
-        /* Spawns a completely new pipeline with the given properties. Will probably be relatively slow compared to other operations, but doesn't depent on other pipeline objects. */
-        Rendering::Pipeline* allocate(const Tools::Array<Rendering::ShaderStage>& shader_stages);
+        /* Spawns a completely new pipeline with the given properties. Will probably be relatively slow compared to other operations, but doesn't depent on other pipeline objects.
+         *
+         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
+         * @param input_assembly_state The description of what to do with the input vertices
+         * @param depth_testing Whether to do depth testing or not and, if so, how so
+         * @param viewport_transformation How the resulting viewport is sized/cutoff
+         * @param rasterization What to do during the rasterization stage
+         * @param multisampling How the pipeline should deal with multisampling
+         * @param color_logic How to deal with pixels already present in the target framebuffer(s)
+         */
+        Rendering::Pipeline* allocate(const Tools::Array<Rendering::ShaderStage>& shader_stages,
+                                      const Rendering::InputAssemblyState& input_assembly_state,
+                                      const Rendering::DepthTesting& depth_testing,
+                                      const Rendering::ViewportTransformation& viewport_transformation,
+                                      const Rendering::Rasterization& rasterization,
+                                      const Rendering::Multisampling& multisampling,
+                                      const Rendering::ColorLogic& color_logic);
         /* Frees the given Pipeline object. */
         void free(Rendering::Pipeline* pipeline);
 

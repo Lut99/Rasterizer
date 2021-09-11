@@ -1,10 +1,10 @@
 # Specify the libraries in this directory
 add_library(VulkanPipelineProperties STATIC
             ${CMAKE_CURRENT_SOURCE_DIR}/ShaderStage.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/InputAssembly.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/InputAssemblyState.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/DepthTesting.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/ViewportTransformation.cpp
-            ${CMAKE_CURRENT_SOURCE_DIR}/Rasterizer.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/Rasterization.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/Multisampling.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/ColorBlending.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/ColorLogic.cpp

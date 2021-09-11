@@ -23,8 +23,25 @@ using namespace Makma3D::Rendering;
 
 
 /***** PIPELINE CLASS *****/
-/* Constructor for the Pipeline class, which takes the GPU on which it should be created, a list of ShaderStages to initialize. */
-Pipeline::Pipeline(const Rendering::GPU& gpu, const Tools::Array<Rendering::ShaderStage>& shader_stages) :
+/* Constructor for the Pipeline class, which takes its properties by a series of structs.
+ *
+ * @param gpu The GPU on which the pipeline should be created
+ * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
+ * @param input_assembly_state The description of what to do with the input vertices
+ * @param depth_testing Whether to do depth testing or not and, if so, how so
+ * @param viewport_transformation How the resulting viewport is sized/cutoff
+ * @param rasterization What to do during the rasterization stage
+ * @param multisampling How the pipeline should deal with multisampling
+ * @param color_logic How to deal with pixels already present in the target framebuffer(s)
+ */
+Pipeline::Pipeline(const Rendering::GPU& gpu,
+                   const Tools::Array<Rendering::ShaderStage>& shader_stages,
+                   const Rendering::InputAssemblyState& input_assembly_state,
+                   const Rendering::DepthTesting& depth_testing,
+                   const Rendering::ViewportTransformation& viewport_transformation,
+                   const Rendering::Rasterization& rasterization,
+                   const Rendering::Multisampling& multisampling,
+                   const Rendering::ColorLogic& color_logic) :
     gpu(gpu)
 {}
 

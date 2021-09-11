@@ -20,6 +20,12 @@
 #include "../gpu/GPU.hpp"
 
 #include "properties/ShaderStage.hpp"
+#include "properties/InputAssemblyState.hpp"
+#include "properties/DepthTesting.hpp"
+#include "properties/ViewportTransformation.hpp"
+#include "properties/Rasterization.hpp"
+#include "properties/Multisampling.hpp"
+#include "properties/ColorLogic.hpp"
 
 namespace Makma3D::Rendering {
     /* The Pipeline class, which functions a as a more convenient wrapper for the internal VkPipeline object. */
@@ -32,8 +38,25 @@ namespace Makma3D::Rendering {
         const Rendering::GPU& gpu;
 
     private:
-        /* Constructor for the Pipeline class, which takes the GPU on which it should be created, a list of ShaderStages to initialize. */
-        Pipeline(const Rendering::GPU& gpu, const Tools::Array<Rendering::ShaderStage>& shader_stages);
+        /* Constructor for the Pipeline class, which takes its properties by a series of structs.
+         *
+         * @param gpu The GPU on which the pipeline should be created
+         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
+         * @param input_assembly_state The description of what to do with the input vertices
+         * @param depth_testing Whether to do depth testing or not and, if so, how so
+         * @param viewport_transformation How the resulting viewport is sized/cutoff
+         * @param rasterization What to do during the rasterization stage
+         * @param multisampling How the pipeline should deal with multisampling
+         * @param color_logic How to deal with pixels already present in the target framebuffer(s)
+         */
+        Pipeline(const Rendering::GPU& gpu,
+                 const Tools::Array<Rendering::ShaderStage>& shader_stages,
+                 const Rendering::InputAssemblyState& input_assembly_state,
+                 const Rendering::DepthTesting& depth_testing,
+                 const Rendering::ViewportTransformation& viewport_transformation,
+                 const Rendering::Rasterization& rasterization,
+                 const Rendering::Multisampling& multisampling,
+                 const Rendering::ColorLogic& color_logic);
         /* Destructor for the Pipeline class. */
         ~Pipeline();
 
