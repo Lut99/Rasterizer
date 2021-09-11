@@ -2,15 +2,15 @@
  *   by Lut99
  *
  * Created:
- *   27/04/2021, 14:56:30
+ *   11/09/2021, 14:24:32
  * Last edited:
- *   10/09/2021, 10:55:51
+ *   11/09/2021, 14:24:32
  * Auto updated?
  *   Yes
  *
  * Description:
- *   Contains the Shader class, which loads, compiles & manages .spv files
- *   for use in pipelines.
+ *   Contains the Shader class, which is used to load a .spv shader file
+ *   from disk.
 **/
 
 #ifndef RENDERING_SHADER_HPP
@@ -22,30 +22,34 @@
 #include "../gpu/GPU.hpp"
 
 namespace Makma3D::Rendering {
-    /* The Shader class, which loads, compiles and manages .spv files. */
+    /* The Shader class, which is used to load shader .spv files from disk. */
     class Shader {
     public:
         /* Channel name for the Shader class. */
         static constexpr const char* channel = "Shader";
 
-        /* Immutable reference to the device where we will compile the shader for. */
+        /* Reference to the GPU where the Shader code lives. */
         const Rendering::GPU& gpu;
-
-    private:
-        /* The raw shader data we read from a file. */
-        std::vector<char> shader_data;
-        /* The VkShaderModule object that we wrap and will compile. */
-        VkShaderModule vk_shader_module;
-        /* The name of the shader, extruded from the path. */
-        std::string path_name;
-        /* The path where the shader resides that we're managing. */
-        std::string filepath;
-        /* The entry function of the shader. */
-        std::string entry;
     
+    private:
+        /* The VkShaderModule object wrapped by the Shader. */
+        VkShaderModule vk_shader_module;
+        /* The size of the shader as a number of bytes. */
+        size_t n_bytes;
+        /* The create flags for the shader module. */
+        VkShaderModuleCreateFlags vk_create_flags;
+
+        /* The raw shader data. */
+        uint32_t* shader_data;
+        /* The size of the shader data array, in elements. */
+        uint32_t shader_data_size;
+
+        /* The name of the shader, used for debugging only. */
+        std::string name;
+
     public:
-        /* Constructor for the Shader class, which takes the device to compile for and the path of the shader. Optionally also takes the entry function to the shader. */
-        Shader(const Rendering::GPU& gpu, const std::string& path, const std::string& entry_function = "main");
+        /* Constructor for the Shader class, which takes a GPU where the Shader will live, the filename of the file to load and optionally some create flags. */
+        Shader(const Rendering::GPU& gpu, const std::string& filename, VkShaderModuleCreateFlags create_flags = 0);
         /* Copy constructor for the Shader class. */
         Shader(const Shader& other);
         /* Move constructor for the Shader class. */
@@ -53,21 +57,10 @@ namespace Makma3D::Rendering {
         /* Destructor for the Shader class. */
         ~Shader();
 
-        /* Reloads the shader from disk, and recompiles it. */
-        void reload();
-        /* Compiles the shader using the data read with reload() only. */
-        void compile();
-
-        /* Returns the name of the shader. */
-        inline const std::string& name() const { return this->path_name; }
-        /* Returns the path of the shader. */
-        inline const std::string& path() const { return this->filepath; }
-        /* Returns the entry function of the shader. */
-        inline const std::string& entry_function() const { return this->entry; }
         /* Explicitly returns the internal VkShaderModule object. */
         inline const VkShaderModule& shader_module() const { return this->vk_shader_module; }
         /* Implicitly returns the internal VkShaderModule object. */
-        inline operator VkShaderModule() const { return this->vk_shader_module; }
+        inline operator const VkShaderModule&() const { return this->vk_shader_module; }
 
         /* Copy assignment operator for the Shader class. */
         inline Shader& operator=(const Shader& other) { return *this = Shader(other); }
@@ -80,6 +73,7 @@ namespace Makma3D::Rendering {
 
     /* Swap operator for the Shader class. */
     void swap(Shader& s1, Shader& s2);
+
 }
 
 #endif

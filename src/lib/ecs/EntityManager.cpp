@@ -43,6 +43,9 @@ entity_t EntityManager::add(ComponentFlags components) {
     // First, search for the first free entity ID
     entity_t entity = 0;
     while (this->entities.find(entity) != this->entities.end() || entity == NullEntity) {
+        if (entity == std::numeric_limits<entity_t>::max()) {
+            logger.fatalc(EntityManager::channel, "Cannot add new entity: no entity ID available anymore.");
+        }
         ++entity;
     }
 
@@ -76,10 +79,17 @@ void EntityManager::remove(entity_t entity) {
 
     // If it does, then remove its components
     ComponentFlags components = this->entities.at(entity);
-    for (uint32_t i = 0; i < EntityManager::max_components; i++) {
-        if (components & this->components[i]->flags()) {
-            this->components[i]->remove(entity);
-        }
+    if (components & ComponentFlags::transform) {
+        this->transforms.remove(entity);
+    }
+    if (components & ComponentFlags::model) {
+        this->models.remove(entity);
+    }
+    if (components & ComponentFlags::controllable) {
+        this->controllables.remove(entity);
+    }
+    if (components & ComponentFlags::camera) {
+        this->cameras.remove(entity);
     }
 
     // Remove the entity from the manager itself

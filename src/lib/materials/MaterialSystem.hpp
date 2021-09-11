@@ -18,7 +18,6 @@
 #define MATERIALS_MATERIAL_SYSTEM_HPP
 
 #include <unordered_map>
-#include <unordered_set>
 #include "glm/glm.hpp"
 
 #include "tools/Array.hpp"
@@ -27,6 +26,7 @@
 #include "rendering/memory/MemoryManager.hpp"
 
 #include "Material.hpp"
+#include "variants/MaterialType.hpp"
 #include "variants/SimpleColoured.hpp"
 #include "variants/SimpleTextured.hpp"
 
@@ -42,11 +42,14 @@ namespace Makma3D::Materials {
 
     private:
         /* List of all material IDs in use. */
-        std::unordered_set<material_t> material_ids;
+        std::unordered_map<material_t, MaterialType> material_ids;
         /* List of materials that use the Simple lighting model and that are not textured. */
         std::unordered_map<material_t, SimpleColoured> simple_coloured;
         /* List of materials that use the Simple lighting model and that are yes textured. */
         std::unordered_map<material_t, SimpleTextured> simple_textured;
+
+        /* Simple helper function that returns the first available material ID in the system. Takes some name to show as the material type that failed to add. */
+        material_t get_available_id(const char* material_type) const;
 
     public:
         /* Constructor for the MaterialSystem class, which takes a MemoryManager so it can allocate GPU memory structures. */
@@ -62,6 +65,8 @@ namespace Makma3D::Materials {
         material_t create_simple_coloured(const glm::vec3& colour);
         /* Adds a new material that uses the simple lighting model with a texture. The texture used is the given one. */
         material_t create_simple_textured(const Textures::Texture& texture);
+        /* Removes the material with the given ID from the system. Throws errors if no such material exists. */
+        void remove(material_t material);
 
         /* Renders the given list of objects with their assigned materials. */
         void render(const ECS::EntityManager& entity_manager);
