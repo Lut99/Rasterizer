@@ -19,13 +19,7 @@
 #include "tools/Array.hpp"
 #include "../gpu/GPU.hpp"
 
-#include "properties/ShaderStage.hpp"
-#include "properties/InputAssemblyState.hpp"
-#include "properties/DepthTesting.hpp"
-#include "properties/ViewportTransformation.hpp"
-#include "properties/Rasterization.hpp"
-#include "properties/Multisampling.hpp"
-#include "properties/ColorLogic.hpp"
+#include "PipelineProperties.hpp"
 
 namespace Makma3D::Rendering {
     /* The Pipeline class, which functions a as a more convenient wrapper for the internal VkPipeline object. */
@@ -38,25 +32,17 @@ namespace Makma3D::Rendering {
         const Rendering::GPU& gpu;
 
     private:
-        /* Constructor for the Pipeline class, which takes its properties by a series of structs.
-         *
-         * @param gpu The GPU on which the pipeline should be created
-         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
-         * @param input_assembly_state The description of what to do with the input vertices
-         * @param depth_testing Whether to do depth testing or not and, if so, how so
-         * @param viewport_transformation How the resulting viewport is sized/cutoff
-         * @param rasterization What to do during the rasterization stage
-         * @param multisampling How the pipeline should deal with multisampling
-         * @param color_logic How to deal with pixels already present in the target framebuffer(s)
-         */
-        Pipeline(const Rendering::GPU& gpu,
-                 const Tools::Array<Rendering::ShaderStage>& shader_stages,
-                 const Rendering::InputAssemblyState& input_assembly_state,
-                 const Rendering::DepthTesting& depth_testing,
-                 const Rendering::ViewportTransformation& viewport_transformation,
-                 const Rendering::Rasterization& rasterization,
-                 const Rendering::Multisampling& multisampling,
-                 const Rendering::ColorLogic& color_logic);
+        /* The actual VkPipeline object that we wrap. */
+        VkPipeline vk_pipeline;
+        /* The properties of this Pipeline. */
+        Rendering::PipelineProperties properties;
+
+        /* Mark the PipelinePool as a friend. */
+        friend class PipelinePool;
+
+
+        /* Constructor for the Pipeline class, which takes a GPU where it lives, the VkPipeline to wrap and its properties for copying purposes. */
+        Pipeline(const Rendering::GPU& gpu, const VkPipeline& vk_pipeline, Rendering::PipelineProperties&& properties);
         /* Destructor for the Pipeline class. */
         ~Pipeline();
 
@@ -65,6 +51,13 @@ namespace Makma3D::Rendering {
         Pipeline(const Pipeline& other) = delete;
         /* Move constructor for the Pipeline class, which is deleted. */
         Pipeline(Pipeline&& other) = delete;
+
+        /* Returns a reference to the internal properties struct. */
+        inline const Rendering::PipelineProperties& props() const { return this->properties; }
+        /* Explicitly returns the internal VkPipeline object. */
+        inline const VkPipeline& pipeline() const { return this->vk_pipeline; }
+        /* Implicitly returns the internal VkPipeline object. */
+        inline operator const VkPipeline&() const { return this->vk_pipeline; }
 
         /* Copy assignment operator for the Pipeline class, which is deleted. */
         Pipeline& operator=(const Pipeline& other) = delete;

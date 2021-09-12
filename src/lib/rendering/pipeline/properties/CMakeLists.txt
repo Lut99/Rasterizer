@@ -1,6 +1,9 @@
 # Specify the libraries in this directory
 add_library(VulkanPipelineProperties STATIC
             ${CMAKE_CURRENT_SOURCE_DIR}/ShaderStage.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/VertexBinding.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/VertexAttribute.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/VertexInputState.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/InputAssemblyState.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/DepthTesting.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/ViewportTransformation.cpp
