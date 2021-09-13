@@ -18,6 +18,7 @@
 
 #include "tools/Array.hpp"
 #include "../gpu/GPU.hpp"
+#include "../commandbuffers/CommandBuffer.hpp"
 
 #include "PipelineProperties.hpp"
 
@@ -51,6 +52,17 @@ namespace Makma3D::Rendering {
         Pipeline(const Pipeline& other) = delete;
         /* Move constructor for the Pipeline class, which is deleted. */
         Pipeline(Pipeline&& other) = delete;
+
+        /* Binds the pipeline to a given command buffer for future draw calls. */
+        void bind(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS);
+        /* Schedules the given value as one of the push constants on the given command buffer. The shader stage and offset determine which push constant, while the data and data_size relate to the push constant's value. */
+        void schedule_push_constant(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, void* data, size_t data_size);
+        /* Schedules the given value as one of the push constants on the given command buffer. The shader stage and offset determine which push constant, while the data and data_size relate to the push constant's value. The element's size is automatically deduced from its type. */
+        template <class T> inline void schedule_push_constant(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, const T& data) { return this->schedule_push_constant(cmd, shader_stage, offset, (void*) &data, sizeof(T)); }
+        /* Schedules a draw for this pipeline with the given number of vertices and the given number of instances. Optionally, an offset can be given in either arrays. */
+        void schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0);
+        /* Schedules an indexed draw for this pipeline with the given number of indices and the given number of instances. Optionally, an offset can be given in any of the three arrays. */
+        void schedule_idraw(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_index = 0, uint32_t first_instance = 0);
 
         /* Returns a reference to the internal properties struct. */
         inline const Rendering::PipelineProperties& props() const { return this->properties; }

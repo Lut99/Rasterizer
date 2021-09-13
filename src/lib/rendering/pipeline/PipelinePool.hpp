@@ -54,17 +54,23 @@ namespace Makma3D::Rendering {
         };
 
     private:
-        /* List of Pipelines allocated with this pool. */
-        Tools::Array<Rendering::Pipeline*> pipelines;
-
+        /* A PipelineCache that we can use to speed up pipeline creation. */
+        VkPipelineCache vk_pipeline_cache;
+        /* The location of the pipeline cache file. */
+        std::string pipeline_cache_filename;
         /* List of PipelinePreallocation objects. */
         Tools::Array<PipelinePreallocation> pipeline_preallocations;
+
+        /* List of Pipelines allocated with this pool. */
+        Tools::Array<Rendering::Pipeline*> pipelines;
 
     public:
         /* Constructor for the PipelinePool class, which takes a GPU where all the pipelines will live. */
         PipelinePool(const Rendering::GPU& gpu);
-        /* Copy constructor for the PipelinePool class. */
-        PipelinePool(const PipelinePool& other);
+        /* Constructor for the PipelinePool class, which takes a GPU where all the pipelines will live, a filename with initial data for the pipeline cache and optional create flags for the cache. If the filename isn't found, initializes the cache to zero. */
+        PipelinePool(const Rendering::GPU& gpu, const std::string& filename, VkPipelineCacheCreateFlags cache_create_flags = 0);
+        /* Copy constructor for the PipelinePool class, which is deleted. */
+        PipelinePool(const PipelinePool& other) = delete;
         /* Move constructor for the PipelinePool class. */
         PipelinePool(PipelinePool&& other);
         /* Destructor for the PipelinePool class. */
@@ -76,12 +82,21 @@ namespace Makma3D::Rendering {
         Rendering::Pipeline* allocate(Rendering::PipelineProperties&& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass);
         /* Spawns a new pipeline that is based on the given pipeline. Works best if you copy the pipeline's PipelineProperties, and then adapt that so they are as alike as possible. Copies the properties first. */
         inline Rendering::Pipeline* allocate(const Rendering::Pipeline* pipeline, const Rendering::PipelineProperties& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass) { return this->allocate(pipeline, Rendering::PipelineProperties(properties), render_pass, first_subpass); }
-        /* Spawns a new pipeline that is based on the given pipeline. Works best if you copy the pipeline's PipelineProperties, and then adapt that so they are as alike as possible. Copies the properties first. */
+        /* Spawns a new pipeline that is based on the given pipeline. Works best if you copy the pipeline's PipelineProperties, and then adapt that so they are as alike as possible. */
         Rendering::Pipeline* allocate(const Rendering::Pipeline* pipeline, Rendering::PipelineProperties&& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass);
+
         /* Pre-allocates a new pipeline with the given properties and the given render pass. Although it's still from scratch and relatively slow, it does allow to bulk-allocate multiple pipeline objects. Calling nallocate() will return the pipeline(s) created with the preallocate function since its last call. Copies the properties first. */
         inline void preallocate(const Rendering::PipelineProperties& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass) { return this->preallocate(Rendering::PipelineProperties(properties), render_pass, first_subpass); }
         /* Pre-allocates a new pipeline with the given properties and the given render pass. Although it's still from scratch and relatively slow, it does allow to bulk-allocate multiple pipeline objects. Calling nallocate() will return the pipeline(s) created with the preallocate function since its last call. */
         void preallocate(Rendering::PipelineProperties&& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass);
+        /* Pre-allocates a new pipeline that is based on the given pipeline. Works best if you copy the pipeline's PipelineProperties, and then adapt that so they are as alike as possible. Copies the properties first. */
+        inline void preallocate(const Rendering::Pipeline* pipeline, const Rendering::PipelineProperties& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass) { return this->preallocate(pipeline, Rendering::PipelineProperties(properties), render_pass, first_subpass); }
+        /* Pre-allocates a new pipeline that is based on the given pipeline. Works best if you copy the pipeline's PipelineProperties, and then adapt that so they are as alike as possible. */
+        void preallocate(const Rendering::Pipeline* pipeline, Rendering::PipelineProperties&& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass);
+        /* Pre-allocates a new pipeline that is based on the given pipeline that is already defined with a preallocate call() in this batch. Works best if you copy the pipeline's PipelineProperties, and then adapt that so they are as alike as possible. Copies the properties first. */
+        inline void preallocate(uint32_t pipeline_index, Rendering::PipelineProperties&& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass) { return this->preallocate(pipeline_index, Rendering::PipelineProperties(properties), render_pass, first_subpass); }
+        /* Pre-allocates a new pipeline that is based on the given pipeline that is already defined with a preallocate call() in this batch. Works best if you copy the pipeline's PipelineProperties, and then adapt that so they are as alike as possible. */
+        void preallocate(uint32_t pipeline_index, Rendering::PipelineProperties&& properties, const Rendering::RenderPass& render_pass, uint32_t first_subpass);
         /* Allocates all pipelines preallocated with preallocate() since either the start of the PipelinePool or the last nallocate() call. */
         Tools::Array<Rendering::Pipeline*> nallocate();
 
@@ -93,8 +108,8 @@ namespace Makma3D::Rendering {
         /* Resets the pool to an empty state, by deleting all the allocated pipelines. All objectes allocated with it will thus become invalid. */
         void reset();
 
-        /* Copy assignment operator for the PipelinePool class. */
-        inline PipelinePool& operator=(const PipelinePool& other) { return *this = PipelinePool(other); }
+        /* Copy assignment operator for the PipelinePool class, which is deleted. */
+        PipelinePool& operator=(const PipelinePool& other) = delete;
         /* Move assignment operator for the PipelinePool class. */
         inline PipelinePool& operator=(PipelinePool&& other) { if (this != &other) { swap(*this, other); } return *this; }
         /* Swap operator for the PipelinePool class. */
