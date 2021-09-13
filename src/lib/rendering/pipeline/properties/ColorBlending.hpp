@@ -32,6 +32,7 @@ namespace Makma3D::Rendering {
         /* Constructor for the ColorBlending class, which takes multiple parameters for a single framebuffer. This overload enables colorblending for the given framebuffer.
          *
          * @param framebuffer The index of the framebuffer for which these settings hold
+         * @param enabled Whether or not to enable color blending for this framebuffer. If disabled, just replaces the damn thing.
          * @param src_color_factor How much weight the new color will have while blending
          * @param dst_color_factor How much weight the existing color will have while blending
          * @param color_op How to combine the two colors into one
@@ -39,7 +40,7 @@ namespace Makma3D::Rendering {
          * @param dst_alpha_factor How much weight the existing alpha value will have while blending
          * @param alpha_op How to combine the two alpha channels into one
          */
-        ColorBlending(uint32_t framebuffer, const std::true_type&, VkBlendFactor src_color_factor, VkBlendFactor dst_color_factor, VkBlendOp color_op, VkBlendFactor src_alpha_factor, VkBlendFactor dst_alpha_factor, VkBlendOp alpha_op);
+        ColorBlending(uint32_t framebuffer, VkBool32 enabled, VkBlendFactor src_color_factor, VkBlendFactor dst_color_factor, VkBlendOp color_op, VkBlendFactor src_alpha_factor, VkBlendFactor dst_alpha_factor, VkBlendOp alpha_op);
         /* Constructor for the ColorBlending class, which takes multiple parameters for a single framebuffer. This overload disables colorblending for the given framebuffer, meaning we don't need to know anything else. */
         ColorBlending(uint32_t framebuffer, const std::false_type&);
 

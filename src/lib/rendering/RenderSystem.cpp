@@ -52,8 +52,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     vertex_shader(this->window.gpu(), "bin/shaders/vertex_v5.spv"),
     fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
-    render_pass(this->window.gpu()),
-    pipeline(this->window.gpu())
+    render_pass(this->window.gpu())
 {
 
     // Initialize the descriptor set layout for the global data
@@ -71,18 +70,30 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, col_index, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
     this->render_pass.finalize();
 
-    // Prepare the pipeline by choosing all its settings
-    this->pipeline.init_shader_stage(this->vertex_shader, VK_SHADER_STAGE_VERTEX_BIT);
-    this->pipeline.init_shader_stage(this->fragment_shader, VK_SHADER_STAGE_FRAGMENT_BIT);
-    this->pipeline.init_input_assembly(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    this->pipeline.init_depth_testing(VK_TRUE, VK_COMPARE_OP_LESS);
-    this->pipeline.init_viewport_transformation(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
-    this->pipeline.init_rasterizer(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE); //VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    this->pipeline.init_multisampling();
-    this->pipeline.init_color_blending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
-    this->pipeline.init_color_logic(VK_FALSE, VK_LOGIC_OP_NO_OP);
-    this->pipeline.init_pipeline_layout({ this->global_descriptor_layout, this->object_descriptor_layout }, {});
-    this->pipeline.finalize(this->render_pass, 0);
+    // Initialize the pipeline
+    this->pipeline = this->memory_manager.pipeline_pool.allocate(
+        PipelineProperties(
+            {
+                ShaderStage(Shader(this->window.gpu(), "bin/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT, {}),
+                ShaderStage(Shader(this->window.gpu(), "bin/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT, {})
+            },
+            VertexInputState({ VertexBinding(0, sizeof(Vertex)) }, {
+                VertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32B32_SFLOAT),
+                VertexAttribute(0, 1, offsetof(Vertex, colour), VK_FORMAT_R32G32B32_SFLOAT),
+                VertexAttribute(0, 2, offsetof(Vertex, texel), VK_FORMAT_R32G32_SFLOAT)
+            }),
+            InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
+            DepthTesting(VK_TRUE, VK_COMPARE_OP_LESS),
+            ViewportTransformation(VkOffset2D{ 0, 0 }, this->window.swapchain().extent(), VkOffset2D{ 0, 0 }, this->window.swapchain().extent()),
+            Rasterization(VK_TRUE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE),
+            Multisampling(),
+            ColorLogic(VK_FALSE, VK_LOGIC_OP_NO_OP, {
+                ColorBlending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD)
+            }),
+            PipelineLayout(this->window.gpu(), { this->global_descriptor_layout, this->object_descriptor_layout }, {})
+        ),
+        this->render_pass, 0
+    );
 
     // Initialize the frame manager
     this->frame_manager = new FrameManager(this->memory_manager, this->window.swapchain(), this->global_descriptor_layout, this->object_descriptor_layout);
@@ -112,6 +123,7 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
     frame_manager(other.frame_manager)
 {
     // Prevent the frame manager from being deallocated
+    this->pipeline = nullptr;
     this->frame_manager = nullptr;
 }
 
@@ -122,6 +134,10 @@ RenderSystem::~RenderSystem() {
     // Deallocate the frame manager if needed
     if (this->frame_manager != nullptr) {
         delete this->frame_manager;
+    }
+    // Deallocate the pipeline
+    if (this->pipeline != nullptr) {
+        this->memory_manager.pipeline_pool.free(this->pipeline);
     }
 
     logger.logc(Verbosity::important, RenderSystem::channel, "Cleaned.");
@@ -144,8 +160,14 @@ void RenderSystem::_resize() {
     // Re-create all frames in the frame manager
     this->frame_manager->bind(this->render_pass, this->depth_stencil);
 
-    // Also resize the pipeline scissor area and junk
-    this->pipeline.resize_viewport(Rectangle(0.0, 0.0, this->window.swapchain().extent()), Rectangle(0.0, 0.0, this->window.swapchain().extent()));
+    // Recreate the pipeline with another viewport
+    PipelineProperties pipeline_properties = this->pipeline->props();
+    pipeline_properties.viewport_transformation = ViewportTransformation(VkOffset2D{ 0, 0 }, this->window.swapchain().extent(), VkOffset2D{ 0, 0 }, this->window.swapchain().extent());
+    Pipeline* new_pipeline = this->memory_manager.pipeline_pool.allocate(this->pipeline, std::move(pipeline_properties), render_pass, 0);
+    
+    // Delete the old pipeline, then set the new one as the current one
+    this->memory_manager.pipeline_pool.free(this->pipeline);
+    this->pipeline = new_pipeline;
 }
 
 

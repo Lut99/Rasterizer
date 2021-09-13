@@ -14,6 +14,8 @@
  *   should be filled in exactly.
 **/
 
+#include "../../auxillary/VulkanSwap.hpp"
+
 #include "ViewportTransformation.hpp"
 
 using namespace std;
@@ -106,8 +108,8 @@ ViewportTransformation::~ViewportTransformation() {}
 void Rendering::swap(ViewportTransformation& vt1, ViewportTransformation& vt2) {
     using std::swap;
 
-    swap(vt1.vk_viewport, vt2.vk_viewport);
-    swap(vt1.vk_scissor, vt2.vk_scissor);
+    Rendering::swap(vt1.vk_viewport, vt2.vk_viewport);
+    Rendering::swap(vt1.vk_scissor, vt2.vk_scissor);
 
-    swap(vt1.vk_viewport_state, vt2.vk_viewport_state);
+    Rendering::swap(vt1.vk_viewport_state, vt2.vk_viewport_state);
 }

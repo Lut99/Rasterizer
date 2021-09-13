@@ -77,7 +77,7 @@ namespace Makma3D::Rendering {
         /* The render pass which we use to draw. */
         Rendering::RenderPass render_pass;
         /* The graphics pipeline we use to render. */
-        Rendering::Pipeline pipeline;
+        Rendering::Pipeline* pipeline;
 
         /* The FrameManager in charge for giving us frames we can render to. */
         Rendering::FrameManager* frame_manager;

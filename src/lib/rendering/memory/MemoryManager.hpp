@@ -23,6 +23,7 @@
 #include "../commandbuffers/CommandPool.hpp"
 #include "../descriptors/DescriptorPool.hpp"
 #include "../views/ImageViewPool.hpp"
+#include "../pipeline/PipelinePool.hpp"
 
 namespace Makma3D::Rendering {
     /* The MemoryManager class, which bundles different kind of pools into one place. */
@@ -48,6 +49,8 @@ namespace Makma3D::Rendering {
         /* The descriptor pool used to manage the descriptors. */
         Rendering::DescriptorPool descr_pool;
 
+        /* The pipeline pool used to efficiently allocate pipelines. */
+        Rendering::PipelinePool pipeline_pool;
         /* The ImageView pool used to allocate image views. */
         Rendering::ImageViewPool view_pool;
 
@@ -57,15 +60,15 @@ namespace Makma3D::Rendering {
     public:
         /* Constructor for the MemoryManager class, which takes the GPU where it is defined for and the sizes of the two memory pools. */
         MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_size, VkDeviceSize stage_pool_size);
-        /* Copy constructor for the MemoryManager class. */
-        MemoryManager(const MemoryManager& other);
+        /* Copy constructor for the MemoryManager class, which is deleted. */
+        MemoryManager(const MemoryManager& other) = delete;;
         /* Move constructor for the MemoryManager class. */
         MemoryManager(MemoryManager&& other);
         /* Destructor for the MemoryManager class. */
         ~MemoryManager();
 
-        /* Copy assignment operator for the MemoryManager class. */
-        inline MemoryManager& operator=(const MemoryManager& other) { return *this = MemoryManager(other); }
+        /* Copy assignment operator for the MemoryManager class, which is deleted. */
+        MemoryManager& operator=(const MemoryManager& other) = delete;
         /* Move assignment operator for the MemoryManager class. */
         inline MemoryManager& operator=(MemoryManager&& other) { if (this != &other) { swap(*this, other); } return *this; }
         /* Swap operator for the MemoryManager class. */

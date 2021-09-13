@@ -55,10 +55,10 @@ VertexInputState::VertexInputState(const Tools::Array<VertexBinding>& vertex_bin
     
     // Create the casted list of attributes
     this->vk_vertex_attributes.reserve(this->vertex_attributes.size());
-    for (uint32_t i = 0; i < this->vertex_bindings.size(); i++) {
+    for (uint32_t i = 0; i < this->vertex_attributes.size(); i++) {
         this->vk_vertex_attributes.push_back(this->vertex_attributes[i].description());
     }
-
+    
     // Create the state info itself
     populate_vertex_input_state(this->vk_vertex_input_state, this->vk_vertex_bindings, this->vk_vertex_attributes);
 }
@@ -77,7 +77,7 @@ VertexInputState::VertexInputState(const VertexInputState& other) :
     
     // Re-create the casted list of attributes
     this->vk_vertex_attributes.reserve(this->vertex_attributes.size());
-    for (uint32_t i = 0; i < this->vertex_bindings.size(); i++) {
+    for (uint32_t i = 0; i < this->vertex_attributes.size(); i++) {
         this->vk_vertex_attributes.push_back(this->vertex_attributes[i].description());
     }
 

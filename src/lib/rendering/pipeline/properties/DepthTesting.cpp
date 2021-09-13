@@ -51,13 +51,7 @@ static void populate_depth_stencil_state(VkPipelineDepthStencilStateCreateInfo& 
 
 /***** DEPTHTESTING CLASS *****/
 /* Constructor for the DepthTesting class, which takes that it is enabled (true_type) and the compare operation for when a new fragment needs to be tested for depth. */
-DepthTesting::DepthTesting(const std::true_type&, VkCompareOp compare_op) {
+DepthTesting::DepthTesting(VkBool32 enabled, VkCompareOp compare_op) {
     // Populate the internal struct with a VK_TRUE
-    populate_depth_stencil_state(this->vk_depth_stencil_state, VK_TRUE, compare_op);
-}
-
-/* Constructor for the DepthTesting class, which takes that it is disabled. */
-DepthTesting::DepthTesting(const std::false_type&) {
-    // Populate the internal struct with a VK_FALSE
-    populate_depth_stencil_state(this->vk_depth_stencil_state, VK_FALSE, VK_COMPARE_OP_MAX_ENUM);
+    populate_depth_stencil_state(this->vk_depth_stencil_state, enabled, compare_op);
 }

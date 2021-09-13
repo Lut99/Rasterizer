@@ -55,7 +55,7 @@ namespace Tools {
     /* The string name of the Texture component. */
     template <> inline constexpr const char* type_name<Makma3D::ECS::Texture>() { return "ECS::Texture"; }
     // /* The string name of the Textures list. */
-    // template <> inline constexpr const char* type_name<Rasterizer::ECS::Textures>() { return "ECS::Textures"; }
+    // template <> inline constexpr const char* type_name<Makma3D::ECS::Textures>() { return "ECS::Textures"; }
 }
 
 #endif

@@ -33,25 +33,3 @@ Pipeline::Pipeline(const Rendering::GPU& gpu, const VkPipeline& vk_pipeline, Ren
 
 /* Destructor for the Pipeline class. */
 Pipeline::~Pipeline() {}
-
-
-
-/* Binds the pipeline to a given command buffer for future draw calls. */
-void Pipeline::bind(const Rendering::CommandBuffer* cmd, VkPipelineBindPoint vk_bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS) {
-
-}
-
-/* Schedules the given value as one of the push constants on the given command buffer. The shader stage and offset determine which push constant, while the data and data_size relate to the push constant's value. */
-void Pipeline::schedule_push_constant(const Rendering::CommandBuffer* cmd, VkShaderStageFlags shader_stage, uint32_t offset, void* data, size_t data_size) {
-
-}
-
-/* Schedules a draw for this pipeline with the given number of vertices and the given number of instances. Optionally, an offset can be given in either arrays. */
-void Pipeline::schedule_draw(const Rendering::CommandBuffer* cmd, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0) {
-
-}
-
-/* Schedules an indexed draw for this pipeline with the given number of indices and the given number of instances. Optionally, an offset can be given in any of the three arrays. */
-void Pipeline::schedule_idraw(const Rendering::CommandBuffer* cmd, uint32_t index_count, uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_index = 0, uint32_t first_instance = 0) {
-
-}

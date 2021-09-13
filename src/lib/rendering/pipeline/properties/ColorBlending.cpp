@@ -53,6 +53,7 @@ static void populate_color_blend_attachment_state(VkPipelineColorBlendAttachment
 /* Constructor for the ColorBlending class, which takes multiple parameters for a single framebuffer. This overload enables colorblending for the given framebuffer.
  *
  * @param framebuffer The index of the framebuffer for which these settings hold
+ * @param enabled Whether or not to enable color blending for this framebuffer. If disabled, just replaces the damn thing.
  * @param src_color_factor How much weight the new color will have while blending
  * @param dst_color_factor How much weight the existing color will have while blending
  * @param color_op How to combine the two colors into one
@@ -60,13 +61,7 @@ static void populate_color_blend_attachment_state(VkPipelineColorBlendAttachment
  * @param dst_alpha_factor How much weight the existing alpha value will have while blending
  * @param alpha_op How to combine the two alpha channels into one
  */
-ColorBlending::ColorBlending(uint32_t framebuffer, const std::true_type&, VkBlendFactor src_color_factor, VkBlendFactor dst_color_factor, VkBlendOp color_op, VkBlendFactor src_alpha_factor, VkBlendFactor dst_alpha_factor, VkBlendOp alpha_op) {
+ColorBlending::ColorBlending(uint32_t framebuffer, VkBool32 enabled, VkBlendFactor src_color_factor, VkBlendFactor dst_color_factor, VkBlendOp color_op, VkBlendFactor src_alpha_factor, VkBlendFactor dst_alpha_factor, VkBlendOp alpha_op) {
     // Populate the internal struct with the given values
-    populate_color_blend_attachment_state(this->vk_color_blend_attachment_state, VK_TRUE, src_color_factor, dst_color_factor, color_op, src_alpha_factor, dst_alpha_factor, alpha_op);
-}
-
-/* Constructor for the ColorBlending class, which takes multiple parameters for a single framebuffer. This overload disables colorblending for the given framebuffer, meaning we don't need to know anything else. */
-ColorBlending::ColorBlending(uint32_t framebuffer, const std::false_type&) {
-    // Populate the internal struct with the default values for OFF
-    populate_color_blend_attachment_state(this->vk_color_blend_attachment_state, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD);
+    populate_color_blend_attachment_state(this->vk_color_blend_attachment_state, enabled, src_color_factor, dst_color_factor, color_op, src_alpha_factor, dst_alpha_factor, alpha_op);
 }

@@ -49,8 +49,8 @@ static void populate_color_blend_state(VkPipelineColorBlendStateCreateInfo& colo
 
 
 /***** COLORLOGIC CLASS *****/
-/* Constructor for the ColorLogic class, which takes the logic operation to apply and the list of per-framebuffer ColorBlending properties. Note that there has to be one ColorBlending struct per framebuffer. */
-ColorLogic::ColorLogic(const std::true_type&, VkLogicOp logic_op, const Tools::Array<Rendering::ColorBlending>& color_blend_attachments) :
+/* Constructor for the ColorLogic class, which takes whether or not to enable the logic operation, which operation to apply if it is and the list of per-framebuffer ColorBlending properties. Note that there has to be one ColorBlending struct per framebuffer. */
+ColorLogic::ColorLogic(VkBool32 enabled, VkLogicOp logic_op, const Tools::Array<Rendering::ColorBlending>& color_blend_attachments) :
     color_blend_attachments(color_blend_attachments)
 {
     // First, 'cast' the ColorBlending structs to their Vulkan-wrapped objects
@@ -60,21 +60,7 @@ ColorLogic::ColorLogic(const std::true_type&, VkLogicOp logic_op, const Tools::A
     }
 
     // Then populate the final state info struct
-    populate_color_blend_state(this->vk_color_blend_state, this->vk_color_blend_attachments, VK_TRUE, logic_op);
-}
-
-/* Constructor for the ColorLogic class, which takes the list of per-framebuffer ColorBlending properties. Note that there has to be one ColorBlending struct per framebuffer. */
-ColorLogic::ColorLogic(const std::false_type&, const Tools::Array<Rendering::ColorBlending>& color_blend_attachments) :
-    color_blend_attachments(color_blend_attachments)
-{
-    // First, 'cast' the ColorBlending structs to their Vulkan-wrapped objects
-    this->vk_color_blend_attachments.reserve(this->color_blend_attachments.size());
-    for (uint32_t i = 0; i < this->color_blend_attachments.size(); i++) {
-        this->vk_color_blend_attachments.push_back(this->color_blend_attachments[i].info());
-    }
-
-    // Then populate the final state info struct
-    populate_color_blend_state(this->vk_color_blend_state, this->vk_color_blend_attachments, VK_FALSE, VK_LOGIC_OP_NO_OP);
+    populate_color_blend_state(this->vk_color_blend_state, this->vk_color_blend_attachments, enabled, logic_op);
 }
 
 /* Copy constructor for the ColorLogic class. */

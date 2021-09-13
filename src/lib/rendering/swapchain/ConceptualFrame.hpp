@@ -101,7 +101,7 @@ namespace Makma3D::Rendering {
         void upload_object_data(uint32_t object_index, const Rendering::ObjectData& object_data);
 
         /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue, followed by binding the given pipeline. */
-        void schedule_start(const Rendering::Pipeline& pipeline);
+        void schedule_start(const Rendering::Pipeline* pipeline);
         /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
         void schedule_global();
         /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */

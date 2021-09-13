@@ -9,7 +9,7 @@
  *   Yes
  *
  * Description:
- *   Contains a struct that bundles all pipeline properties in one place.
+ *   Contains a class that bundles all pipeline properties in one place.
 **/
 
 #ifndef RENDERING_PIPELINE_PROPERTIES_HPP
@@ -27,7 +27,8 @@
 
 namespace Makma3D::Rendering {
     /* The PipelineProperties struct, which bundles the properties in one place. */
-    struct PipelineProperties {
+    class PipelineProperties {
+    public:
         /* The list of shader stages for this pipeline. */
         Tools::Array<Rendering::ShaderStage> shader_stages;
         /* Describes how the vertex data presented to the pipeline is organised .*/
@@ -47,6 +48,7 @@ namespace Makma3D::Rendering {
         /* The layout of the pipeline in terms of descriptors and push constants. */
         Rendering::PipelineLayout pipeline_layout;
 
+    public:
         /* Constructor for the PipelineProperties class, which simply takes all properties in order and copies them.
          *
          * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
@@ -67,17 +69,7 @@ namespace Makma3D::Rendering {
                            const Rendering::Rasterization& rasterization,
                            const Rendering::Multisampling& multisampling,
                            const Rendering::ColorLogic& color_logic,
-                           const Rendering::PipelineLayout& pipeline_layout) :
-            shader_stages(shader_stages),
-            vertex_input_state(vertex_input_state),
-            input_assembly_state(input_assembly_state),
-            depth_testing(depth_testing),
-            viewport_transformation(viewport_transformation),
-            rasterization(rasterization),
-            multisampling(multisampling),
-            color_logic(color_logic),
-            pipeline_layout(pipeline_layout)
-        {}
+                           const Rendering::PipelineLayout& pipeline_layout);
         /* Constructor for the PipelineProperties class, which simply takes all properties in order and moves them.
          *
          * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
@@ -98,19 +90,25 @@ namespace Makma3D::Rendering {
                            Rendering::Rasterization&& rasterization,
                            Rendering::Multisampling&& multisampling,
                            Rendering::ColorLogic&& color_logic,
-                           Rendering::PipelineLayout&& pipeline_layout) :
-            shader_stages(std::move(shader_stages)),
-            vertex_input_state(std::move(vertex_input_state)),
-            input_assembly_state(std::move(input_assembly_state)),
-            depth_testing(std::move(depth_testing)),
-            viewport_transformation(std::move(viewport_transformation)),
-            rasterization(std::move(rasterization)),
-            multisampling(std::move(multisampling)),
-            color_logic(std::move(color_logic)),
-            pipeline_layout(std::move(pipeline_layout))
-        {}
+                           Rendering::PipelineLayout&& pipeline_layout);
+        /* Copy constructor for the PipelineProperties class. */
+        PipelineProperties(const PipelineProperties& other);
+        /* Move constructor for the PipelineProperties class. */
+        PipelineProperties(PipelineProperties&& other);
+        /* Destructor for the PipelineProperties class. */
+        ~PipelineProperties();
+
+        /* Copy assignment operator for the PipelineProperties class. */
+        inline PipelineProperties& operator=(const PipelineProperties& other) { return *this = PipelineProperties(other); }
+        /* Move assignment operator for the PipelineProperties class. */
+        inline PipelineProperties& operator=(PipelineProperties&& other) { if (this != &other) { swap(*this, other); } return *this; }
+        /* Swap operator for the PipelineProperties class */
+        friend void swap(PipelineProperties& pp1, PipelineProperties& pp2);
 
     };
+
+    /* Swap operator for the PipelineProperties class */
+    void swap(PipelineProperties& pp1, PipelineProperties& pp2);
 
 }
 

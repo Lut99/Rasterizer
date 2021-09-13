@@ -28,10 +28,8 @@ namespace Makma3D::Rendering {
         VkPipelineDepthStencilStateCreateInfo vk_depth_stencil_state;
     
     public:
-        /* Constructor for the DepthTesting class, which takes that it is enabled (true_type) and the compare operation for when a new fragment needs to be tested for depth. */
-        DepthTesting(const std::true_type&, VkCompareOp compare_op);
-        /* Constructor for the DepthTesting class, which takes that it is disabled. */
-        DepthTesting(const std::false_type&);
+        /* Constructor for the DepthTesting class, which takes whether to enable depthtesting or not and the compare operation for when a new fragment needs to be tested for depth. */
+        DepthTesting(VkBool32 enabled, VkCompareOp compare_op);
 
         /* Explicitly returns the internal VkPipelineDepthStencilStateCreateInfo object. */
         inline const VkPipelineDepthStencilStateCreateInfo& info() const { return this->vk_depth_stencil_state; }

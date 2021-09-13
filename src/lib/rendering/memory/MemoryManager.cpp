@@ -36,42 +36,26 @@ MemoryManager::MemoryManager(const Rendering::GPU& gpu, VkDeviceSize draw_pool_s
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
     }, 10),
 
+    pipeline_pool(this->gpu, "pipeline.cache"),
     view_pool(this->gpu),
 
     copy_cmd(this->mem_cmd_pool.allocate())
-{}
-
-/* Copy constructor for the MemoryManager class. */
-MemoryManager::MemoryManager(const MemoryManager& other) :
-    gpu(other.gpu),
-
-    draw_cmd_pool(other.draw_cmd_pool),
-    mem_cmd_pool(other.mem_cmd_pool),
-
-    draw_pool(other.draw_pool),
-    stage_pool(other.stage_pool),
-
-    descr_pool(other.descr_pool),
-
-    view_pool(other.view_pool),
-
-    copy_cmd(this->mem_cmd_pool.allocate())
-
 {}
 
 /* Move constructor for the MemoryManager class. */
 MemoryManager::MemoryManager(MemoryManager&& other) :
     gpu(other.gpu),
 
-    draw_cmd_pool(other.draw_cmd_pool),
-    mem_cmd_pool(other.mem_cmd_pool),
+    draw_cmd_pool(std::move(other.draw_cmd_pool)),
+    mem_cmd_pool(std::move(other.mem_cmd_pool)),
 
-    draw_pool(other.draw_pool),
-    stage_pool(other.stage_pool),
+    draw_pool(std::move(other.draw_pool)),
+    stage_pool(std::move(other.stage_pool)),
 
-    descr_pool(other.descr_pool),
+    descr_pool(std::move(other.descr_pool)),
 
-    view_pool(other.view_pool),
+    pipeline_pool(std::move(other.pipeline_pool)),
+    view_pool(std::move(other.view_pool)),
 
     copy_cmd(other.copy_cmd)
 {
@@ -104,6 +88,7 @@ void Rendering::swap(MemoryManager& mm1, MemoryManager& mm2) {
 
     swap(mm1.descr_pool, mm2.descr_pool);
 
+    swap(mm1.pipeline_pool, mm2.pipeline_pool);
     swap(mm1.view_pool, mm2.view_pool);
 
     swap(mm1.copy_cmd, mm2.copy_cmd);

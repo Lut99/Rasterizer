@@ -29,6 +29,7 @@ namespace Makma3D::Rendering {
     public:
         /* Constructor for the Rasterization class, which takes the rasterizer-specific properties.
          *
+         * @param enabled Whether to enable the rasterization stage or not. Technically discards the result if disabled, so the other properties still have to be valid.
          * @param cull_mode Describes how to cull faces that are behind others
          * @param front_face Describes what the front face of an object is (i.e., which side to cull)
          * @param depth_clamp Describes whether to clamp objects that are too far or too near to their plane instead of simply not rendering them. Needs a special GPU feature to enable.
@@ -36,9 +37,7 @@ namespace Makma3D::Rendering {
          * @param line_width The width of the lines that the rasterizer draws. Needs a special GPU feature to grow beyond 1.0f.
          * @param disable_rasterizer If set to TRUE, then discards the output of the rasterizer, disabling it in effect.
          */
-        Rasterization(const std::true_type&, VkCullModeFlags cull_mode, VkFrontFace front_face, VkBool32 depth_clamp = VK_FALSE, VkPolygonMode polygon_mode = VK_POLYGON_MODE_FILL, float line_width = 1.0f);
-        /* Constructor for the Rasterization class, which takes the rasterizer-specific properties. This overload disables the rasterizer output, making other arguments unnecessary. */
-        Rasterization(const std::false_type&);
+        Rasterization(VkBool32 enabled, VkCullModeFlags cull_mode, VkFrontFace front_face, VkBool32 depth_clamp = VK_FALSE, VkPolygonMode polygon_mode = VK_POLYGON_MODE_FILL, float line_width = 1.0f);
 
         /* Explicitly returns the internal VkPipelineRasterizationStateCreateInfo object. */
         inline const VkPipelineRasterizationStateCreateInfo& info() const { return this->vk_rasterizer_state; }

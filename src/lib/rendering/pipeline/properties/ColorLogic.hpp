@@ -36,10 +36,8 @@ namespace Makma3D::Rendering {
         VkPipelineColorBlendStateCreateInfo vk_color_blend_state;
 
     public:
-        /* Constructor for the ColorLogic class, which takes the logic operation to apply and the list of per-framebuffer ColorBlending properties. Note that there has to be one ColorBlending struct per framebuffer. */
-        ColorLogic(const std::true_type&, VkLogicOp logic_op, const Tools::Array<Rendering::ColorBlending>& color_blend_attachments);
-        /* Constructor for the ColorLogic class, which takes the list of per-framebuffer ColorBlending properties. Note that there has to be one ColorBlending struct per framebuffer. */
-        ColorLogic(const std::false_type&, const Tools::Array<Rendering::ColorBlending>& color_blend_attachments);
+        /* Constructor for the ColorLogic class, which takes whether or not to enable the logic operation, which operation to apply if it is and the list of per-framebuffer ColorBlending properties. Note that there has to be one ColorBlending struct per framebuffer. */
+        ColorLogic(VkBool32 enabled, VkLogicOp logic_op, const Tools::Array<Rendering::ColorBlending>& color_blend_attachments);
         /* Copy constructor for the ColorLogic class. */
         ColorLogic(const ColorLogic& other);
         /* Move constructor for the ColorLogic class. */

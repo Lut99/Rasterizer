@@ -57,19 +57,14 @@ static void populate_rasterizer_state(VkPipelineRasterizationStateCreateInfo& ra
 /***** RASTERIZATION CLASS *****/
 /* Constructor for the Rasterization class, which takes the rasterizer-specific properties. This overload enables the rasterizer output.
  *
+ * @param enabled Whether to enable the rasterization stage or not. Technically discards the result if disabled, so the other properties still have to be valid.
  * @param cull_mode Describes how to cull faces that are behind others
  * @param front_face Describes what the front face of an object is (i.e., which side to cull)
  * @param depth_clamp Describes whether to clamp objects that are too far or too near to their plane instead of simply not rendering them. Needs a special GPU feature to enable.
  * @param polygon_mode Describes how to "colour" the given geometry. For example, can be set to fill the whole vertex, or only its lines, etc. Needs a special GPU feature for anything other than FILL.
  * @param line_width The width of the lines that the rasterizer draws. Needs a special GPU feature to grow beyond 1.0f.
  */
-Rasterization::Rasterization(const std::true_type&, VkCullModeFlags cull_mode, VkFrontFace front_face, VkBool32 depth_clamp, VkPolygonMode polygon_mode, float line_width) {
+Rasterization::Rasterization(VkBool32 enabled, VkCullModeFlags cull_mode, VkFrontFace front_face, VkBool32 depth_clamp, VkPolygonMode polygon_mode, float line_width) {
     // Simply populate the struct, done
-    populate_rasterizer_state(this->vk_rasterizer_state, cull_mode, front_face, depth_clamp, polygon_mode, line_width, VK_FALSE);
-}
-
-/* Constructor for the Rasterization class, which takes the rasterizer-specific properties. This overload disables the rasterizer output, making other arguments unnecessary. */
-Rasterization::Rasterization(const std::false_type&) {
-    // Populate the struct with a lot of default values
-    populate_rasterizer_state(this->vk_rasterizer_state, VK_CULL_MODE_FRONT_AND_BACK, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_FALSE, VK_POLYGON_MODE_FILL, 1.0f, VK_TRUE);
+    populate_rasterizer_state(this->vk_rasterizer_state, cull_mode, front_face, depth_clamp, polygon_mode, line_width, !enabled);
 }

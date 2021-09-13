@@ -217,7 +217,7 @@ void ConceptualFrame::upload_object_data(uint32_t object_index, const Rendering:
 
 
 /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue, followed by binding the given pipeline. */
-void ConceptualFrame::schedule_start(const Rendering::Pipeline& pipeline) {
+void ConceptualFrame::schedule_start(const Rendering::Pipeline* pipeline) {
     #ifndef NDEBUG
     // Check if the swapchain frame is set
     if (this->swapchain_frame == nullptr) {
@@ -226,7 +226,7 @@ void ConceptualFrame::schedule_start(const Rendering::Pipeline& pipeline) {
     #endif
     
     // Store the pipeline internally
-    this->pipeline = &pipeline;
+    this->pipeline = pipeline;
 
     // Begin the command buffer
     this->draw_cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -234,7 +234,7 @@ void ConceptualFrame::schedule_start(const Rendering::Pipeline& pipeline) {
     // First, schedule the render pass start
     this->swapchain_frame->render_pass.start_scheduling(this->draw_cmd, this->swapchain_frame->framebuffer(), this->swapchain_frame->extent());
     // Then the pipeline bind
-    this->pipeline->schedule(this->draw_cmd);
+    this->pipeline->bind(this->draw_cmd);
 }
 
 /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
@@ -242,7 +242,7 @@ void ConceptualFrame::schedule_global() {
     // Add the camera to the descriptor
     this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
     // Bind the descriptor itself
-    this->global_set->schedule(this->draw_cmd, this->pipeline->layout(), 0);
+    this->global_set->schedule(this->draw_cmd, this->pipeline->props().pipeline_layout.layout(), 0);
 }
 
 /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
@@ -257,7 +257,7 @@ void ConceptualFrame::schedule_object(uint32_t object_index) {
     // Bind the correct object buffer to the correct set
     this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
     // Schedule the object's descriptor set
-    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
+    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->props().pipeline_layout.layout(), 1);
 }
 
 /* Schedules a draw command for the given mesh on the internal draw queue. */
@@ -265,7 +265,7 @@ void ConceptualFrame::schedule_draw(const Models::ModelSystem& model_system, con
     // First, schedule the mesh as an indexed vertex buffer
     model_system.schedule(this->draw_cmd, mesh);
     // Next, schedule the draw call
-    this->pipeline->schedule_draw_indexed(this->draw_cmd, mesh.n_indices, 1);
+    this->pipeline->schedule_idraw(this->draw_cmd, mesh.n_indices, 1);
 }
 
 /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */

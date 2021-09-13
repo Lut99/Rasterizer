@@ -52,7 +52,9 @@ static void populate_shader_module_info(VkShaderModuleCreateInfo& shader_module_
 Shader::Shader(const Rendering::GPU& gpu, const std::string& filename, VkShaderModuleCreateFlags create_flags) :
     gpu(gpu),
 
-    vk_create_flags(create_flags)
+    vk_create_flags(create_flags),
+
+    name(filename.substr(filename.find_last_of("/") != string::npos ? filename.find_last_of("/") + 1 : 0))
 {
     logger.logc(Verbosity::details, Shader::channel, "Initializing shader '", this->name, "'...");
 
@@ -109,7 +111,7 @@ Shader::Shader(const Shader& other) :
     gpu(other.gpu),
 
     n_bytes(other.n_bytes),
-    vk_create_flags(vk_create_flags),
+    vk_create_flags(other.vk_create_flags),
     
     shader_data_size(other.shader_data_size),
 
