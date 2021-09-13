@@ -44,5 +44,5 @@ build/
 # All weird valgrind core stuff
 vgcore.*
 
-# Skip uploading the old library
-src/lib_old
+# Skip uploading the pipeline caches
+*.cache
