@@ -63,17 +63,17 @@ PipelineLayout::PipelineLayout(const Rendering::GPU& gpu, const Tools::Array<Ren
 
     descriptor_layouts(descriptor_layouts)
 {
-    logger.logc(Verbosity::details, PipelineLayout::channel, "Initializing...");
+    // logger.logc(Verbosity::details, PipelineLayout::channel, "Initializing...");
 
     // Start by 'casting' the array of DescriptorSetLayouts to VkDescriptorSetLayouts
-    logger.logc(Verbosity::details, PipelineLayout::channel, "Preparing descriptor set layouts...");
+    // logger.logc(Verbosity::details, PipelineLayout::channel, "Preparing descriptor set layouts...");
     this->vk_descriptor_layouts.reserve(this->descriptor_layouts.size());
     for (uint32_t i = 0; i < this->descriptor_layouts.size(); i++) {
         this->vk_descriptor_layouts.push_back(this->descriptor_layouts[i].descriptor_set_layout());
     }
 
     // Next, construct the push constant ranges
-    logger.logc(Verbosity::details, PipelineLayout::channel, "Preparing push constant ranges...");
+    // logger.logc(Verbosity::details, PipelineLayout::channel, "Preparing push constant ranges...");
     uint32_t offset = 0;
     this->vk_push_constant_ranges.resize(push_constant_layouts.size());
     for (uint32_t i = 0; i < push_constant_layouts.size(); i++) {
@@ -89,7 +89,7 @@ PipelineLayout::PipelineLayout(const Rendering::GPU& gpu, const Tools::Array<Ren
     }
 
     // Finally, create the VkPipelineLayout itself
-    logger.logc(Verbosity::details, PipelineLayout::channel, "Creating VkPipelineLayout...");
+    // logger.logc(Verbosity::details, PipelineLayout::channel, "Creating VkPipelineLayout...");
     VkPipelineLayoutCreateInfo layout_info;
     populate_layout_info(layout_info, this->vk_descriptor_layouts, this->vk_push_constant_ranges);
 
@@ -99,7 +99,7 @@ PipelineLayout::PipelineLayout(const Rendering::GPU& gpu, const Tools::Array<Ren
     }
 
     // Done
-    logger.logc(Verbosity::details, PipelineLayout::channel, "Init success.");
+    // logger.logc(Verbosity::details, PipelineLayout::channel, "Init success.");
 }
 
 /* Copy constructor for the PipelineLayout class. */
@@ -110,7 +110,7 @@ PipelineLayout::PipelineLayout(const PipelineLayout& other) :
 
     vk_push_constant_ranges(other.vk_push_constant_ranges)
 {
-    logger.logc(Verbosity::debug, PipelineLayout::channel, "Copying...");
+    // logger.logc(Verbosity::debug, PipelineLayout::channel, "Copying...");
 
     // Start by 'casting' the array of DescriptorSetLayouts to VkDescriptorSetLayouts
     this->vk_descriptor_layouts.reserve(this->descriptor_layouts.size());
@@ -126,7 +126,7 @@ PipelineLayout::PipelineLayout(const PipelineLayout& other) :
         logger.fatalc(PipelineLayout::channel, "Could not create pipeline layout: ", vk_error_map[vk_result]);   
     }
     
-    logger.logc(Verbosity::debug, PipelineLayout::channel, "Copy success.");
+    // logger.logc(Verbosity::debug, PipelineLayout::channel, "Copy success.");
 }
 
 /* Move constructor for the PipelineLayout class. */
@@ -146,15 +146,15 @@ PipelineLayout::PipelineLayout(PipelineLayout&& other) :
 
 /* Destructor for the PipelineLayout class. */
 PipelineLayout::~PipelineLayout() {
-    logger.logc(Verbosity::details, PipelineLayout::channel, "Cleaning...");
+    // logger.logc(Verbosity::details, PipelineLayout::channel, "Cleaning...");
 
     // Deallocate the layout if needed
     if (this->vk_layout != nullptr) {
-        logger.logc(Verbosity::details, PipelineLayout::channel, "Cleaning VkPipelineLayout...");
+        // logger.logc(Verbosity::details, PipelineLayout::channel, "Cleaning VkPipelineLayout...");
         vkDestroyPipelineLayout(this->gpu, this->vk_layout, nullptr);
     }
     
-    logger.logc(Verbosity::details, PipelineLayout::channel, "Cleaned.");
+    // logger.logc(Verbosity::details, PipelineLayout::channel, "Cleaned.");
 }
 
 

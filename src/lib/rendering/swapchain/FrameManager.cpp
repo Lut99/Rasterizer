@@ -100,6 +100,9 @@ void FrameManager::bind(const Rendering::RenderPass& render_pass, const Renderin
     // Get the list of swapchain images
     this->swapchain_frames = this->swapchain.get_frames(render_pass, depth_stencil);
 
+    // Reset the index for the frame we're gonna render to
+    this->frame_index = 0;
+
     // Done
 }
 

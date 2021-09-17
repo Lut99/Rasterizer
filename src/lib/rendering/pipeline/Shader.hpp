@@ -45,7 +45,7 @@ namespace Makma3D::Rendering {
         uint32_t shader_data_size;
 
         /* The name of the shader, used for debugging only. */
-        std::string name;
+        std::string shader_name;
 
     public:
         /* Constructor for the Shader class, which takes a GPU where the Shader will live, the filename of the file to load and optionally some create flags. */
@@ -57,6 +57,8 @@ namespace Makma3D::Rendering {
         /* Destructor for the Shader class. */
         ~Shader();
 
+        /* Returns the name of the Shader, which is useful for debugging and junk. */
+        inline const std::string& name() const { return this->shader_name; }
         /* Explicitly returns the internal VkShaderModule object. */
         inline const VkShaderModule& shader_module() const { return this->vk_shader_module; }
         /* Implicitly returns the internal VkShaderModule object. */

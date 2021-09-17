@@ -70,10 +70,6 @@ namespace Makma3D::Rendering {
         /* The depth stencil we attach to the pipeline. */
         Rendering::DepthStencil depth_stencil;
 
-        /* The vertex shader we use. */
-        Rendering::Shader vertex_shader;
-        /* The fragment shader we use. */
-        Rendering::Shader fragment_shader;
         /* The render pass which we use to draw. */
         Rendering::RenderPass render_pass;
         /* The graphics pipeline we use to render. */

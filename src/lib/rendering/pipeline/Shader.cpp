@@ -54,9 +54,9 @@ Shader::Shader(const Rendering::GPU& gpu, const std::string& filename, VkShaderM
 
     vk_create_flags(create_flags),
 
-    name(filename.substr(filename.find_last_of("/") != string::npos ? filename.find_last_of("/") + 1 : 0))
+    shader_name(filename.substr(filename.find_last_of("/") != string::npos ? filename.find_last_of("/") + 1 : 0))
 {
-    logger.logc(Verbosity::details, Shader::channel, "Initializing shader '", this->name, "'...");
+    logger.logc(Verbosity::details, Shader::channel, "Initializing shader '", this->shader_name, "'...");
 
     // Begin by trying to open a stream to the file
     logger.logc(Verbosity::details, Shader::channel, "Loading file '", filename, "'...");
@@ -115,9 +115,9 @@ Shader::Shader(const Shader& other) :
     
     shader_data_size(other.shader_data_size),
 
-    name(other.name)
+    shader_name(other.shader_name)
 {
-    logger.logc(Verbosity::debug, Shader::channel, "Copying shader '", this->name, "'...");
+    // logger.logc(Verbosity::debug, Shader::channel, "Copying shader '", this->shader_name, "'...");
 
     // First, copy the raw shader data
     this->shader_data = new uint32_t[this->shader_data_size];
@@ -133,7 +133,7 @@ Shader::Shader(const Shader& other) :
         logger.fatalc(Shader::channel, "Cannot re-create VkShaderModule: ", vk_error_map[vk_result]);
     }
     
-    logger.logc(Verbosity::debug, Shader::channel, "Copy success.");
+    // logger.logc(Verbosity::debug, Shader::channel, "Copy success.");
 }
 
 /* Move constructor for the Shader class. */
@@ -147,7 +147,7 @@ Shader::Shader(Shader&& other) :
     shader_data(other.shader_data),
     shader_data_size(other.shader_data_size),
 
-    name(other.name)
+    shader_name(other.shader_name)
 {
     // Prevent the other deallocating shit
     other.vk_shader_module = nullptr;
@@ -156,20 +156,20 @@ Shader::Shader(Shader&& other) :
 
 /* Destructor for the Shader class. */
 Shader::~Shader() {
-    logger.logc(Verbosity::details, Shader::channel, "Cleaning shader '", this->name, "'...");
+    // logger.logc(Verbosity::details, Shader::channel, "Cleaning shader '", this->shader_name, "'...");
 
     // Deallocate the shader module
     if (this->vk_shader_module != nullptr) {
-        logger.logc(Verbosity::details, Shader::channel, "Cleaning VkShaderModule...");
+        // logger.logc(Verbosity::details, Shader::channel, "Cleaning VkShaderModule...");
         vkDestroyShaderModule(this->gpu, this->vk_shader_module, nullptr);
     }
     // Deallocate the raw shader data
     if (this->shader_data != nullptr) {
-        logger.logc(Verbosity::details, Shader::channel, "Cleaning raw shader data...");
+        // logger.logc(Verbosity::details, Shader::channel, "Cleaning raw shader data...");
         delete[] this->shader_data;
     }
     
-    logger.logc(Verbosity::details, Shader::channel, "Cleaned.");
+    // logger.logc(Verbosity::details, Shader::channel, "Cleaned.");
 }
 
 
@@ -189,5 +189,5 @@ void Rendering::swap(Shader& s1, Shader& s2) {
     swap(s1.shader_data, s2.shader_data);
     swap(s1.shader_data_size, s2.shader_data_size);
 
-    swap(s1.name, s2.name);
+    swap(s1.shader_name, s2.shader_name);
 }

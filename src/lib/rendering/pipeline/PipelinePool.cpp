@@ -187,6 +187,7 @@ PipelinePool::~PipelinePool() {
     if (this->pipelines.size() > 0) {
         logger.logc(Verbosity::details, PipelinePool::channel, "Cleaning allocated pipelines...");
         for (uint32_t i = 0; i < this->pipelines.size(); i++) {
+            vkDestroyPipeline(this->gpu, this->pipelines[i]->vk_pipeline, nullptr);
             delete this->pipelines[i];
         }
     }
@@ -493,6 +494,7 @@ void PipelinePool::free(const Rendering::Pipeline* pipeline) {
     for (uint32_t i = 0; i < this->pipelines.size(); i++) {
         if (this->pipelines[i] == pipeline) {
             // Delete, then return
+            vkDestroyPipeline(this->gpu, this->pipelines[i]->vk_pipeline, nullptr);
             delete this->pipelines[i];
             this->pipelines.erase(i);
             return;
@@ -511,6 +513,7 @@ void PipelinePool::nfree(const Tools::Array<Rendering::Pipeline*>& pipelines) {
         for (uint32_t j = 0; j < this->pipelines.size(); j++) {
             if (this->pipelines[j] == pipelines[i]) {
                 // Delete, then return
+                vkDestroyPipeline(this->gpu, this->pipelines[i]->vk_pipeline, nullptr);
                 delete this->pipelines[j];
                 this->pipelines.erase(j);
                 found = true;
@@ -532,6 +535,7 @@ void PipelinePool::nfree(const Tools::Array<Rendering::Pipeline*>& pipelines) {
 void PipelinePool::reset() {
     // Simply deallocate everything in the pool
     for (uint32_t i = 0; i < this->pipelines.size(); i++) {
+        vkDestroyPipeline(this->gpu, this->pipelines[i]->vk_pipeline, nullptr);
         delete this->pipelines[i];
     }
 

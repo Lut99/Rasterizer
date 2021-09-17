@@ -49,8 +49,10 @@ namespace Makma3D::Rendering {
         VkPipelineShaderStageCreateInfo vk_shader_stage_info;
     
     public:
-        /* Constructor for the ShaderStage, which takes the Shader to load, where we should place it (its VkShaderStage) and optionally a map of specialization constants. */
+        /* Constructor for the ShaderStage, which takes the Shader to load (copying it), where we should place it (its VkShaderStage) and optionally a map of specialization constants. */
         ShaderStage(const Rendering::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, std::pair<void*, uint32_t>>& specialization_constants = {});
+        /* Constructor for the ShaderStage, which takes the Shader to load (without copying it), where we should place it (its VkShaderStage) and optionally a map of specialization constants. */
+        ShaderStage(Rendering::Shader&& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, std::pair<void*, uint32_t>>& specialization_constants = {});
         /* Copy constructor for the ShaderStage. */
         ShaderStage(const ShaderStage& other);
         /* Move constructor for the ShaderStage. */

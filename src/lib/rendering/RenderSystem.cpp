@@ -50,8 +50,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     depth_stencil(this->window.gpu(), this->memory_manager.draw_pool, this->window.swapchain().extent()),
 
-    vertex_shader(this->window.gpu(), "bin/shaders/vertex_v5.spv"),
-    fragment_shader(this->window.gpu(), "bin/shaders/frag_v1.spv"),
     render_pass(this->window.gpu())
 {
 
@@ -71,12 +69,12 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->render_pass.finalize();
 
     // Initialize the pipeline
+    Tools::Array<ShaderStage> shader_stages(2);
+    shader_stages.push_back(ShaderStage(Shader(this->window.gpu(), "bin/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT, {}));
+    shader_stages.push_back(ShaderStage(Shader(this->window.gpu(), "bin/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT, {}));
     this->pipeline = this->memory_manager.pipeline_pool.allocate(
         PipelineProperties(
-            {
-                ShaderStage(Shader(this->window.gpu(), "bin/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT, {}),
-                ShaderStage(Shader(this->window.gpu(), "bin/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT, {})
-            },
+            std::move(shader_stages),
             VertexInputState({ VertexBinding(0, sizeof(Vertex)) }, {
                 VertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32B32_SFLOAT),
                 VertexAttribute(0, 1, offsetof(Vertex, colour), VK_FORMAT_R32G32B32_SFLOAT),
@@ -115,8 +113,6 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
 
     depth_stencil(other.depth_stencil),
 
-    vertex_shader(other.vertex_shader),
-    fragment_shader(other.fragment_shader),
     render_pass(other.render_pass),
     pipeline(other.pipeline),
 
@@ -272,8 +268,6 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
 
     swap(rs1.depth_stencil, rs2.depth_stencil);
 
-    swap(rs1.vertex_shader, rs2.vertex_shader);
-    swap(rs1.fragment_shader, rs2.fragment_shader);
     swap(rs1.render_pass, rs2.render_pass);
     swap(rs1.pipeline, rs2.pipeline);
 

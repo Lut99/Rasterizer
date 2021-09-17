@@ -99,9 +99,14 @@ static void populate_stage_info(VkPipelineShaderStageCreateInfo& stage_info, con
 
 
 /***** SHADERSTAGE CLASS *****/
-/* Constructor for the ShaderStage, which takes the Shader to load, where we should place it (its VkShaderStage) and optionally a map of specialization constants. */
+/* Constructor for the ShaderStage, which takes the Shader to load (copying it), where we should place it (its VkShaderStage) and optionally a map of specialization constants. */
 ShaderStage::ShaderStage(const Rendering::Shader& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, std::pair<void*, uint32_t>>& specialization_constants) :
-    shader(shader)
+    ShaderStage(Shader(shader), shader_stage, specialization_constants)
+{}
+
+/* Constructor for the ShaderStage, which takes the Shader to load (without copying it), where we should place it (its VkShaderStage) and optionally a map of specialization constants. */
+ShaderStage::ShaderStage(Rendering::Shader&& shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, std::pair<void*, uint32_t>>& specialization_constants):
+    shader(std::move(shader))
 {
     // Start by allocating enough specialization entries and flatten the specialization constants into those entries
     this->vk_specialization_entries_size = static_cast<uint32_t>(specialization_constants.size());

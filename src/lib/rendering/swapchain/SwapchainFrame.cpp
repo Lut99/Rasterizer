@@ -89,11 +89,11 @@ SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::Rende
 
     in_flight_fence(nullptr)
 {
-    logger.logc(Verbosity::details, SwapchainFrame::channel, "Initializing...");
+    // logger.logc(Verbosity::details, SwapchainFrame::channel, "Initializing...");
     VkResult vk_result;
 
     // Create the color aspect image view
-    logger.logc(Verbosity::details, SwapchainFrame::channel, "Creating image view...");
+    // logger.logc(Verbosity::details, SwapchainFrame::channel, "Creating image view...");
     VkImageViewCreateInfo color_view_info;
     populate_color_view_info(color_view_info, this->vk_image, this->vk_format);
     if ((vk_result = vkCreateImageView(this->gpu, &color_view_info, nullptr, &this->vk_color_view)) != VK_SUCCESS) {
@@ -101,7 +101,7 @@ SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::Rende
     }
 
     // Create the framebuffer
-    logger.logc(Verbosity::details, SwapchainFrame::channel, "Creating framebuffer...");
+    // logger.logc(Verbosity::details, SwapchainFrame::channel, "Creating framebuffer...");
     Tools::Array<VkImageView> framebuffer_views = { this->vk_color_view, this->vk_depth_view };
     VkFramebufferCreateInfo framebuffer_info;
     populate_framebuffer_info(framebuffer_info, this->render_pass.render_pass(), framebuffer_views, this->vk_extent);
@@ -109,7 +109,7 @@ SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::Rende
         logger.fatalc(SwapchainFrame::channel, "Could not create framebuffer: ", vk_error_map[vk_result]);
     }
     
-    logger.logc(Verbosity::details, SwapchainFrame::channel, "Init success.");
+    // logger.logc(Verbosity::details, SwapchainFrame::channel, "Init success.");
 }
 
 /* Move constructor for the SwapchainFrame class. */
@@ -136,18 +136,18 @@ SwapchainFrame::SwapchainFrame(SwapchainFrame&& other) :
 
 /* Destructor for the SwapchainFrame class. */
 SwapchainFrame::~SwapchainFrame() {
-    logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning...");
+    // logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning...");
 
     if (this->vk_framebuffer != nullptr) {
-        logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning framebuffer...");
+        // logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning framebuffer...");
         vkDestroyFramebuffer(this->gpu, this->vk_framebuffer, nullptr);
     }
     if (this->vk_color_view != nullptr) {
-        logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning color image view...");
+        // logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaning color image view...");
         vkDestroyImageView(this->gpu, this->vk_color_view, nullptr);
     }
     
-    logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaned.");
+    // logger.logc(Verbosity::details, SwapchainFrame::channel, "Cleaned.");
 }
 
 

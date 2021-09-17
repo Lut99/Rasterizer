@@ -77,29 +77,29 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
     render_ready_semaphore(this->memory_manager.gpu),
     in_flight_fence(this->memory_manager.gpu, VK_FENCE_CREATE_SIGNALED_BIT)
 {
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing...");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing...");
 
     // Initialize the stage buffer
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
     this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(ObjectData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     logger.logc(Verbosity::debug, ConceptualFrame::channel, "Allocated stage buffer @ ", this->stage_buffer->offset());
 
     // Initialize the commandbuffer
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating command buffer...");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating command buffer...");
     this->draw_cmd = this->memory_manager.draw_cmd_pool.allocate();
 
     // Initialize the pool
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing descriptor pool...");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing descriptor pool...");
     this->descriptor_pool = new DescriptorPool(this->memory_manager.gpu, {
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
     }, 10);
 
     // Initialize the global descriptor set & camera buffer
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing global frame data...");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing global frame data...");
     this->camera_buffer = this->memory_manager.draw_pool.allocate(sizeof(CameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
     // And that's it
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Init success.");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Init success.");
 }
 
 /* Move constructor for the ConceptualFrame class. */
@@ -137,32 +137,32 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
 
 /* Destructor for the ConceptualFrame class. */
 ConceptualFrame::~ConceptualFrame() {
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning...");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning...");
 
     if (this->object_buffers.size() > 0) {
-        logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning object buffers...");
+        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning object buffers...");
         for (uint32_t i = 0; i < this->object_buffers.size(); i++) {
             this->memory_manager.draw_pool.free(this->object_buffers[i]);
         }
     }
     if (this->camera_buffer != nullptr) {
-        logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning camera buffer...");
+        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning camera buffer...");
         this->memory_manager.draw_pool.free(this->camera_buffer);
     }
     if (this->descriptor_pool != nullptr) {
-        logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning descriptor pool...");
+        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning descriptor pool...");
         delete this->descriptor_pool;
     }
     if (this->draw_cmd != nullptr) {
-        logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning command buffer...");
+        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning command buffer...");
         this->memory_manager.draw_cmd_pool.free(this->draw_cmd);
     }
     if (this->stage_buffer != nullptr) {
-        logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning stage buffer...");
+        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning stage buffer...");
         this->memory_manager.stage_pool.free(this->stage_buffer);
     }
 
-    logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaned.");
+    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaned.");
 }
 
 
