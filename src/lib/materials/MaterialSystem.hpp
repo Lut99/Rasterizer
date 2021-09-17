@@ -23,7 +23,8 @@
 #include "tools/Array.hpp"
 #include "ecs/EntityManager.hpp"
 #include "textures/Texture.hpp"
-#include "rendering/memory/MemoryManager.hpp"
+#include "rendering/gpu/GPU.hpp"
+#include "rendering/pipeline/PipelineProperties.hpp"
 
 #include "Material.hpp"
 #include "variants/MaterialType.hpp"
@@ -37,10 +38,13 @@ namespace Makma3D::Materials {
         /* The logging channel for the MaterialSystem class. */
         static constexpr const char* channel = "MaterialSystem";
 
-        /* Reference to the MemoryManager used to allocate structures. */
-        Rendering::MemoryManager& memory_manager;
+        /* Reference to the GPU used to create the pipeline properties for materials. */
+        const Rendering::GPU& gpu;
 
     private:
+        /* The DescriptorSetLayout for the SimpleColoured material. */
+        Rendering::DescriptorSetLayout simple_coloured_layout;
+
         /* List of all material IDs in use. */
         std::unordered_map<material_t, MaterialType> material_ids;
         /* List of materials that use the Simple lighting model and that are not textured. */
@@ -52,8 +56,8 @@ namespace Makma3D::Materials {
         material_t get_available_id(const char* material_type) const;
 
     public:
-        /* Constructor for the MaterialSystem class, which takes a MemoryManager so it can allocate GPU memory structures. */
-        MaterialSystem(Rendering::MemoryManager& memory_manager);
+        /* Constructor for the MaterialSystem class, which takes a GPU where the pipelines referencing materials created here will live. */
+        MaterialSystem(const Rendering::GPU& gpu);
         /* Copy constructor for the MaterialSystem, which is deleted. */
         MaterialSystem(const MaterialSystem& other) = delete;
         /* Move constructor for the MaterialSystem. */
@@ -61,15 +65,17 @@ namespace Makma3D::Materials {
         /* Destructor for the MaterialSystem. */
         ~MaterialSystem();
 
+        /* Returns the pipeline properties for the SimpleColoured material. The properties for the ViewportTransformation, Rasterization and ColorLogic, as well as the descriptor sets for the global and object's descriptors, have to be given. */
+        Rendering::PipelineProperties props_simple_coloured(Rendering::ViewportTransformation&& viewport_transformation, Rendering::Rasterization&& rasterization, Rendering::ColorLogic&& color_logic, Rendering::DescriptorSetLayout&& global_descriptor_layout, Rendering::DescriptorSetLayout&& object_descriptor_layout) const;
+        /* Returns the pipeline properties for the SimpleTextured material. */
+        Rendering::PipelineProperties props_simple_textured() const;
+
         /* Adds a new material that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
         material_t create_simple_coloured(const glm::vec3& colour);
         /* Adds a new material that uses the simple lighting model with a texture. The texture used is the given one. */
         material_t create_simple_textured(const Textures::Texture& texture);
         /* Removes the material with the given ID from the system. Throws errors if no such material exists. */
         void remove(material_t material);
-
-        /* Renders the given list of objects with their assigned materials. */
-        void render(const ECS::EntityManager& entity_manager);
 
         /* Copy assignment operator for the MaterialSystem class, which is deleted. */
         MaterialSystem& operator=(const MaterialSystem& other) = delete;

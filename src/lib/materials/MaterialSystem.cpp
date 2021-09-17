@@ -13,33 +13,41 @@
 **/
 
 #include "tools/Logger.hpp"
+#include "rendering/auxillary/Vertex.hpp"
 
 #include "MaterialSystem.hpp"
 
 using namespace std;
 using namespace Makma3D;
 using namespace Makma3D::Materials;
+using namespace Makma3D::Rendering;
 
 
 /***** MODELSYSTEM CLASS *****/
-/* Constructor for the MaterialSystem class, which takes a MemoryManager so it can allocate GPU memory structures. */
-MaterialSystem::MaterialSystem(Rendering::MemoryManager& memory_manager) :
-    memory_manager(memory_manager)
+/* Constructor for the MaterialSystem class, which takes a GPU where the pipelines referencing materials created here will live. */
+MaterialSystem::MaterialSystem(const Rendering::GPU& gpu) :
+    gpu(gpu),
+
+    simple_coloured_layout(this->gpu)
 {
     logger.logc(Verbosity::important, MaterialSystem::channel, "Initializing...");
 
-    // Nothing as of yet
+    // Prepare the material's descriptor set layout for the SimpleColoured material
+    this->simple_coloured_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10, VK_SHADER_STAGE_FRAGMENT_BIT);
+    this->simple_coloured_layout.finalize();
 
     logger.logc(Verbosity::important, MaterialSystem::channel, "Init success.");
 }
 
 /* Move constructor for the MaterialSystem. */
 MaterialSystem::MaterialSystem(MaterialSystem&& other) :
-    memory_manager(other.memory_manager),
+    gpu(other.gpu),
 
-    material_ids(other.material_ids),
-    simple_coloured(other.simple_coloured),
-    simple_textured(other.simple_textured)
+    simple_coloured_layout(std::move(other.simple_coloured_layout)),
+
+    material_ids(std::move(other.material_ids)),
+    simple_coloured(std::move(other.simple_coloured)),
+    simple_textured(std::move(other.simple_textured))
 {}
 
 /* Destructor for the MaterialSystem. */
@@ -66,6 +74,40 @@ material_t MaterialSystem::get_available_id(const char* material_type) const {
 
     // Done, return
     return material;
+}
+
+
+
+/* Returns the pipeline properties for the SimpleColoured material. The descriptor sets for the global and object's descriptors, have to be given. */
+Rendering::PipelineProperties MaterialSystem::props_simple_coloured(Rendering::DescriptorSetLayout&& global_descriptor_layout, Rendering::DescriptorSetLayout&& object_descriptor_layout) const {
+    logger.logc(Verbosity::important, MaterialSystem::channel, "Preparing pipeline properties for the SimpleColoured textures...");
+
+    // Prepare the shaders for the SimpleColoured pipeline
+    Tools::Array<ShaderStage> shader_stages(2);
+    shader_stages.push_back(ShaderStage(Shader(this->gpu, "bin/shaders/materials/simple_coloured_vertex.spv"), VK_SHADER_STAGE_VERTEX_BIT, {}));
+    shader_stages.push_back(ShaderStage(Shader(this->gpu, "bin/shaders/materials/simple_coloured_frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT, {}));
+
+    // Done
+    return Rendering::PipelineProperties(
+        std::move(shader_stages),
+        VertexInputState({ VertexBinding(0, sizeof(Vertex)) }, {
+            VertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32B32_SFLOAT),
+            VertexAttribute(0, 1, offsetof(Vertex, colour), VK_FORMAT_R32G32B32_SFLOAT),
+            VertexAttribute(0, 2, offsetof(Vertex, texel), VK_FORMAT_R32G32_SFLOAT)
+        }),
+        InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
+        depth_testing,
+        viewport_transformation,
+        rasterization,
+        Multisampling(),
+        color_logic,
+        PipelineLayout(this->gpu, { global_descriptor_layout, this->simple_coloured_layout, object_descriptor_layout }, {})
+    );
+}
+
+/* Returns the pipeline properties for the SimpleTextured material. */
+Rendering::PipelineProperties MaterialSystem::props_simple_textured() const {
+    logger.fatalc(MaterialSystem::channel, "Not yet implemented.");
 }
 
 
@@ -121,20 +163,15 @@ void MaterialSystem::remove(material_t material) {
 
 
 
-/* Renders the given list of objects with their assigned materials. */
-void MaterialSystem::render(const ECS::EntityManager& entity_manager) {
-    
-}
-
-
-
 /* Swap operator for the MaterialSystem class. */
 void Materials::swap(MaterialSystem& ms1, MaterialSystem& ms2) {
     #ifndef NDEBUG
-    if (&ms1.memory_manager != &ms2.memory_manager) { logger.fatalc(MaterialSystem::channel, "Cannot swap memory managers with different memory managers."); }
+    if (ms1.gpu != ms2.gpu) { logger.fatalc(MaterialSystem::channel, "Cannot swap memory managers with different GPUs."); }
     #endif
 
     using std::swap;
+
+    swap(ms1.simple_coloured_layout, ms2.simple_coloured_layout);
 
     swap(ms1.material_ids, ms2.material_ids);
     swap(ms1.simple_coloured, ms2.simple_coloured);

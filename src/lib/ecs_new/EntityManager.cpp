@@ -14,12 +14,6 @@
 
 #include "tools/Logger.hpp"
 
-#include "components/Transform.hpp"
-#include "components/Meshes.hpp"
-#include "components/Camera.hpp"
-#include "components/Controllable.hpp"
-#include "components/Textures.hpp"
-
 #include "EntityManager.hpp"
 
 using namespace std;
