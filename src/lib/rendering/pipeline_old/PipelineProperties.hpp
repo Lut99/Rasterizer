@@ -51,15 +51,15 @@ namespace Makma3D::Rendering {
     public:
         /* Constructor for the PipelineProperties class, which simply takes all properties in order and copies them.
          *
-         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
-         * @param vertex_input_state The description of where the vertex buffers are bound and how they are laid out
-         * @param input_assembly_state The description of what to do with the input vertices
-         * @param depth_testing Whether to do depth testing or not and, if so, how so
-         * @param viewport_transformation How the resulting viewport is sized/cutoff
-         * @param rasterization What to do during the rasterization stage
-         * @param multisampling How the pipeline should deal with multisampling
-         * @param color_logic How to deal with pixels already present in the target framebuffer(s)
-         * @param pipeline_layout How the data in the pipeline looks like, in terms of descriptors and push constants
+         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code.
+         * @param vertex_input_state The description of where the vertex buffers are bound and how they are laid out.
+         * @param input_assembly_state The description of what to do with the input vertices.
+         * @param depth_testing Whether to do depth testing or not and, if so, how so.
+         * @param viewport_transformation How the resulting viewport is sized/cutoff.
+         * @param rasterization What to do during the rasterization stage.
+         * @param multisampling How the pipeline should deal with multisampling.
+         * @param color_logic How to deal with pixels already present in the target framebuffer(s).
+         * @param pipeline_layout How the data in the pipeline looks like, in terms of descriptors and push constants.
          */
         PipelineProperties(const Tools::Array<Rendering::ShaderStage>& shader_stages,
                            const Rendering::VertexInputState& vertex_input_state,
@@ -72,15 +72,15 @@ namespace Makma3D::Rendering {
                            const Rendering::PipelineLayout& pipeline_layout);
         /* Constructor for the PipelineProperties class, which simply takes all properties in order and moves them.
          *
-         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code
-         * @param vertex_input_state The description of where the vertex buffers are bound and how they are laid out
-         * @param input_assembly_state The description of what to do with the input vertices
-         * @param depth_testing Whether to do depth testing or not and, if so, how so
-         * @param viewport_transformation How the resulting viewport is sized/cutoff
-         * @param rasterization What to do during the rasterization stage
-         * @param multisampling How the pipeline should deal with multisampling
-         * @param color_logic How to deal with pixels already present in the target framebuffer(s)
-         * @param pipeline_layout How the data in the pipeline looks like, in terms of descriptors and push constants
+         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code.
+         * @param vertex_input_state The description of where the vertex buffers are bound and how they are laid out.
+         * @param input_assembly_state The description of what to do with the input vertices.
+         * @param depth_testing Whether to do depth testing or not and, if so, how so.
+         * @param viewport_transformation How the resulting viewport is sized/cutoff.
+         * @param rasterization What to do during the rasterization stage.
+         * @param multisampling How the pipeline should deal with multisampling.
+         * @param color_logic How to deal with pixels already present in the target framebuffer(s).
+         * @param pipeline_layout How the data in the pipeline looks like, in terms of descriptors and push constants.
          */
         PipelineProperties(Tools::Array<Rendering::ShaderStage>&& shader_stages,
                            Rendering::VertexInputState&& vertex_input_state,
@@ -98,6 +98,23 @@ namespace Makma3D::Rendering {
         /* Destructor for the PipelineProperties class. */
         ~PipelineProperties();
 
+        /* Returns a copy of the PipelineProperties class, except that any of the given property structs are used instead of the internal ones.
+         *
+         * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code.
+         * @param vertex_input_state The description of where the vertex buffers are bound and how they are laid out.
+         * @param input_assembly_state The description of what to do with the input vertices.
+         * @param depth_testing Whether to do depth testing or not and, if so, how so.
+         * @param viewport_transformation How the resulting viewport is sized/cutoff.
+         * @param rasterization What to do during the rasterization stage.
+         * @param multisampling How the pipeline should deal with multisampling.
+         * @param color_logic How to deal with pixels already present in the target framebuffer(s).
+         * @param pipeline_layout How the data in the pipeline looks like, in terms of descriptors and push constants.
+         */
+        template <class... Ts>
+        PipelineProperties duplicate(Ts... args) const {
+            
+        }
+
         /* Copy assignment operator for the PipelineProperties class. */
         inline PipelineProperties& operator=(const PipelineProperties& other) { return *this = PipelineProperties(other); }
         /* Move assignment operator for the PipelineProperties class. */
@@ -106,6 +123,21 @@ namespace Makma3D::Rendering {
         friend void swap(PipelineProperties& pp1, PipelineProperties& pp2);
 
     };
+
+    /* Returns a copy of the PipelineProperties class, except that any of the given property structs are used instead of the internal ones.
+     *
+     * @param shader_stages A list of ShaderStages to initialize, each containing custom shader code.
+     * @param vertex_input_state The description of where the vertex buffers are bound and how they are laid out.
+     * @param input_assembly_state The description of what to do with the input vertices.
+     * @param depth_testing Whether to do depth testing or not and, if so, how so.
+     * @param viewport_transformation How the resulting viewport is sized/cutoff.
+     * @param rasterization What to do during the rasterization stage.
+     * @param multisampling How the pipeline should deal with multisampling.
+     * @param color_logic How to deal with pixels already present in the target framebuffer(s).
+     * @param pipeline_layout How the data in the pipeline looks like, in terms of descriptors and push constants.
+     */
+    template <class... Ts>
+    PipelineProperties PipelineProperties::duplicate(Ts... args) const;
 
     /* Swap operator for the PipelineProperties class */
     void swap(PipelineProperties& pp1, PipelineProperties& pp2);

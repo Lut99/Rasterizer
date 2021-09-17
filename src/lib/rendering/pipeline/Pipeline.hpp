@@ -20,8 +20,6 @@
 #include "../gpu/GPU.hpp"
 #include "../commandbuffers/CommandBuffer.hpp"
 
-#include "PipelineProperties.hpp"
-
 namespace Makma3D::Rendering {
     /* The Pipeline class, which functions a as a more convenient wrapper for the internal VkPipeline object. */
     class Pipeline {
@@ -35,8 +33,6 @@ namespace Makma3D::Rendering {
     private:
         /* The actual VkPipeline object that we wrap. */
         VkPipeline vk_pipeline;
-        /* The properties of this Pipeline. */
-        Rendering::PipelineProperties properties;
 
         /* Mark the PipelinePool as a friend. */
         friend class PipelinePool;

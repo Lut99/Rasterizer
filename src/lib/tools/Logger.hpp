@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   10/09/2021, 11:11:41
+ *   17/09/2021, 22:21:21
  * Auto updated?
  *   Yes
  *
@@ -318,6 +318,23 @@ namespace Tools {
             // Instead of returning, hit 'em with the exception
             throw Logger::Fatal(sstr.str());
         }
+
+        /* Prints the "Initializing..." message for the given channel and with the given verbosity. */
+        inline void init_start(Verbosity verbosity, const std::string& channel) { return this->logc(verbosity, channel, "Initializing..."); }
+        /* Prints the "Init success." message for the given channel and with the given verbosity. */
+        inline void init_success(Verbosity verbosity, const std::string& channel) { return this->logc(verbosity, channel, "Initialized."); }
+        /* Prints the "Copying..." message for the given channel. Always has a verbosity of 'debug'. */
+        inline void copy_start(const std::string& channel) { return this->logc(Verbosity::debug, channel, "Copying..."); }
+        /* Prints the "Copy success." message for the given channel. Always has a verbosity of 'debug'. */
+        inline void copy_success(const std::string& channel) { return this->logc(Verbosity::debug, channel, "Copied."); }
+        /* Prints the "Moving..." message for the given channel. Always has a verbosity of 'debug'. */
+        inline void move_start(const std::string& channel) { return this->logc(Verbosity::debug, channel, "Moving..."); }
+        /* Prints the "Move success." message for the given channel. Always has a verbosity of 'debug'. */
+        inline void move_success(const std::string& channel) { return this->logc(Verbosity::debug, channel, "Moved."); }
+        /* Prints the "Cleaning..." message for the given channel and with the given verbosity. */
+        inline void clean_start(Verbosity verbosity, const std::string& channel) { return this->logc(verbosity, channel, "Cleaning..."); }
+        /* Prints the "Cleaned." message for the given channel and with the given verbosity. */
+        inline void clean_success(Verbosity verbosity, const std::string& channel) { return this->logc(verbosity, channel, "Cleaned."); }
 
         /* Copy assignment operator for the Logger class. */
         inline Logger& operator=(const Logger& other) { return *this = Logger(other); }

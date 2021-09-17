@@ -23,6 +23,8 @@
 #include "../gpu/GPU.hpp"
 #include "../renderpass/RenderPass.hpp"
 
+#include "PipelineProperties.hpp"
+
 #include "Pipeline.hpp"
 
 namespace Makma3D::Rendering {
