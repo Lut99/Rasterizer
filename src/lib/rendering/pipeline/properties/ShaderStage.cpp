@@ -37,10 +37,10 @@ ShaderStage::ShaderStage(const Rendering::Shader* shader, VkShaderStageFlagBits 
 
 
 /* Flattens the internal map of specialization constants into an array of specialization map entries. */
-void ShaderStage::flatten_specialization_entries(VkSpecializationMapEntry*& entries, size_t& entries_size) const {
+std::pair<VkSpecializationMapEntry*, uint32_t> ShaderStage::flatten_specialization_entries() const {
     // We already know the size of the array, so allocate it
-    entries_size = this->specialization_constants.size();
-    entries = new VkSpecializationMapEntry[entries_size];
+    uint32_t entries_size = this->specialization_constants.size();
+    VkSpecializationMapEntry* entries = new VkSpecializationMapEntry[entries_size];
 
     // Loop through the array to construct all of the entries
     uint32_t offset = 0;
@@ -58,40 +58,42 @@ void ShaderStage::flatten_specialization_entries(VkSpecializationMapEntry*& entr
         offset += entries[i].size;
     }
 
-    // DOne
+    // DOne, return
+    return { entries, entries_size };
 }
 
 /* Flattens the internal map of specialization constants into a single string of binary data. Requires the list of VkSpecializationMapEntries to do this. */
-void ShaderStage::flatten_specialization_values(void*& data, size_t& data_size, VkSpecializationMapEntry* entries, size_t entries_size) const {
+std::pair<void*, size_t> ShaderStage::flatten_specialization_values(const std::pair<VkSpecializationMapEntry*, uint32_t>& entries) const {
     // First, do a quick search of the total data size
-    data_size = 0;
-    for (uint32_t i = 0; i < entries_size; i++) {
-        data_size += entries[i].size;
+    size_t data_size = 0;
+    for (uint32_t i = 0; i < entries.second; i++) {
+        data_size += entries.first[i].size;
     }
 
     // Next, allocate the array for the data
-    data = (void*) new uint8_t[data_size];
+    void* data = (void*) new uint8_t[data_size];
 
     // Populate the array by copying all the data over, one-by-one
-    for (uint32_t i = 0; i < entries_size; i++) {
-        memcpy((void*) ((uint8_t*) data + entries[i].offset), this->specialization_constants.at(entries[i].constantID).first, entries[i].size);
+    for (uint32_t i = 0; i < entries.second; i++) {
+        memcpy((void*) ((uint8_t*) data + entries.first[i].offset), this->specialization_constants.at(entries.first[i].constantID).first, entries.first[i].size);
     }
 
     // D0ne
+    return { data, data_size };
 }
 
 /* Given a flattened list of entries and of values, returns a new VkSpecializationInfo struct. */
-VkSpecializationInfo ShaderStage::create_specialization_info(VkSpecializationMapEntry* entries, size_t entries_size, void* data, size_t data_size) const {
+VkSpecializationInfo ShaderStage::create_specialization_info(const std::pair<VkSpecializationMapEntry*, uint32_t>& entries, const std::pair<void*, size_t>& data) const {
     // Create the struct
     VkSpecializationInfo specialization_info{};
 
     // Add the entries
-    specialization_info.mapEntryCount = entries_size;
-    specialization_info.pMapEntries = entries;
+    specialization_info.mapEntryCount = entries.second;
+    specialization_info.pMapEntries = entries.first;
 
     // Add the values
-    specialization_info.dataSize = data_size;
-    specialization_info.pData = data;
+    specialization_info.dataSize = data.second;
+    specialization_info.pData = data.first;
 
     // Return the struct
     return specialization_info;

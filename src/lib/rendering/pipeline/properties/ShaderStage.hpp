@@ -44,11 +44,11 @@ namespace Makma3D::Rendering {
         ShaderStage(const Rendering::Shader* shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, std::pair<void*, uint32_t>>& specialization_constants = {});
 
         /* Flattens the internal map of specialization constants into an array of specialization map entries. */
-        void flatten_specialization_entries(VkSpecializationMapEntry*& entries, size_t& entries_size) const;
+        std::pair<VkSpecializationMapEntry*, uint32_t> flatten_specialization_entries() const;
         /* Flattens the internal map of specialization constants into a single string of binary data. Requires the list of VkSpecializationMapEntries to do this. */
-        void flatten_specialization_values(void*& data, size_t& data_size, VkSpecializationMapEntry* entries, size_t entries_size) const;
+        std::pair<void*, size_t> flatten_specialization_values(const std::pair<VkSpecializationMapEntry*, uint32_t>& entries) const;
         /* Given a flattened list of entries and of values, returns a new VkSpecializationInfo struct. */
-        VkSpecializationInfo create_specialization_info(VkSpecializationMapEntry* entries, size_t entries_size, void* data, size_t data_size) const;
+        VkSpecializationInfo create_specialization_info(const std::pair<VkSpecializationMapEntry*, uint32_t>& entries, const std::pair<void*, size_t>& data) const;
         /* Given a VkSpecializationInfo struct, returns a VkPipelineShaderStageCreateInfo struct that describes the shader stage properly for use in a Pipeline. */
         VkPipelineShaderStageCreateInfo create_info(const VkSpecializationInfo& specialization_info) const;
 

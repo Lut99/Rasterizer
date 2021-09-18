@@ -23,13 +23,45 @@ using namespace Makma3D::Rendering;
 
 
 /***** PIPELINE CLASS *****/
-/* Constructor for the Pipeline class, which takes a GPU where it lives, the VkPipeline to wrap and its properties for copying purposes. */
-Pipeline::Pipeline(const Rendering::GPU& gpu, const VkPipeline& vk_pipeline, Rendering::PipelineProperties&& properties) :
+/* Constructor for the Pipeline class, which takes a GPU where it lives, the VkPipeline to wrap and its matching layout. */
+Pipeline::Pipeline(const Rendering::GPU& gpu, const VkPipeline& vk_pipeline, const VkPipelineLayout& vk_pipeline_layout) :
     gpu(gpu),
 
     vk_pipeline(vk_pipeline),
-    properties(properties)
+    vk_pipeline_layout(vk_pipeline_layout)
 {}
 
+/* Move constructor for the Pipeline class, which is deleted. */
+Pipeline::Pipeline(Pipeline&& other) :
+    gpu(other.gpu),
+
+    vk_pipeline(other.vk_pipeline),
+    vk_pipeline_layout(other.vk_pipeline_layout)
+{
+    other.vk_pipeline = nullptr;
+    other.vk_pipeline_layout = nullptr;
+}
+
 /* Destructor for the Pipeline class. */
-Pipeline::~Pipeline() {}
+Pipeline::~Pipeline() {
+    if (this->vk_pipeline != nullptr) {
+        vkDestroyPipeline(this->gpu, this->vk_pipeline, nullptr);
+    }
+    if (this->vk_pipeline_layout != nullptr) {
+        vkDestroyPipelineLayout(this->gpu, this->vk_pipeline_layout, nullptr);
+    }
+}
+
+
+
+/* Swap operator for the Pipeline class. */
+void Rendering::swap(Pipeline& p1, Pipeline& p2) {
+    #ifndef NDEBUG
+    if (p1.gpu != p2.gpu) { logger.fatalc(Pipeline::channel, "Could not swap pipelines with different GPUs"); }
+    #endif
+
+    using std::swap;
+
+    swap(p1.vk_pipeline, p2.vk_pipeline);
+    swap(p1.vk_pipeline_layout, p2.vk_pipeline_layout);
+}

@@ -18,6 +18,9 @@
 
 #include "tools/Array.hpp"
 
+#include "../gpu/GPU.hpp"
+#include "../renderpass/RenderPass.hpp"
+
 #include "properties/ShaderStage.hpp"
 #include "properties/VertexInputState.hpp"
 #include "properties/InputAssemblyState.hpp"
@@ -28,6 +31,7 @@
 #include "properties/ColorLogic.hpp"
 #include "properties/PipelineLayout.hpp"
 #include "PipelineCache.hpp"
+#include "Pipeline.hpp"
 
 namespace Makma3D::Rendering {
     /* The PipelineConstructor class, which is used to efficiently set a pipeline's properties. */
@@ -36,6 +40,8 @@ namespace Makma3D::Rendering {
         /* Channel name for the PipelineCOnstructor class. */
         static constexpr const char* channel = "PipelineConstructor";
 
+        /* Reference to the GPU where the PipelineConstructor will construct its pipelines. */
+        const Rendering::GPU& gpu;
         /* Reference to the PipelineCache that we use for speeding up pipeline creation. */
         const Rendering::PipelineCache& pipeline_cache;
 
@@ -60,14 +66,17 @@ namespace Makma3D::Rendering {
         Rendering::PipelineLayout pipeline_layout;
 
     public:
-        /* Constructor for the PipelineConstructor class, which takes a PipelineCache we use for creating its pipelines. */
-        PipelineConstructor(const Rendering::PipelineCache& pipeline_cache);
+        /* Constructor for the PipelineConstructor class, which takes a GPU to create the pipelines on and a PipelineCache we use for creating its pipelines. */
+        PipelineConstructor(const Rendering::GPU& gpu, const Rendering::PipelineCache& pipeline_cache);
         /* Copy constructor for the PipelineConstructor class. */
         PipelineConstructor(const PipelineConstructor& other);
         /* Move constructor for the PipelineConstructor class. */
         PipelineConstructor(PipelineConstructor&& other);
         /* Destructor for the PipelineConstructor class. */
         ~PipelineConstructor();
+
+        /* Creates a new Pipeline with the internal properties and the given RenderPass & first subpass. Optionally takes create flags for the VkPipeline, too. */
+        Rendering::Pipeline construct(const Rendering::RenderPass& render_pass, uint32_t first_subpass, VkPipelineCreateFlags create_flags = 0) const;
 
         /* Copy assignment operator for the PipelineConstructor class. */
         inline PipelineConstructor& operator=(const PipelineConstructor& other) { return *this = PipelineConstructor(other); }
