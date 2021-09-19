@@ -4,7 +4,7 @@
  * Created:
  *   30/07/2021, 12:17:08
  * Last edited:
- *   07/08/2021, 22:50:54
+ *   9/19/2021, 5:52:41 PM
  * Auto updated?
  *   Yes
  *
@@ -96,7 +96,7 @@ WorldSystem::WorldSystem(float time_ratio) :
 }
 
 /* Constructor for the WorldSystem, which takes an entity manager and generates an empty world (but with a floor). */
-WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
+WorldSystem::WorldSystem(ECS::EntityManager&, float time_ratio) :
     time_ratio(time_ratio),
 
     last_update(std::chrono::system_clock::now()),
@@ -111,7 +111,7 @@ WorldSystem::WorldSystem(ECS::EntityManager& entity_manger, float time_ratio) :
 }
 
 /* Constructor for the WorldSystem, which takes an entity manager to spawn entities with an the path to a scene JSON. */
-WorldSystem::WorldSystem(ECS::EntityManager& entity_manager, const std::string& scene_path, float time_ratio) :
+WorldSystem::WorldSystem(ECS::EntityManager&, const std::string&, float time_ratio) :
     time_ratio(time_ratio),
 
     last_update(std::chrono::system_clock::now()),

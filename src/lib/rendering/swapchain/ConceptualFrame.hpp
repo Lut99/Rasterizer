@@ -4,7 +4,7 @@
  * Created:
  *   08/09/2021, 18:53:40
  * Last edited:
- *   08/09/2021, 18:53:40
+ *   9/19/2021, 5:56:26 PM
  * Auto updated?
  *   Yes
  *
@@ -21,7 +21,7 @@
 #include "models/ModelSystem.hpp"
 
 #include "../data/ObjectData.hpp"
-#include "../memory/MemoryManager.hpp"
+#include "../memory_manager/MemoryManager.hpp"
 #include "../memory/Buffer.hpp"
 #include "../commandbuffers/CommandBuffer.hpp"
 #include "../descriptors/DescriptorSetLayout.hpp"

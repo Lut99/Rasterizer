@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:19
  * Last edited:
- *   8/1/2021, 3:48:11 PM
+ *   9/19/2021, 5:56:32 PM
  * Auto updated?
  *   Yes
  *
@@ -17,7 +17,7 @@
 
 #include "rendering/auxillary/Vertex.hpp"
 #include "rendering/auxillary/Index.hpp"
-#include "rendering/memory/MemoryManager.hpp"
+#include "rendering/memory_manager/MemoryManager.hpp"
 #include "ecs/components/Meshes.hpp"
 #include "tools/Array.hpp"
 

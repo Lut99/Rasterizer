@@ -4,7 +4,7 @@
  * Created:
  *   11/09/2021, 17:40:29
  * Last edited:
- *   11/09/2021, 17:40:29
+ *   9/19/2021, 5:49:12 PM
  * Auto updated?
  *   Yes
  *
@@ -14,6 +14,7 @@
  *   should be filled in exactly.
 **/
 
+#include <cstdio>
 #include "ViewportTransformation.hpp"
 
 using namespace std;

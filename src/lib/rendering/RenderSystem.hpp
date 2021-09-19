@@ -4,7 +4,7 @@
  * Created:
  *   20/07/2021, 15:10:33
  * Last edited:
- *   20/07/2021, 15:10:33
+ *   9/19/2021, 5:56:40 PM
  * Auto updated?
  *   Yes
  *
@@ -21,7 +21,7 @@
 
 #include "ecs/EntityManager.hpp"
 #include "window/Window.hpp"
-#include "memory/MemoryManager.hpp"
+#include "memory_manager/MemoryManager.hpp"
 #include "models/ModelSystem.hpp"
 #include "textures/TextureSystem.hpp"
 

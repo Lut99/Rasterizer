@@ -4,7 +4,7 @@
  * Created:
  *   16/08/2021, 11:49:33
  * Last edited:
- *   16/08/2021, 11:49:33
+ *   9/19/2021, 5:56:37 PM
  * Auto updated?
  *   Yes
  *
@@ -19,7 +19,7 @@
 #include "ecs/EntityManager.hpp"
 #include "ecs/components/Textures.hpp"
 
-#include "rendering/memory/MemoryManager.hpp"
+#include "rendering/memory_manager/MemoryManager.hpp"
 #include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "rendering/sampling/Sampler.hpp"
 

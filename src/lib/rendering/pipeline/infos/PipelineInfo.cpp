@@ -4,7 +4,7 @@
  * Created:
  *   19/09/2021, 15:48:27
  * Last edited:
- *   19/09/2021, 15:48:27
+ *   9/19/2021, 6:03:45 PM
  * Auto updated?
  *   Yes
  *
@@ -113,8 +113,8 @@ PipelineInfo::PipelineInfo(const Tools::Array<Rendering::ShaderStage>& shaders,
     pipeline_layout_info(pipeline_layout)
 {
     // Initialize the list of shader stage infos first, immediately casting to to the vklist
-    this->vk_shader_stage_infos = new VkPipelineShaderStageCreateInfo[this->shader_stage_infos.size()];
-    for (uint32_t i = 0; i < this->shader_stage_infos.size(); i++) {
+    this->vk_shader_stage_infos = new VkPipelineShaderStageCreateInfo[shaders.size()];
+    for (uint32_t i = 0; i < shaders.size(); i++) {
         this->shader_stage_infos.push_back(ShaderStageInfo(shaders[i]));
         this->vk_shader_stage_infos[i] = this->shader_stage_infos[i].vulkan();
     }

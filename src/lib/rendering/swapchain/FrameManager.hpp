@@ -4,7 +4,7 @@
  * Created:
  *   08/09/2021, 23:33:27
  * Last edited:
- *   08/09/2021, 23:33:27
+ *   9/19/2021, 5:56:36 PM
  * Auto updated?
  *   Yes
  *
@@ -18,7 +18,7 @@
 
 #include "tools/Array.hpp"
 
-#include "../memory/MemoryManager.hpp"
+#include "../memory_manager/MemoryManager.hpp"
 #include "../descriptors/DescriptorSetLayout.hpp"
 #include "../renderpass/RenderPass.hpp"
 #include "../depthtesting/DepthStencil.hpp"

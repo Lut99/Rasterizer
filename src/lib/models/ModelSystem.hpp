@@ -4,7 +4,7 @@
  * Created:
  *   01/07/2021, 14:09:53
  * Last edited:
- *   01/07/2021, 14:09:53
+ *   9/19/2021, 5:56:30 PM
  * Auto updated?
  *   Yes
  *
@@ -22,7 +22,7 @@
 
 #include "ecs/EntityManager.hpp"
 #include "ecs/components/Meshes.hpp"
-#include "rendering/memory/MemoryManager.hpp"
+#include "rendering/memory_manager/MemoryManager.hpp"
 #include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "ModelFormat.hpp"
 

@@ -4,7 +4,7 @@
  * Created:
  *   11/06/2021, 18:03:12
  * Last edited:
- *   9/8/2021, 3:27:16 PM
+ *   9/19/2021, 5:56:26 PM
  * Auto updated?
  *   Yes
  *
@@ -30,7 +30,7 @@
 #include "textures/TextureSystem.hpp"
 
 #include "rendering/instance/Instance.hpp"
-#include "rendering/memory/MemoryManager.hpp"
+#include "rendering/memory_manager/MemoryManager.hpp"
 #include "rendering/RenderSystem.hpp"
 
 #include "ecs/EntityManager.hpp"
@@ -283,7 +283,6 @@ int main(int argc, const char** argv) {
         logger.log(Verbosity::important, "Done initializing, entering game loop...");
         chrono::system_clock::time_point last_fps_update = chrono::system_clock::now();
         bool busy = true;
-        uint32_t count = 0;
         while (busy) {
             // Run the render engine
             busy = render_system.render_frame(entity_manager);

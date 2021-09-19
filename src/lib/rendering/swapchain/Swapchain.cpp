@@ -4,7 +4,7 @@
  * Created:
  *   09/05/2021, 18:40:07
  * Last edited:
- *   25/05/2021, 18:14:13
+ *   9/19/2021, 5:51:17 PM
  * Auto updated?
  *   Yes
  *
@@ -59,33 +59,6 @@ static void populate_swapchain_info(VkSwapchainCreateInfoKHR& swapchain_info, Vk
 
     // FInally, set no old swapchain (for now, at least)
     swapchain_info.oldSwapchain = old_swapchain;
-}
-
-/* Populates a given VkImageViewCreateInfo struct. */
-static void populate_view_info(VkImageViewCreateInfo& view_info, const VkImage& vk_image, const VkFormat& vk_format) {
-    // Set the struct's default values
-    view_info = {};
-    view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-
-    // Link the image
-    view_info.image = vk_image;
-
-    // Set the type and format of the image
-    view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    view_info.format = vk_format;
-
-    // Set the components of the swapchain. For now, all of them are just themselves
-    view_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    view_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-    // Set the subresource range's properties: what kind of aspect we're interested in, how many bitmaps this image has and how many layers
-    view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    view_info.subresourceRange.baseMipLevel = 0;
-    view_info.subresourceRange.levelCount = 1;
-    view_info.subresourceRange.baseArrayLayer = 0;
-    view_info.subresourceRange.layerCount = 1;
 }
 
 
@@ -245,13 +218,17 @@ Swapchain::Swapchain(const Swapchain& other) :
 /* Move constructor for the Swapchain class. */
 Swapchain::Swapchain(Swapchain&& other) :
     gpu(other.gpu),
-    vk_swapchain(other.vk_swapchain),
     surface(other.surface),
+    
+    vk_swapchain(other.vk_swapchain),
+
     vk_surface_format(other.vk_surface_format),
     vk_surface_present_mode(other.vk_surface_present_mode),
     vk_surface_extent(other.vk_surface_extent),
+
     vk_actual_image_count(other.vk_actual_image_count),
     vk_desired_image_count(other.vk_desired_image_count),
+    
     vk_swapchain_images(other.vk_swapchain_images)
 {
     // Set the deallocatable objects to nullptrs to avoid them, well, being deallocation

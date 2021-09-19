@@ -4,7 +4,7 @@
  * Created:
  *   17/09/2021, 22:13:30
  * Last edited:
- *   17/09/2021, 22:13:30
+ *   9/19/2021, 6:01:53 PM
  * Auto updated?
  *   Yes
  *
@@ -26,7 +26,7 @@ using namespace Makma3D::Rendering;
 
 /***** HELPER FUNCTIONS *****/
 /* Loads the given path as raw, binary shader data, and returns it in the newly heap-allocated array. Note that the data type is actually uint32_t, meaning the resulting array is aligned to its size. */
-static void load_raw_shader_data(const std::string& path, uint32_t** data, size_t* data_size) {
+static void load_raw_shader_data(const std::string& path, uint32_t** data, uint32_t* data_size) {
     // Begin by trying to open a stream to the file
     std::ifstream file(path, ios::binary | ios::ate);
     if (!file.is_open()) {
@@ -40,7 +40,7 @@ static void load_raw_shader_data(const std::string& path, uint32_t** data, size_
     }
 
     // Note the file position as the shader module size and compute the uint32_t size version of it
-    size_t n_bytes = static_cast<uint32_t>(file.tellg());
+    size_t n_bytes = static_cast<size_t>(file.tellg());
     uint32_t padding = (sizeof(uint32_t) - static_cast<uint32_t>(n_bytes) % sizeof(uint32_t)) % sizeof(uint32_t);
     *data_size = (static_cast<uint32_t>(n_bytes) + padding) / sizeof(uint32_t);
 
@@ -51,8 +51,6 @@ static void load_raw_shader_data(const std::string& path, uint32_t** data, size_
     file.seekg(0);
     file.read((char*) *data, n_bytes);
     file.close();
-
-    // Done
 }
 
 
@@ -61,14 +59,14 @@ static void load_raw_shader_data(const std::string& path, uint32_t** data, size_
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates the given VkShaderModuleCreateInfo struct. */
-static void populate_shader_info(VkShaderModuleCreateInfo& shader_info, uint32_t* data, size_t data_size, VkShaderModuleCreateFlags create_flags) {
+static void populate_shader_info(VkShaderModuleCreateInfo& shader_info, uint32_t* data, uint32_t data_size, VkShaderModuleCreateFlags create_flags) {
     // Set to default
     shader_info = {};
     shader_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 
     // Link the data
     shader_info.pCode = data;
-    shader_info.codeSize = data_size;
+    shader_info.codeSize = data_size * sizeof(uint32_t);
 
     // Possibly add some shader flags
     shader_info.flags = create_flags;
@@ -118,7 +116,7 @@ ShaderPool::~ShaderPool() {
 Rendering::Shader* ShaderPool::allocate(const std::string& path, VkShaderModuleCreateFlags create_flags) {
     // First, we try to load the shader data
     logger.logc(Verbosity::important, ShaderPool::channel, "Loading shader from file '", path, "'...");
-    uint32_t* data; size_t data_size;
+    uint32_t* data; uint32_t data_size;
     load_raw_shader_data(path, &data, &data_size);
 
     // If we succeeded, continue by populating the create info for the VkShaderModule

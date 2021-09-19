@@ -4,7 +4,7 @@
  * Created:
  *   11/09/2021, 18:38:56
  * Last edited:
- *   11/09/2021, 18:38:56
+ *   9/19/2021, 5:49:51 PM
  * Auto updated?
  *   Yes
  *
@@ -31,7 +31,7 @@ ColorLogic::ColorLogic() :
 ColorLogic::ColorLogic(VkBool32 enabled, VkLogicOp logic_op, const Tools::Array<Rendering::ColorBlending>& color_blend_attachments) :
     enabled(enabled),
     logic_op(logic_op),
-    color_blends(color_blends)
+    color_blends(color_blend_attachments)
 {
     printf("Initialized ColorLogic\n");
 }

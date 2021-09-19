@@ -4,7 +4,7 @@
  * Created:
  *   06/09/2021, 14:47:46
  * Last edited:
- *   06/09/2021, 14:47:46
+ *   9/19/2021, 5:56:38 PM
  * Auto updated?
  *   Yes
  *
@@ -18,7 +18,7 @@
 #include <string>
 
 #include "ecs/components/Textures.hpp"
-#include "rendering/memory/MemoryManager.hpp"
+#include "rendering/memory_manager/MemoryManager.hpp"
 
 namespace Makma3D::Textures {
     /* Loads the file at the given path as a .jpg file, and populates the given Texture component from it. */

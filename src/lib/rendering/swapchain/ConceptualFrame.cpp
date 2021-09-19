@@ -4,7 +4,7 @@
  * Created:
  *   08/09/2021, 19:09:54
  * Last edited:
- *   08/09/2021, 19:09:54
+ *   9/19/2021, 5:51:54 PM
  * Auto updated?
  *   Yes
  *
@@ -242,7 +242,7 @@ void ConceptualFrame::schedule_global() {
     // Add the camera to the descriptor
     this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
     // Bind the descriptor itself
-    this->global_set->schedule(this->draw_cmd, this->pipeline->props().pipeline_layout.layout(), 0);
+    this->global_set->schedule(this->draw_cmd, this->pipeline->layout(), 0);
 }
 
 /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
@@ -257,7 +257,7 @@ void ConceptualFrame::schedule_object(uint32_t object_index) {
     // Bind the correct object buffer to the correct set
     this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
     // Schedule the object's descriptor set
-    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->props().pipeline_layout.layout(), 1);
+    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
 }
 
 /* Schedules a draw command for the given mesh on the internal draw queue. */
