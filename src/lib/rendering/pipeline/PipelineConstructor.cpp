@@ -160,7 +160,7 @@ Tools::Array<Rendering::Pipeline*> PipelineConstructor::nconstruct(uint32_t N, c
     // Clean the remaining arrays and return
     delete[] vk_pipeline_layouts;
     delete[] vk_pipelines;
-    return std::move(result);
+    return result;
 }
 
 
