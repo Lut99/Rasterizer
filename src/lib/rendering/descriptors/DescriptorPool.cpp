@@ -237,7 +237,7 @@ DescriptorSet* DescriptorPool::allocate(const Rendering::DescriptorSetLayout& de
     }
 
     // Put the layout in a struct s.t. we can pass it and keep it in memory until after the call
-    Tools::Array<VkDescriptorSetLayout> vk_descriptor_set_layouts({ descriptor_set_layout.descriptor_set_layout() });
+    Tools::Array<VkDescriptorSetLayout> vk_descriptor_set_layouts({ descriptor_set_layout.vulkan() });
 
     // Next, populate the create info
     VkDescriptorSetAllocateInfo descriptor_set_info;
@@ -319,7 +319,7 @@ Tools::Array<DescriptorSet*> DescriptorPool::nallocate(uint32_t n_sets, const Re
     }
 
     // Get the VkDescriptorSetLayout object behind the layout as an array
-    Tools::Array<VkDescriptorSetLayout> vk_descriptor_set_layout(descriptor_set_layout.descriptor_set_layout(), n_sets);
+    Tools::Array<VkDescriptorSetLayout> vk_descriptor_set_layout(descriptor_set_layout.vulkan(), n_sets);
     // Create a temporary list of result sets to which we can allocate
     Tools::Array<VkDescriptorSet> sets(n_sets);
 

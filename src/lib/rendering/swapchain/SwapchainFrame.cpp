@@ -104,7 +104,7 @@ SwapchainFrame::SwapchainFrame(const Rendering::GPU& gpu, const Rendering::Rende
     // logger.logc(Verbosity::details, SwapchainFrame::channel, "Creating framebuffer...");
     Tools::Array<VkImageView> framebuffer_views = { this->vk_color_view, this->vk_depth_view };
     VkFramebufferCreateInfo framebuffer_info;
-    populate_framebuffer_info(framebuffer_info, this->render_pass.render_pass(), framebuffer_views, this->vk_extent);
+    populate_framebuffer_info(framebuffer_info, this->render_pass.vulkan(), framebuffer_views, this->vk_extent);
     if ((vk_result = vkCreateFramebuffer(this->gpu, &framebuffer_info, nullptr, &this->vk_framebuffer)) != VK_SUCCESS) {
         logger.fatalc(SwapchainFrame::channel, "Could not create framebuffer: ", vk_error_map[vk_result]);
     }

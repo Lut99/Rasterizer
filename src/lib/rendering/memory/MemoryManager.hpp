@@ -23,7 +23,6 @@
 #include "../commandbuffers/CommandPool.hpp"
 #include "../descriptors/DescriptorPool.hpp"
 #include "../views/ImageViewPool.hpp"
-#include "../pipeline/PipelinePool.hpp"
 
 namespace Makma3D::Rendering {
     /* The MemoryManager class, which bundles different kind of pools into one place. */
@@ -49,8 +48,6 @@ namespace Makma3D::Rendering {
         /* The descriptor pool used to manage the descriptors. */
         Rendering::DescriptorPool descr_pool;
 
-        /* The pipeline pool used to efficiently allocate pipelines. */
-        Rendering::PipelinePool pipeline_pool;
         /* The ImageView pool used to allocate image views. */
         Rendering::ImageViewPool view_pool;
 

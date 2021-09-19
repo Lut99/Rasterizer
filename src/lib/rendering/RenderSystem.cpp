@@ -50,9 +50,14 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     depth_stencil(this->window.gpu(), this->memory_manager.draw_pool, this->window.swapchain().extent()),
 
-    render_pass(this->window.gpu())
-{
+    shader_pool(this->window.gpu()),
 
+    render_pass(this->window.gpu()),
+
+    pipeline_cache(this->window.gpu(), "pipeline.cache"),
+    pipeline_constructor(this->window.gpu(), this->pipeline_cache)
+{
+    logger.debug("Test 1");
     // Initialize the descriptor set layout for the global data
     this->global_descriptor_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     this->global_descriptor_layout.finalize();
@@ -61,39 +66,47 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->object_descriptor_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     this->object_descriptor_layout.finalize();
 
+    // Load the shaders
+    logger.debug("Test 2");
+    Tools::Array<ShaderStage> shader_stages(2);
+    shader_stages.push_back(ShaderStage(this->shader_pool.allocate("bin/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT));
+    shader_stages.push_back(ShaderStage(this->shader_pool.allocate("bin/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT));
+
     // Initialize the render pass
+    logger.debug("Test 3");
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     uint32_t dep_index = this->render_pass.add_attachment(this->depth_stencil.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     this->render_pass.add_subpass({ std::make_pair(col_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) }, std::make_pair(dep_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
     this->render_pass.add_dependency(VK_SUBPASS_EXTERNAL, col_index, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
     this->render_pass.finalize();
 
-    // Initialize the pipeline
-    Tools::Array<ShaderStage> shader_stages(2);
-    shader_stages.push_back(ShaderStage(Shader(this->window.gpu(), "bin/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT, {}));
-    shader_stages.push_back(ShaderStage(Shader(this->window.gpu(), "bin/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT, {}));
-    this->pipeline = this->memory_manager.pipeline_pool.allocate(
-        PipelineProperties(
-            std::move(shader_stages),
-            VertexInputState({ VertexBinding(0, sizeof(Vertex)) }, {
-                VertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32B32_SFLOAT),
-                VertexAttribute(0, 1, offsetof(Vertex, colour), VK_FORMAT_R32G32B32_SFLOAT),
-                VertexAttribute(0, 2, offsetof(Vertex, texel), VK_FORMAT_R32G32_SFLOAT)
-            }),
-            InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST),
-            DepthTesting(VK_TRUE, VK_COMPARE_OP_LESS),
-            ViewportTransformation(VkOffset2D{ 0, 0 }, this->window.swapchain().extent(), VkOffset2D{ 0, 0 }, this->window.swapchain().extent()),
-            Rasterization(VK_TRUE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE),
-            Multisampling(),
-            ColorLogic(VK_FALSE, VK_LOGIC_OP_NO_OP, {
-                ColorBlending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD)
-            }),
-            PipelineLayout(this->window.gpu(), { this->global_descriptor_layout, this->object_descriptor_layout }, {})
-        ),
-        this->render_pass, 0
+    // Prepare pipeline construction by settings the constructor properties
+    logger.debug("Test 4");
+    this->pipeline_constructor.shaders = shader_stages;
+    this->pipeline_constructor.vertex_input_state = VertexInputState(
+        { VertexBinding(0, sizeof(Vertex)) },
+        {
+            VertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32B32_SFLOAT),
+            VertexAttribute(0, 1, offsetof(Vertex, colour), VK_FORMAT_R32G32B32_SFLOAT),
+            VertexAttribute(0, 2, offsetof(Vertex, texel), VK_FORMAT_R32G32_SFLOAT)
+        }
     );
+    this->pipeline_constructor.input_assembly_state = InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    this->pipeline_constructor.depth_testing = DepthTesting(VK_TRUE, VK_COMPARE_OP_LESS);
+    this->pipeline_constructor.viewport_transformation = ViewportTransformation(VkOffset2D{ 0, 0 }, this->window.swapchain().extent(), VkOffset2D{ 0, 0 }, this->window.swapchain().extent());
+    this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    this->pipeline_constructor.multisampling = Multisampling();
+    this->pipeline_constructor.color_logic = ColorLogic(
+        VK_FALSE, VK_LOGIC_OP_NO_OP,
+        { ColorBlending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD) }
+    );
+    this->pipeline_constructor.pipeline_layout = PipelineLayout({ this->global_descriptor_layout, this->object_descriptor_layout }, {});
+    // Create the pipeline
+    logger.debug("Test 5");
+    this->pipeline = this->pipeline_constructor.construct(this->render_pass, 0, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT);
 
     // Initialize the frame manager
+    logger.debug("Test 6");
     this->frame_manager = new FrameManager(this->memory_manager, this->window.swapchain(), this->global_descriptor_layout, this->object_descriptor_layout);
     this->frame_manager->bind(this->render_pass, this->depth_stencil);
 
@@ -108,12 +121,17 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
     model_system(other.model_system),
     texture_system(other.texture_system),
 
-    global_descriptor_layout(other.global_descriptor_layout),
-    object_descriptor_layout(other.object_descriptor_layout),
+    global_descriptor_layout(std::move(other.global_descriptor_layout)),
+    object_descriptor_layout(std::move(other.object_descriptor_layout)),
 
-    depth_stencil(other.depth_stencil),
+    depth_stencil(std::move(other.depth_stencil)),
 
-    render_pass(other.render_pass),
+    shader_pool(std::move(other.shader_pool)),
+    
+    render_pass(std::move(other.render_pass)),
+
+    pipeline_cache(std::move(other.pipeline_cache)),
+    pipeline_constructor(std::move(other.pipeline_constructor)),
     pipeline(other.pipeline),
 
     frame_manager(other.frame_manager)
@@ -133,7 +151,7 @@ RenderSystem::~RenderSystem() {
     }
     // Deallocate the pipeline
     if (this->pipeline != nullptr) {
-        this->memory_manager.pipeline_pool.free(this->pipeline);
+        delete this->pipeline;
     }
 
     logger.logc(Verbosity::important, RenderSystem::channel, "Cleaned.");
@@ -156,13 +174,15 @@ void RenderSystem::_resize() {
     // Re-create all frames in the frame manager
     this->frame_manager->bind(this->render_pass, this->depth_stencil);
 
-    // Recreate the pipeline with another viewport
-    PipelineProperties pipeline_properties = this->pipeline->props();
-    pipeline_properties.viewport_transformation = ViewportTransformation(VkOffset2D{ 0, 0 }, this->window.swapchain().extent(), VkOffset2D{ 0, 0 }, this->window.swapchain().extent());
-    Pipeline* new_pipeline = this->memory_manager.pipeline_pool.allocate(this->pipeline, std::move(pipeline_properties), render_pass, 0);
+    // Recreate the pipeline
+    this->pipeline_constructor.viewport_transformation.viewport.width  = (float) this->window.swapchain().extent().width;
+    this->pipeline_constructor.viewport_transformation.viewport.height = (float) this->window.swapchain().extent().height;
+    this->pipeline_constructor.viewport_transformation.scissor.extent = this->window.swapchain().extent();
+    this->pipeline_constructor.set_base_pipeline(this->pipeline);
+    Pipeline* new_pipeline = this->pipeline_constructor.construct(this->render_pass, 0);
     
     // Delete the old pipeline, then set the new one as the current one
-    this->memory_manager.pipeline_pool.free(this->pipeline);
+    delete this->pipeline;
     this->pipeline = new_pipeline;
 }
 
@@ -268,7 +288,12 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
 
     swap(rs1.depth_stencil, rs2.depth_stencil);
 
+    swap(rs1.shader_pool, rs2.shader_pool);
+
     swap(rs1.render_pass, rs2.render_pass);
+
+    swap(rs1.pipeline_cache, rs2.pipeline_cache);
+    swap(rs1.pipeline_constructor, rs2.pipeline_constructor);
     swap(rs1.pipeline, rs2.pipeline);
 
     swap(rs1.frame_manager, rs2.frame_manager);

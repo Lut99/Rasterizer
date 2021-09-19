@@ -14,7 +14,6 @@
  *   per framebuffer.
 **/
 
-#include "tools/Array.hpp"
 #include "ColorLogic.hpp"
 
 using namespace std;
@@ -25,7 +24,7 @@ using namespace Makma3D::Rendering;
 /***** COLORLOGIC CLASS *****/
 /* Default constructor for the ColorLogic class. */
 ColorLogic::ColorLogic() :
-    ColorLogic(VK_FALSE, VK_LOGIC_OP_MAX_ENUM, {})
+    ColorLogic(VK_FALSE, VK_LOGIC_OP_MAX_ENUM, Tools::Array<Rendering::ColorBlending>())
 {}
 
 /* Constructor for the ColorLogic class, which takes whether or not to enable the logic operation, which operation to apply if it is and the list of per-framebuffer ColorBlending properties. Note that there has to be one ColorBlending struct per framebuffer, whether that framebuffer has it enabled or not. */
@@ -33,7 +32,9 @@ ColorLogic::ColorLogic(VkBool32 enabled, VkLogicOp logic_op, const Tools::Array<
     enabled(enabled),
     logic_op(logic_op),
     color_blends(color_blends)
-{}
+{
+    printf("Initialized ColorLogic\n");
+}
 
 
 

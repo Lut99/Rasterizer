@@ -71,7 +71,7 @@ namespace Makma3D::Rendering {
         void stop_scheduling(const Rendering::CommandBuffer* cmd) const;
 
         /* Expliticly returns the internal VkRenderPass object. */
-        inline const VkRenderPass& render_pass() const { return this->vk_render_pass; }
+        inline const VkRenderPass& vulkan() const { return this->vk_render_pass; }
         /* Implicitly returns the internal VkRenderPass object. */
         inline operator VkRenderPass() const { return this->vk_render_pass; }
 

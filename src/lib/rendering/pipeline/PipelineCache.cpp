@@ -117,13 +117,17 @@ PipelineCache::~PipelineCache() {
         size_t data_size;
         if ((vk_result = vkGetPipelineCacheData(this->gpu, this->vk_pipeline_cache, &data_size, nullptr)) != VK_SUCCESS) {
             logger.errorc(PipelineCache::channel, "Could not get pipeline cache data size: ", vk_error_map[vk_result]);
-            goto done;
+            // Destroy the pipeline cache and return
+            vkDestroyPipelineCache(this->gpu, this->vk_pipeline_cache, nullptr);
+            return;
         }
         // Allocate the buffer, then fetch the actual data
         void* data = (void*) new char[data_size];
         if ((vk_result = vkGetPipelineCacheData(this->gpu, this->vk_pipeline_cache, &data_size, data)) != VK_SUCCESS) {
             logger.errorc(PipelineCache::channel, "Could not get pipeline cache data: ", vk_error_map[vk_result]);
-            goto done;
+            // Destroy the pipeline cache and return
+            vkDestroyPipelineCache(this->gpu, this->vk_pipeline_cache, nullptr);
+            return;
         }
 
         // With the data in memory, open the file to write to
@@ -139,7 +143,9 @@ PipelineCache::~PipelineCache() {
 
             // Show the error
             logger.errorc(PipelineCache::channel, "Could not open cache file '", this->filepath, "' for writing: ", error);
-            goto done;
+            // Destroy the pipeline cache and return
+            vkDestroyPipelineCache(this->gpu, this->vk_pipeline_cache, nullptr);
+            return;
         }
 
         // Write, done
@@ -147,7 +153,6 @@ PipelineCache::~PipelineCache() {
         cache_file.close();
         logger.logc(Verbosity::details, PipelineCache::channel, "Writing success.");
 
-done:
         // Finally, destroy the pipeline cache
         vkDestroyPipelineCache(this->gpu, this->vk_pipeline_cache, nullptr);
     }

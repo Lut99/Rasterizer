@@ -39,7 +39,7 @@ _intern::ArrayStorage<T>::ArrayStorage(const _intern::ArrayStorage<T>& other) :
 {
     // Allocate a new array for ourselves
     this->elements = (T*) malloc(this->length * sizeof(T));
-    if (this->elements == nullptr) { throw std::bad_alloc(); }
+    if (this->elements == nullptr) { printf("Length: %u\n", this->length); throw std::bad_alloc(); }
 
     // Copy everything over
     if constexpr (std::conjunction<std::is_trivially_copy_constructible<T>, std::is_trivially_copy_assignable<T>>::value) {

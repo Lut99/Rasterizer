@@ -13,6 +13,7 @@
  *   how the Pipeline will rasterizer the vertices.
 **/
 
+#include <cstdio>
 #include "Rasterization.hpp"
 
 using namespace std;
@@ -42,7 +43,9 @@ Rasterization::Rasterization(VkBool32 enabled, VkCullModeFlags cull_mode, VkFron
     depth_clamp(depth_clamp),
     polygon_mode(polygon_mode),
     line_width(line_width)
-{}
+{
+    printf("Initialized Rasterization\n");
+}
 
 
 

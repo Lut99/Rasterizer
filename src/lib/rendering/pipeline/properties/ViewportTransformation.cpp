@@ -14,8 +14,6 @@
  *   should be filled in exactly.
 **/
 
-#include "../../auxillary/VulkanSwap.hpp"
-
 #include "ViewportTransformation.hpp"
 
 using namespace std;
@@ -47,6 +45,7 @@ ViewportTransformation::ViewportTransformation(VkOffset2D viewport_offset, VkExt
     this->scissor.extent = scissor_extent;
 
     // Done
+    printf("Initialized ViewportTransformation\n");
 }
 
 

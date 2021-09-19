@@ -46,6 +46,9 @@ namespace Makma3D::Rendering {
         const Rendering::PipelineCache& pipeline_cache;
 
     public:
+        /* The base pipeline with which new pipelines can be created faster. */
+        const Rendering::Pipeline* base_pipeline;
+
         /* List of Shaders to load,each with their matching pipeline stage and map of specialization constants. */
         Tools::Array<Rendering::ShaderStage> shaders;
         /* Defines how the input vertex buffer is laid out. */
@@ -75,8 +78,13 @@ namespace Makma3D::Rendering {
         /* Destructor for the PipelineConstructor class. */
         ~PipelineConstructor();
 
+        /* Sets the base pipeline that can be a parent to any new pipelines. Set to a nullptr to remove them again. */
+        inline void set_base_pipeline(const Rendering::Pipeline* pipeline) { this->base_pipeline = pipeline; }
+
         /* Creates a new Pipeline with the internal properties and the given RenderPass & first subpass. Optionally takes create flags for the VkPipeline, too. */
-        Rendering::Pipeline construct(const Rendering::RenderPass& render_pass, uint32_t first_subpass, VkPipelineCreateFlags create_flags = 0) const;
+        Rendering::Pipeline* construct(const Rendering::RenderPass& render_pass, uint32_t first_subpass, VkPipelineCreateFlags create_flags = 0) const;
+        /* Creates N new Pipelines with the internal properties and the given RenderPass & first subpass. Optionally takes create flags for the VkPipeline, too. */
+        Tools::Array<Rendering::Pipeline*> nconstruct(uint32_t N, const Rendering::RenderPass& render_pass, uint32_t first_subpass, VkPipelineCreateFlags create_flags = 0) const;
 
         /* Copy assignment operator for the PipelineConstructor class. */
         inline PipelineConstructor& operator=(const PipelineConstructor& other) { return *this = PipelineConstructor(other); }
@@ -86,9 +94,12 @@ namespace Makma3D::Rendering {
         friend void swap(PipelineConstructor& pc1, PipelineConstructor& pc2);
 
     };
-    
+
     /* Swap operator for the PipelineConstructor class. */
     void swap(PipelineConstructor& pc1, PipelineConstructor& pc2);
+
+    // /* Static function that takes a list of PipelineConstructors and uses the information in them to create that many new pipelines at once. */
+    // Tools::Array<Rendering::Pipeline*> joint_construct(const Tools::Array<PipelineConstructor>& constructors, const Tools::Array<RenderPass>& render_passes, const Tools::Array<uint32_t>& first_subpasses, const Tools::Array<VkPipelineCreateFlags>& create_flags);
 
 }
 

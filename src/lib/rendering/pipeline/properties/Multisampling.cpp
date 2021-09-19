@@ -13,6 +13,7 @@
  *   should deal with multisampling.
 **/
 
+#include <cstdio>
 #include "Multisampling.hpp"
 
 using namespace std;
@@ -27,7 +28,9 @@ using namespace Makma3D::Rendering;
 // {}
 
 /* Constructor for the Multisampling class, which takes nothing as we don't do that for now. */
-Multisampling::Multisampling() {}
+Multisampling::Multisampling() {
+    printf("Initialized Multisampling\n");
+}
 
 
 

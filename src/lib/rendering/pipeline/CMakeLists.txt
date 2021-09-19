@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanPipeline STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Shader.cpp ${CMAKE_CURRENT_SOURCE_DIR}/PipelineProperties.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Pipeline.cpp ${CMAKE_CURRENT_SOURCE_DIR}/PipelinePool.cpp )
+add_library(VulkanPipeline STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Pipeline.cpp ${CMAKE_CURRENT_SOURCE_DIR}/PipelineConstructor.cpp ${CMAKE_CURRENT_SOURCE_DIR}/PipelineCache.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanPipeline PUBLIC
@@ -9,6 +9,7 @@ target_include_directories(VulkanPipeline PUBLIC
 list(APPEND EXTRA_LIBS VulkanPipeline)
 
 # Add the subdirectories
+add_subdirectory(infos)
 add_subdirectory(properties)
 
 # Carry the list to the parent scope

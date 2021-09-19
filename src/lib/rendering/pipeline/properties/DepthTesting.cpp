@@ -13,6 +13,7 @@
  *   depthtesting part of a Pipeline.
 **/
 
+#include <cstdio>
 #include "DepthTesting.hpp"
 
 using namespace std;
@@ -30,7 +31,9 @@ DepthTesting::DepthTesting() :
 DepthTesting::DepthTesting(VkBool32 enabled, VkCompareOp compare_op) :
     enabled(enabled),
     compare_op(compare_op)
-{}
+{
+    printf("Initializing DepthTesting\n");
+}
 
 
 

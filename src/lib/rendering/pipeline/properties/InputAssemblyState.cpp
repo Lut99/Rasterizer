@@ -13,6 +13,7 @@
  *   a Pipeline relating to how the vertices are treated.
 **/
 
+#include <cstdio>
 #include "InputAssemblyState.hpp"
 
 using namespace std;
@@ -30,7 +31,9 @@ InputAssemblyState::InputAssemblyState() :
 InputAssemblyState::InputAssemblyState(VkPrimitiveTopology topology, VkBool32 restart_enable) :
     topology(topology),
     restart_enable(restart_enable)
-{}
+{
+    printf("Initializing InputAssemblyState\n");
+}
 
 
 

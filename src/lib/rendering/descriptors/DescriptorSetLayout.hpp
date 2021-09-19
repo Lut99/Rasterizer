@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 15:33:48
  * Last edited:
- *   10/09/2021, 10:55:54
+ *   19/09/2021, 15:34:23
  * Auto updated?
  *   Yes
  *
@@ -52,7 +52,7 @@ namespace Makma3D::Rendering {
         void finalize();
 
         /* Expliticly returns the internal VkDescriptorSetLayout object. */
-        inline const VkDescriptorSetLayout& descriptor_set_layout() const { return this->vk_descriptor_set_layout; }
+        inline const VkDescriptorSetLayout& vulkan() const { return this->vk_descriptor_set_layout; }
         /* Implicitly casts this class to a VkDescriptorSetLayout by returning the internal object. */
         inline operator VkDescriptorSetLayout() const { return this->vk_descriptor_set_layout; }
 

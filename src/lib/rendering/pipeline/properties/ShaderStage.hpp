@@ -20,6 +20,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include "tools/Array.hpp"
 #include "../../shaders/Shader.hpp"
 
 namespace Makma3D::Rendering {
@@ -44,11 +45,11 @@ namespace Makma3D::Rendering {
         ShaderStage(const Rendering::Shader* shader, VkShaderStageFlagBits shader_stage, const std::unordered_map<uint32_t, std::pair<void*, uint32_t>>& specialization_constants = {});
 
         /* Flattens the internal map of specialization constants into an array of specialization map entries. */
-        std::pair<VkSpecializationMapEntry*, uint32_t> flatten_specialization_entries() const;
+        Tools::Array<VkSpecializationMapEntry> flatten_specialization_entries() const;
         /* Flattens the internal map of specialization constants into a single string of binary data. Requires the list of VkSpecializationMapEntries to do this. */
-        std::pair<void*, size_t> flatten_specialization_values(const std::pair<VkSpecializationMapEntry*, uint32_t>& entries) const;
+        std::pair<void*, size_t> flatten_specialization_values(const Tools::Array<VkSpecializationMapEntry>& entries) const;
         /* Given a flattened list of entries and of values, returns a new VkSpecializationInfo struct. */
-        VkSpecializationInfo create_specialization_info(const std::pair<VkSpecializationMapEntry*, uint32_t>& entries, const std::pair<void*, size_t>& data) const;
+        VkSpecializationInfo create_specialization_info(const Tools::Array<VkSpecializationMapEntry>& entries, const std::pair<void*, size_t>& data) const;
         /* Given a VkSpecializationInfo struct, returns a VkPipelineShaderStageCreateInfo struct that describes the shader stage properly for use in a Pipeline. */
         VkPipelineShaderStageCreateInfo create_info(const VkSpecializationInfo& specialization_info) const;
 

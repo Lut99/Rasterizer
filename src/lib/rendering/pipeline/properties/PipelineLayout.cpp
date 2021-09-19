@@ -13,9 +13,6 @@
  *   pipeline in terms of push constants and descriptors.
 **/
 
-#include "tools/Logger.hpp"
-#include "../../auxillary/ErrorCodes.hpp"
-
 #include "PipelineLayout.hpp"
 
 using namespace std;
@@ -51,7 +48,9 @@ PipelineLayout::PipelineLayout() :
 PipelineLayout::PipelineLayout(const Tools::Array<Rendering::DescriptorSetLayout>& descriptor_layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constant_layouts) :
     descriptor_layouts(descriptor_layouts),
     push_constant_layouts(push_constant_layouts)
-{}
+{
+    printf("Initialized PipelineLayout\n");
+}
 
 
 
@@ -59,7 +58,7 @@ PipelineLayout::PipelineLayout(const Tools::Array<Rendering::DescriptorSetLayout
 Tools::Array<VkDescriptorSetLayout> PipelineLayout::get_layouts() const {
     Tools::Array<VkDescriptorSetLayout> result(this->descriptor_layouts.size());
     for (uint32_t i = 0; i < this->descriptor_layouts.size(); i++) {
-        result.push_back(this->descriptor_layouts[i].descriptor_set_layout());
+        result.push_back(this->descriptor_layouts[i].vulkan());
     }
     return result;
 }

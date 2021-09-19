@@ -29,8 +29,10 @@
 
 #include "descriptors/DescriptorSetLayout.hpp"
 
-#include "pipeline/Shader.hpp"
+#include "shaders/ShaderPool.hpp"
 #include "renderpass/RenderPass.hpp"
+#include "pipeline/PipelineCache.hpp"
+#include "pipeline/PipelineConstructor.hpp"
 #include "pipeline/Pipeline.hpp"
 
 #include "swapchain/FrameManager.hpp"
@@ -70,8 +72,16 @@ namespace Makma3D::Rendering {
         /* The depth stencil we attach to the pipeline. */
         Rendering::DepthStencil depth_stencil;
 
+        /* A pool where we draw shaders from. */
+        Rendering::ShaderPool shader_pool;
+
         /* The render pass which we use to draw. */
         Rendering::RenderPass render_pass;
+
+        /* A cache for creating pipelines. */
+        Rendering::PipelineCache pipeline_cache;
+        /* The constructor we use to (hopefully) efficiently pump out new pipelines. */
+        Rendering::PipelineConstructor pipeline_constructor;
         /* The graphics pipeline we use to render. */
         Rendering::Pipeline* pipeline;
 
