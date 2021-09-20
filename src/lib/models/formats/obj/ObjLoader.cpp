@@ -4,7 +4,7 @@
  * Created:
  *   03/07/2021, 17:37:15
  * Last edited:
- *   07/08/2021, 23:11:09
+ *   9/20/2021, 8:05:50 PM
  * Auto updated?
  *   Yes
  *
@@ -789,7 +789,7 @@ mtllib_start: {
                 // Show what we loaded and done
                 logger.logc(Verbosity::debug, channel, "Loaded materials: ", sstr.str());
             } else {
-                logger.warningc(channel, "Material library '", filepath, "' not found; cannot load.");
+                (*iter)->debug_info.print_warning(cerr, "Material library '" + filepath + "' not found, skipping.");
             }
 
             // Done with this one

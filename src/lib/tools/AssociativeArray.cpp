@@ -4,7 +4,7 @@
  * Created:
  *   10/09/2021, 11:15:26
  * Last edited:
- *   10/09/2021, 11:15:26
+ *   9/20/2021, 7:58:49 PM
  * Auto updated?
  *   Yes
  *
@@ -75,7 +75,7 @@ template <class ABSTRACT, class T, bool D, bool C, bool M>
 template <class U>
 auto AssociativeArray<ABSTRACT, T, D, C, M>::remove(abstract_t abstract_index) -> std::enable_if_t<M, U> {
     // Try to find the abstract index first
-    std::unordered_map<abstract_t, array_size_t>::iterator iter = this->abstract_index_map.find(abstract_index);
+    typename std::unordered_map<abstract_t, array_size_t>::iterator iter = this->abstract_index_map.find(abstract_index);
     if (iter == this->abstract_index_map.end()) {
         throw std::out_of_range("No element with abstract index " + std::to_string(abstract_index) + " is present in the AssociativeArray.");
     }
@@ -102,7 +102,7 @@ auto AssociativeArray<ABSTRACT, T, D, C, M>::remove(abstract_t abstract_index) -
 template <class ABSTRACT, class T, bool D, bool C, bool M>
 T& AssociativeArray<ABSTRACT, T, D, C, M>::get_at(abstract_t abstract_index) {
     // First, check if the index exists
-    std::unordered_map<abstract_t, array_size_t>::iterator iter = this->abstract_index_map.find(abstract_index);
+    typename std::unordered_map<abstract_t, array_size_t>::iterator iter = this->abstract_index_map.find(abstract_index);
     if (iter == this->abstract_index_map.end()) {
         throw std::out_of_range("No element with abstract index " + std::to_string(abstract_index) + " is present in the AssociativeArray.");
     }

@@ -4,7 +4,7 @@
  * Created:
  *   16/08/2021, 15:11:40
  * Last edited:
- *   07/09/2021, 16:01:25
+ *   9/20/2021, 8:18:11 PM
  * Auto updated?
  *   Yes
  *
@@ -366,6 +366,7 @@ Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_forma
 
     // With the buffer in place, allocate memory and bind it
     VkDeviceSize offset = this->_allocate(image_requirements);
+    printf("GPU: %p\nImage: %p\nMemory: %p\nOffset: %lu\n", this->gpu.device(), image, this->vk_memory, offset);
     vkBindImageMemory(this->gpu, image, this->vk_memory, offset);
 
     // Create the new Buffer object and insert it in our own list

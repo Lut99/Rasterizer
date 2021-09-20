@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 15:33:41
  * Last edited:
- *   25/05/2021, 18:14:13
+ *   9/20/2021, 8:34:22 PM
  * Auto updated?
  *   Yes
  *
@@ -84,7 +84,8 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayout& other) :
 DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout&& other) :
     gpu(other.gpu),
     vk_descriptor_set_layout(other.vk_descriptor_set_layout),
-    vk_bindings(other.vk_bindings)
+    // vk_bindings(other.vk_bindings)
+    vk_bindings(std::move(other.vk_bindings))
 {
     // Set the layout to a nullptr to avoid deallocation
     other.vk_descriptor_set_layout = nullptr;

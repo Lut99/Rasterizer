@@ -4,7 +4,7 @@
  * Created:
  *   08/09/2021, 23:33:27
  * Last edited:
- *   9/19/2021, 5:56:36 PM
+ *   9/20/2021, 9:16:25 PM
  * Auto updated?
  *   Yes
  *
@@ -68,7 +68,7 @@ namespace Makma3D::Rendering {
         /* Returns a new ConceptualFrame to which the render system can render. Blocks until any such frame is available. If it returns a nullptr, that means that the swapchain is out of date for some reason. */
         Rendering::ConceptualFrame* get_frame();
         /* Schedules the given frame for presentation once rendering to it has been completed. Returns whether or not the window needs to be resized. */
-        bool present_frame(Rendering::ConceptualFrame* conceptual_frame);
+        bool present_frame(const Rendering::ConceptualFrame* conceptual_frame);
 
         /* Copy assignment operator for the FrameManager class, which is deleted. */
         FrameManager& operator=(const FrameManager& other) = delete;

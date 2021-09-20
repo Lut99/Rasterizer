@@ -4,7 +4,7 @@
  * Created:
  *   09/09/2021, 16:28:57
  * Last edited:
- *   10/09/2021, 16:56:37
+ *   9/20/2021, 10:52:39 PM
  * Auto updated?
  *   Yes
  *
@@ -23,6 +23,7 @@
 #include "tools/Array.hpp"
 #include "tools/AssociativeArray.hpp"
 #include "ecs/EntityManager.hpp"
+#include "ecs/components/Model.hpp"
 #include "textures/Texture.hpp"
 #include "rendering/data/MaterialData.hpp"
 #include "rendering/gpu/GPU.hpp"
@@ -82,6 +83,9 @@ namespace Makma3D::Materials {
         static void init_props_simple_coloured(Rendering::ShaderPool& shader_pool, Rendering::PipelineConstructor& pipeline_constructor);
         /* Takes a PipelineConstructor and modifies the relevant properties so that it's suitable to render the SimpleTextured material. The shaders are allocated with the given ShaderPool. As little properties as possible are changed. */
         static void init_props_simple_textured(Rendering::ShaderPool& shader_pool, Rendering::PipelineConstructor& pipeline_constructor);
+
+        /* Sorts given list of 'entities' (list of their Model components) in such a way that they can be rendered material-by-material efficiently. */
+        std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> sort_entities(const ECS::ComponentList<ECS::Model>& entities) const;
 
         /* Returns the MaterialType of the given material. */
         inline MaterialType get_type(material_t material) const { return this->material_ids.at(material); }

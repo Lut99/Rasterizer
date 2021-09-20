@@ -4,7 +4,7 @@
  * Created:
  *   27/07/2021, 17:11:02
  * Last edited:
- *   07/09/2021, 17:21:03
+ *   9/20/2021, 8:38:11 PM
  * Auto updated?
  *   Yes
  *
@@ -38,6 +38,7 @@ _intern::ArrayStorage<T>::ArrayStorage(const _intern::ArrayStorage<T>& other) :
     max_length(other.max_length)
 {
     // Allocate a new array for ourselves
+    // printf("Copying from array with size %u\n", this->length);
     this->elements = (T*) malloc(this->length * sizeof(T));
     if (this->elements == nullptr) { throw std::bad_alloc(); }
 
@@ -58,6 +59,7 @@ _intern::ArrayStorage<T>::ArrayStorage(_intern::ArrayStorage<T>&& other) :
     length(other.length),
     max_length(other.max_length)
 {
+    // printf("Moving from array with size %u\n", this->length);
     other.elements = nullptr;
     other.length = 0;
     other.max_length = 0;

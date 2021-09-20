@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 15:33:48
  * Last edited:
- *   19/09/2021, 15:34:23
+ *   9/20/2021, 10:49:35 PM
  * Auto updated?
  *   Yes
  *
@@ -24,13 +24,14 @@
 namespace Makma3D::Rendering {
     /* The DescriptorSetLayout class, which describes the layout for a single type of buffer. */
     class DescriptorSetLayout {
-    private:
+    public:
         /* Channel name for the DescriptorSetLayout class. */
         static constexpr const char* channel = "DescriptorSetLayout";
 
         /* Constant reference to the device for which we defined this DescriptorSetLayout. */
         const Rendering::GPU& gpu;
 
+    private:
         /* The actual VkDescriptorSetLayout we wrap. */
         VkDescriptorSetLayout vk_descriptor_set_layout;
         /* Keeps track of all bindings defined. */

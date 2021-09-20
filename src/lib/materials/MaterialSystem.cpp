@@ -4,7 +4,7 @@
  * Created:
  *   09/09/2021, 16:32:42
  * Last edited:
- *   10/09/2021, 16:58:46
+ *   9/20/2021, 10:52:48 PM
  * Auto updated?
  *   Yes
  *
@@ -33,7 +33,7 @@ MaterialSystem::MaterialSystem(const Rendering::GPU& gpu) :
 
     // Add in the default material
     this->material_ids.insert({ DefaultMaterial, MaterialType::simple });
-    this->simple_coloured.add(DefaultMaterial, {});
+    this->simple.add(DefaultMaterial, {});
 
     logger.logc(Verbosity::important, MaterialSystem::channel, "Init success.");
 }
@@ -78,8 +78,7 @@ material_t MaterialSystem::get_available_id(const char* material_type) const {
 
 /* Initializes given DescriptorSetLayout with everything needed for materials. */
 void MaterialSystem::init_layout(Rendering::DescriptorSetLayout& descriptor_set_layout) {
-    descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10, VK_SHADER_STAGE_VERTEX_BIT);
-    descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10, VK_SHADER_STAGE_FRAGMENT_BIT);
+    descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     descriptor_set_layout.finalize();
 }
 
@@ -184,6 +183,54 @@ void MaterialSystem::init_props_simple_textured(Rendering::ShaderPool& shader_po
     pipeline_constructor.input_assembly_state = InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
 
     // Done
+}
+
+
+
+/* Sorts given list of 'entities' (list of their Model components) in such a way that they can be rendered material-by-material efficiently. */
+std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> MaterialSystem::sort_entities(const ECS::ComponentList<ECS::Model>& entities) const {
+    // Start by looping through the possible entities
+    std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> result;
+    for (uint32_t i = 0; i < entities.size(); i++) {
+        // Get the entity and its component
+        ECS::entity_t entity = entities.get_entity(i);
+        const ECS::Model& model = entities[i];
+
+        // Next, loop through all the entity's meshes
+        for (uint32_t j = 0; j < model.meshes.size(); j++) {
+            // Get a shortcut to the mesh & material in question
+            const ECS::Mesh& mesh = model.meshes[j];
+            material_t material = mesh.material;
+            // Also lookup the meshes MaterialType based on its material index
+            MaterialType material_type = this->material_ids.at(material);
+
+            // Next, add a new unordered map to the main map if this is the first time we see this type
+            std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>>::iterator type_iter = result.find(material_type);
+            if (type_iter == result.end()) {
+                // Insert a new map
+                type_iter = result.insert({ material_type, {} }).first;
+            }
+
+            // Next, check if we have seen this specific material before
+            std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>::iterator material_iter = (*type_iter).second.find(material);
+            if (material_iter == (*type_iter).second.end()) {
+                material_iter = (*type_iter).second.insert({ material, {} }).first;
+            }
+
+            // Finally, see if we need to add an entry for this entity
+            std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>::iterator entity_iter = (*material_iter).second.find(entity);
+            if (entity_iter == (*material_iter).second.end()) {
+                entity_iter = (*material_iter).second.insert({ entity, Tools::Array<const ECS::Mesh*>(16) }).first;
+            }
+
+            // Finally, add this mesh to the list
+            while ((*entity_iter).second.size() >= (*entity_iter).second.capacity()) { (*entity_iter).second.reserve(2 * (*entity_iter).second.capacity()); }
+            (*entity_iter).second.push_back(&mesh);
+        }
+    }
+
+    // Done, return the map
+    return result;
 }
 
 

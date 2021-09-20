@@ -4,7 +4,7 @@
  * Created:
  *   05/06/2021, 15:27:42
  * Last edited:
- *   05/06/2021, 15:27:42
+ *   9/20/2021, 8:14:07 PM
  * Auto updated?
  *   Yes
  *
@@ -81,7 +81,7 @@ void QueueInfo::refresh(const VkPhysicalDevice& vk_physical_device, const VkSurf
             uint32_t cap_i = static_cast<uint32_t>(p.first);
             if (capabilities[cap_i] && (p.second.first < 0 || n_specialties < best_specialities[cap_i])) {
                 // Update the graphics family
-                this->queue_families.at(p.first) = make_pair(static_cast<int64_t>(i), static_cast<int64_t>(supported_queues[cap_i].queueCount));
+                this->queue_families.at(p.first) = make_pair(static_cast<int64_t>(i), static_cast<int64_t>(supported_queues[i].queueCount));
 
                 // Update this family's best specialty measure
                 best_specialities[cap_i] = n_specialties;

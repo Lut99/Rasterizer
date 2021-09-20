@@ -4,7 +4,7 @@
  * Created:
  *   11/06/2021, 18:03:12
  * Last edited:
- *   9/19/2021, 5:56:26 PM
+ *   9/20/2021, 8:15:45 PM
  * Auto updated?
  *   Yes
  *
@@ -283,11 +283,11 @@ int main(int argc, const char** argv) {
         // model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
         // texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
 
-        // Prepare the second object
-        entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
-        world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
-        model_system.load_model(entity_manager, obj2, exe_path + "/data/models/capsule.obj", Models::ModelFormat::obj);
-        // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);
+        // // Prepare the second object
+        // entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
+        // world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
+        // model_system.load_model(entity_manager, obj2, exe_path + "/data/models/capsule.obj", Models::ModelFormat::obj);
+        // // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);
 
         // Do the render
         uint32_t fps = 0;

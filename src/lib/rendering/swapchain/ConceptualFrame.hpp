@@ -4,7 +4,7 @@
  * Created:
  *   08/09/2021, 18:53:40
  * Last edited:
- *   9/19/2021, 5:56:26 PM
+ *   9/20/2021, 9:14:26 PM
  * Auto updated?
  *   Yes
  *
@@ -112,10 +112,10 @@ namespace Makma3D::Rendering {
 
         /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue. */
         void schedule_start();
-        /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
-        void schedule_global();
         /* Binds the given pipeline on the internal draw command queue. */
         void schedule_pipeline(const Rendering::Pipeline* pipeline);
+        /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
+        void schedule_global();
         /* Schedules the stuff for a material. */
         void schedule_material(uint32_t material_index);
         /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
@@ -127,6 +127,9 @@ namespace Makma3D::Rendering {
 
         /* "Renders" the frame by sending the internal draw queue to the given device queue. */
         void submit(const VkQueue& vk_queue);
+
+        /* Returns the index of the internal frame. */
+        inline uint32_t index() const { printf("Swapchain frame pointer: %p\n", this->swapchain_frame); return this->swapchain_frame->index(); }
 
         /* Copy assignment operator for the ConceptualFrame class, which is deleted. */
         ConceptualFrame& operator=(const ConceptualFrame& other) = delete;

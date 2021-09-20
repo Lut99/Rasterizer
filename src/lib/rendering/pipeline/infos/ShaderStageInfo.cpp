@@ -4,7 +4,7 @@
  * Created:
  *   19/09/2021, 14:09:52
  * Last edited:
- *   19/09/2021, 14:09:52
+ *   9/20/2021, 8:00:16 PM
  * Auto updated?
  *   Yes
  *
@@ -145,7 +145,7 @@ ShaderStageInfo::~ShaderStageInfo() {
         delete this->vk_specialization_info;
     }
     if (this->vk_data != nullptr) {
-        delete[] this->vk_data;
+        delete[] (uint8_t*) this->vk_data;
     }
     if (this->vk_entries != nullptr) {
         delete[] this->vk_entries;

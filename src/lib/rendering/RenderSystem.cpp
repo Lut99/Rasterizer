@@ -4,7 +4,7 @@
  * Created:
  *   20/07/2021, 15:10:25
  * Last edited:
- *   07/08/2021, 15:23:48
+ *   9/20/2021, 10:51:53 PM
  * Auto updated?
  *   Yes
  *
@@ -226,37 +226,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     frame->prepare_render(objects.size(), this->material_system.size());
 
     // Sort the objects by material type
-    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, ECS::ComponentList<Tools::Array<const ECS::Mesh*>>>> sorted_objects;
-    for (uint32_t i = 0; i < objects.size(); i++) {
-        // Get the data from the entity
-        entity_t entity = objects.get_entity(i);
-        const ECS::Model& model = objects[i];
-
-        // Sort all of the model's meshes
-        for (uint32_t j = 0; j < model.meshes.size(); j++) {
-            // Get the meshes' material
-            Materials::material_t material = model.meshes[i].material;
-
-            // Make sure there is enough space in the material list in a little efficient way
-            ECS::ComponentList<Tools::Array<const ECS::Mesh*>>& material_list = sorted_objects[this->material_system.get_type(material)][material];
-            if (material_list.size() == 0) {
-                material_list.reserve(16);
-            }
-            while (material_list.size() >= material_list.capacity()) {
-                material_list.reserve(2 * material_list.capacity());
-            }
-
-            // Check if this model already has a mesh scheduled here
-            if (!material_list.contains(entity)) {
-                material_list.add(entity, Tools::Array<const ECS::Mesh*>(16));
-            }
-            Tools::Array<const ECS::Mesh*>& mesh_list = material_list.get(entity);
-
-            // Add this mesh to the list of meshes
-            while (mesh_list.capacity() >= mesh_list.size()) { mesh_list.reserve(2 * mesh_list.capacity()); }
-            mesh_list.push_back(&model.meshes[i]);
-        }
-    }
+    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> sorted_objects = this->material_system.sort_entities(objects);
 
     // Populate the frame's camera data
     const Camera& cam = entity_manager.get_list<Camera>()[0];
@@ -270,43 +240,39 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     // Start recording the frame's command buffer
     frame->schedule_start();
 
-    // Schedule the global data too
-    frame->schedule_global();
-
     // Loop through all present material types
     uint32_t material_index = 0;
     uint32_t object_index = 0;
-    for (const auto& p1 : sorted_objects) {
+    for (const auto& material_types : sorted_objects) {
         // Schedule the pipeline for this material
-        frame->schedule_pipeline(this->pipelines.at(p1.first));
+        frame->schedule_pipeline(this->pipelines.at(material_types.first));
+        // Schedule the frame global data on it
+        frame->schedule_global();
+
         // Get the list of data for this material type
-        const Tools::AssociativeArray<Materials::material_t, MaterialData>& material_data = this->material_system.get_list(p1.first);
+        const Tools::AssociativeArray<Materials::material_t, MaterialData>& material_data = this->material_system.get_list(material_types.first);
 
         // Loop through all specific materials for this type
-        for (const auto& p2 : p1.second) {
+        for (const auto& materials : material_types.second) {
             // Upload & schedule the data for this material
-            frame->upload_material_data(material_index, material_data.get(p2.first));
+            frame->upload_material_data(material_index, material_data.get(materials.first));
             frame->schedule_material(material_index++);
 
             // Next, loop through all entities of this material to render them
-            for (uint32_t i = 0; i < p2.second.size(); i++) {
-                // Get the relevant components for this mesh' entity
-                entity_t entity = p2.second.get_entity(i);
-                const Tools::Array<const ECS::Mesh*>& models = p2.second[i];
-                const ECS::Transform& transform = entity_manager.get_component<Transform>(entity);
+            for (const auto& entities : materials.second) {
+                // Get the relevant components for this entity
+                const ECS::Transform& transform = entity_manager.get_component<Transform>(entities.first);
 
-                // Populate the buffer for this entity
+                // Populate the buffer for this entity and upload it
                 frame->upload_object_data(object_index, ObjectData{ transform.translation });
-                // Schedule the object's buffer too
                 frame->schedule_object(object_index++);
 
-                // Loop through all meshes of this object to render them
-                for (uint32_t j = 0; j < models.size(); j++) {
+                // Loop through the meshes of this entity to render each of those
+                for (uint32_t i = 0; i < entities.second.size(); i++) {
                     // Schedule its draw
-                    frame->schedule_draw(this->model_system, *models[j]);
+                    frame->schedule_draw(this->model_system, *entities.second[i]);
                 }
             }
-
         }
     }
 

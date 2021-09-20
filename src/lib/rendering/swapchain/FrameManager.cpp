@@ -4,7 +4,7 @@
  * Created:
  *   08/09/2021, 23:33:43
  * Last edited:
- *   08/09/2021, 23:33:43
+ *   9/20/2021, 9:24:06 PM
  * Auto updated?
  *   Yes
  *
@@ -138,10 +138,11 @@ Rendering::ConceptualFrame* FrameManager::get_frame() {
 }
 
 /* Schedules the given frame for presentation once rendering to it has been completed. Returns whether or not the window needs to be resized. */
-bool FrameManager::present_frame(Rendering::ConceptualFrame* conceptual_frame) {
+bool FrameManager::present_frame(const Rendering::ConceptualFrame* conceptual_frame) {
     // Prepare the present info
+    uint32_t index = conceptual_frame->swapchain_frame->index();
     VkPresentInfoKHR present_info;
-    populate_present_info(present_info, this->swapchain, conceptual_frame->swapchain_frame->index(), conceptual_frame->render_ready_semaphore);
+    populate_present_info(present_info, this->swapchain, index, conceptual_frame->render_ready_semaphore);
 
     // Present it using the queue present function
     Tools::Array<VkQueue> present_queues = this->memory_manager.gpu.queues(QueueType::present);

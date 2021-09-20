@@ -4,7 +4,7 @@
  * Created:
  *   08/09/2021, 19:09:54
  * Last edited:
- *   9/19/2021, 5:51:54 PM
+ *   9/20/2021, 10:51:41 PM
  * Auto updated?
  *   Yes
  *
@@ -112,7 +112,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     pipeline(std::move(other.pipeline)),
 
     global_layout(std::move(other.global_layout)),
-    material_layout(std::move(material_layout)),
+    material_layout(std::move(other.material_layout)),
     object_layout(std::move(other.object_layout)),
 
     draw_cmd(std::move(other.draw_cmd)),
@@ -213,8 +213,9 @@ void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
 
     // Allocate n_objects new descriptors, since we always reset the pool
     this->descriptor_pool->reset();
-    this->global_set  = this->descriptor_pool->allocate(this->global_layout);
-    this->object_sets = this->descriptor_pool->nallocate(n_objects, this->object_layout);
+    this->global_set    = this->descriptor_pool->allocate(this->global_layout);
+    this->material_sets = this->descriptor_pool->nallocate(n_materials, this->material_layout);
+    this->object_sets   = this->descriptor_pool->nallocate(n_objects, this->object_layout);
 }
 
 
@@ -226,6 +227,8 @@ void ConceptualFrame::upload_camera_data(const glm::mat4& proj_matrix, const glm
 
     // Send it to the camera buffer using the staging buffer
     this->camera_buffer->set((void*) &data, sizeof(CameraData), this->stage_buffer, this->memory_manager.copy_cmd);
+    // Add the camera to the descriptor
+    this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
 }
 
 /* Uploads the material data for the given material index. */
@@ -239,6 +242,8 @@ void ConceptualFrame::upload_material_data(uint32_t material_index, const Render
 
     // Otherwise, set the correct buffer using the staging buffer
     this->material_buffers[material_index]->set((void*) &material_data, sizeof(MaterialData), this->stage_buffer, this->memory_manager.copy_cmd);
+    // Bind the material's buffer to the correct set
+    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->material_buffers[material_index] });
 }
 
 /* Uploads object data for the given object to its buffer. */
@@ -252,6 +257,8 @@ void ConceptualFrame::upload_object_data(uint32_t object_index, const Rendering:
 
     // Otherwise, set the correct buffer using the staging buffer
     this->object_buffers[object_index]->set((void*) &object_data, sizeof(ObjectData), this->stage_buffer, this->memory_manager.copy_cmd);
+    // Bind the correct object buffer to the correct set
+    this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
 }
 
 
@@ -272,14 +279,6 @@ void ConceptualFrame::schedule_start() {
     this->swapchain_frame->render_pass.start_scheduling(this->draw_cmd, this->swapchain_frame->framebuffer(), this->swapchain_frame->extent());
 }
 
-/* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
-void ConceptualFrame::schedule_global() {
-    // Add the camera to the descriptor
-    this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
-    // Bind the descriptor itself
-    this->global_set->schedule(this->draw_cmd, this->pipeline->layout(), 0);
-}
-
 /* Binds the given pipeline on the internal draw command queue. */
 void ConceptualFrame::schedule_pipeline(const Rendering::Pipeline* pipeline) {
     // First, set the pipeline internally
@@ -287,6 +286,12 @@ void ConceptualFrame::schedule_pipeline(const Rendering::Pipeline* pipeline) {
 
     // Bind the pipeline to the command buffer
     pipeline->bind(this->draw_cmd);
+}
+
+/* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
+void ConceptualFrame::schedule_global() {
+    // Bind the descriptor itself
+    this->global_set->schedule(this->draw_cmd, this->pipeline->layout(), 0);
 }
 
 /* Schedules the stuff for a material. */
@@ -298,8 +303,6 @@ void ConceptualFrame::schedule_material(uint32_t material_index) {
     }
     #endif
 
-    // Bind the material's buffer to the correct set
-    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->material_buffers[material_index] });
     // Schedule the material's descriptor set
     this->material_sets[material_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
 }
@@ -313,8 +316,6 @@ void ConceptualFrame::schedule_object(uint32_t object_index) {
     }
     #endif
 
-    // Bind the correct object buffer to the correct set
-    this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
     // Schedule the object's descriptor set
     this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->layout(), 2);
 }
