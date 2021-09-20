@@ -48,8 +48,8 @@ static void populate_present_info(VkPresentInfoKHR& present_info, const Swapchai
 
 
 /***** FRAMEMANAGER CLASS *****/
-/* Constructor for the FrameManager class, which takes a MemoryManager for stuff allocation, a Swapchain to draw images from, a layout for the frame's global descriptor and a layout for the frame's per-object descriptors. */
-FrameManager::FrameManager(Rendering::MemoryManager& memory_manager, const Rendering::Swapchain& swapchain, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& object_layout) :
+/* Constructor for the FrameManager class, which takes a MemoryManager for stuff allocation, a Swapchain to draw images from, a layout for the frame's global descriptor, a layout for the material descriptors and a layout for the frame's per-object descriptors. */
+FrameManager::FrameManager(Rendering::MemoryManager& memory_manager, const Rendering::Swapchain& swapchain, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& object_layout) :
     memory_manager(memory_manager),
     swapchain(swapchain),
 
@@ -61,7 +61,7 @@ FrameManager::FrameManager(Rendering::MemoryManager& memory_manager, const Rende
     logger.logc(Verbosity::details, FrameManager::channel, "Preparing ConceptualFrames...");
     this->conceptual_frames.reserve(FrameManager::max_frames_in_flight);
     for (uint32_t i = 0; i < FrameManager::max_frames_in_flight; i++) {
-        this->conceptual_frames.push_back(ConceptualFrame(this->memory_manager, global_layout, object_layout));
+        this->conceptual_frames.push_back(ConceptualFrame(this->memory_manager, global_layout, material_layout, object_layout));
     }
 
     logger.logc(Verbosity::important, FrameManager::channel, "Init success.");

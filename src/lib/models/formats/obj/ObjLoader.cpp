@@ -29,24 +29,21 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/hash.hpp"
 
-#include "tools/Logger.hpp"
 #include "tools/Common.hpp"
+#include "tools/Logger.hpp"
 #include "tools/LinkedArray.hpp"
-
-#include "../auxillary/SymbolStack.hpp"
 
 #include "tokenizer/ValueTerminal.hpp"
 #include "tokenizer/Tokenizer.hpp"
 
-#include "../mtl/MtlLoader.hpp"
-
-#include "../auxillary/ParserTools.hpp"
+#include "../../../auxillary/ParserTools.hpp"
 #include "ObjLoader.hpp"
 
 using namespace std;
 using namespace Makma3D;
 using namespace Makma3D::Models;
 using namespace Makma3D::Models::Obj;
+using namespace Makma3D::Auxillary;
 
 
 /***** CONSTANTS *****/
@@ -79,7 +76,7 @@ struct ParserState {
     Tools::Array<Rendering::index_t> temp_indices;
 
     /* Library of materials, as defined in .mtl files. */
-    std::unordered_map<std::string, glm::vec3> mtl_lib;
+    std::unordered_map<std::string, Materials::material_t> mtl_lib;
 
 };
 
@@ -101,17 +98,16 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
 
 
 
-    logger.logc(Verbosity::debug, channel, "Transferring mesh '", mesh.name, "' (", cpu_vertices.size(), " vertices & ", cpu_indices.size(), " indices) to GPU (", Tools::bytes_to_string(cpu_vertices.size() * sizeof(Rendering::Vertex) + cpu_indices.size() * sizeof(Rendering::index_t) + sizeof(Rendering::MeshData)), ")...");
+    logger.logc(Verbosity::debug, channel, "Transferring mesh '", mesh.name, "' (", cpu_vertices.size(), " vertices & ", cpu_indices.size(), " indices) to GPU (", Tools::bytes_to_string(cpu_vertices.size() * sizeof(Rendering::Vertex) + cpu_indices.size() * sizeof(Rendering::index_t)), ")...");
 
     // Allocate memory in the mesh
     VkDeviceSize vertices_size = cpu_vertices.size() * sizeof(Rendering::Vertex);
     VkDeviceSize indices_size  = cpu_indices.size() * sizeof(Rendering::index_t);
-    VkDeviceSize data_size     = sizeof(Rendering::MeshData);
     mesh.vertices = memory_manager.draw_pool.allocate(vertices_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     mesh.indices  = memory_manager.draw_pool.allocate(indices_size, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
     // Allocate a stage memory
-    Rendering::Buffer* stage = memory_manager.stage_pool.allocate(std::max({vertices_size, indices_size, data_size}), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    Rendering::Buffer* stage = memory_manager.stage_pool.allocate(std::max({vertices_size, indices_size}), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     void* stage_map;
     stage->map(&stage_map);
 
@@ -148,7 +144,7 @@ static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t
                 to_return,
                 Rendering::Vertex(
                     glm::vec3(state.vertices[vertex_index - 1]),
-                    state.mtl_lib.at(state.mesh.mtl),
+                    glm::vec3(1.0f, 0.0f, 0.0f),
                     { state.texels[texture_index - 1].x, -state.texels[texture_index - 1].y }
                 )
             )
@@ -159,7 +155,7 @@ static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t
 }
 
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
-static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path) {
+static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path) {
     // Prepare the iterator over the linked array
     Tools::LinkedArray<Terminal*>::iterator iter = state.symbol_stack.begin();
     Tools::linked_array_size_t i = 0;
@@ -698,13 +694,13 @@ group_start: {
             // If the previous mesh needs copying, do so
             if (state.mesh.n_indices > 0) {
                 transfer_to_mesh(memory_manager, state.mesh, state.temp_vertices, state.temp_indices);
-                meshes.push_back(state.mesh);
+                model.meshes.push_back(state.mesh);
             }
 
             // Reset the mesh, then set its name
             state.mesh = {};
             state.mesh.name = ((ValueTerminal<std::string>*) term)->value;
-            state.mesh.mtl = "*";
+            state.mesh.material = Materials::DefaultMaterial;
 
             // Remove the token, then we're done
             remove_stack_bottom(state.symbol_stack, iter);
@@ -773,15 +769,24 @@ mtllib_start: {
             // Parse the material file
             if (FILE* test = fopen(filepath.c_str(), "r")) {
                 fclose(test);
+
+                // Load the referenced material file
                 logger.logc(Verbosity::details, channel, "Loading '", filepath, "' as .mtl file...");
-                load_mtl_lib(state.mtl_lib, filepath);
+                Tools::Array<std::pair<std::string, Materials::material_t>> new_materials = material_system.load_simple_coloured(filepath);
+
+                // Add the materials to the internal library
                 stringstream sstr;
-                bool first = true;
-                for (const std::pair<std::string, glm::vec3>& p : state.mtl_lib) {
-                    if (first) { first = false; }
-                    else { sstr << ", "; }
-                    sstr << '\'' << p.first << '\'';
+                for (uint32_t i = 0; i < new_materials.size(); i++) {
+                    // Add the material, possibly with a warning if it's a duplicate
+                    if (state.mtl_lib.find(new_materials[i].first) != state.mtl_lib.end()) { logger.warningc(channel, "Overwriting material '", new_materials[i].first, "' with new value."); }
+                    state.mtl_lib.insert(new_materials[i]);
+                    
+                    // Construct the new material string
+                    if (i > 0) { sstr << ", "; }
+                    sstr << '\'' << new_materials[i].first << '\'';
                 }
+
+                // Show what we loaded and done
                 logger.logc(Verbosity::debug, channel, "Loaded materials: ", sstr.str());
             } else {
                 logger.warningc(channel, "Material library '", filepath, "' not found; cannot load.");
@@ -812,24 +817,23 @@ usemtl_start: {
         case TerminalType::name: {
             // Set this material as current, but only if we know it
             std::string material = ((ValueTerminal<std::string>*) term)->value;
-            std::unordered_map<std::string, glm::vec3>::iterator mtl_iter = state.mtl_lib.find(material);
+            std::unordered_map<std::string, Materials::material_t>::iterator mtl_iter = state.mtl_lib.find(material);
             if (mtl_iter == state.mtl_lib.end()) {
                 term->debug_info.print_warning(cerr, "Unknown material name '" + material + "'.");
-                remove_stack_bottom(state.symbol_stack, iter);
+                Auxillary::remove_stack_bottom(state.symbol_stack, iter);
                 return "warning";
             }
 
             // Else, set as current and return
-            state.mesh.mtl     = material;
-            state.mesh.mtl_col = glm::vec4((*mtl_iter).second, 1.0f);
-            remove_stack_bottom(state.symbol_stack, iter);
+            state.mesh.material = (*mtl_iter).second;
+            Auxillary::remove_stack_bottom(state.symbol_stack, iter);
             return "usemtl";
         }
-        
+
         default:
             // Missing filename
             (*(iter - 1))->debug_info.print_error(cerr, "Missing name after material usage.");
-            remove_stack_bottom(state.symbol_stack, --iter);
+            Auxillary::remove_stack_bottom(state.symbol_stack, --iter);
             return "error";
 
     }
@@ -856,19 +860,19 @@ smooth_start: {
 
             } else {
                 term->debug_info.print_error(cerr, "Unknown smooth shading value '" + value + "'");
-                remove_stack_bottom(state.symbol_stack, iter);
+                Auxillary::remove_stack_bottom(state.symbol_stack, iter);
                 return "error";
             }
 
             // Pop from the stack and return
-            remove_stack_bottom(state.symbol_stack, iter);
+            Auxillary::remove_stack_bottom(state.symbol_stack, iter);
             return "smooth";
         }
         
         default:
             // Missing filename
             (*(iter - 1))->debug_info.print_error(cerr, "Missing name after material usage.");
-            remove_stack_bottom(state.symbol_stack, --iter);
+            Auxillary::remove_stack_bottom(state.symbol_stack, --iter);
             return "error";
 
     }
@@ -886,16 +890,15 @@ smooth_start: {
 
 
 /***** LIBRARY FUNCTIONS *****/
-/* Loads the file at the given path as a .obj file, and populates the given list of meshes from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
-void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path) {
+/* Loads the file at the given path as a .obj file, and populates the given model from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
+void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path) {
     // Prepare the Tokenizer
     Obj::Tokenizer tokenizer(path);
 
     // Prepare the parser state
     ParserState state{};
     state.mesh.name = "-";
-    state.mesh.mtl = "*";
-    state.mtl_lib.insert(make_pair("*", glm::vec3(1.0f, 0.0f, 0.0f)));
+    state.mesh.material = Materials::DefaultMaterial;
 
     // Start looping to parse stuff off the stack
     bool changed = true;
@@ -904,7 +907,7 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshe
     #endif
     while (changed) {
         // Run the parser
-        std::string rule = reduce(state, memory_manager, meshes, path);
+        std::string rule = reduce(state, memory_manager, material_system, model, path);
         changed = !rule.empty() && rule != "error";
 
         // If there's no change and we're not at the end, pop a new terminal
@@ -961,7 +964,7 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshe
     if (state.mesh.n_indices > 0) {
         // Do the transfer
         transfer_to_mesh(memory_manager, state.mesh, state.temp_vertices, state.temp_indices);
-        meshes.push_back(state.mesh);
+        model.meshes.push_back(state.mesh);
     }
 
     // When done, delete everything left on the symbol stack (we assume all errors have been processed)

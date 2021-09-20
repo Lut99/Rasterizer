@@ -13,12 +13,12 @@
  *   a value of some type T.
 **/
 
-#ifndef MODELS_MTL_VALUE_TERMINAL_HPP
-#define MODELS_MTL_VALUE_TERMINAL_HPP
+#ifndef MATERIALS_MTL_VALUE_TERMINAL_HPP
+#define MATERIALS_MTL_VALUE_TERMINAL_HPP
 
 #include "Terminal.hpp"
 
-namespace Makma3D::Models::Mtl {
+namespace Makma3D::Materials::Mtl {
     /* The ValueTerminal class, which is a standard Terminal but with some value T. */
     template <class T>
     class ValueTerminal: public Terminal {
@@ -28,7 +28,7 @@ namespace Makma3D::Models::Mtl {
 
 
         /* Constructor for the ValueTerminal class, which takes its type, its value and the DebugInfo. */
-        ValueTerminal(TerminalType type, const T& value, const DebugInfo& debug_info);
+        ValueTerminal(TerminalType type, const T& value, const Auxillary::DebugInfo& debug_info);
 
     };
 }

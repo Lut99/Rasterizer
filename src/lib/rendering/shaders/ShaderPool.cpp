@@ -14,6 +14,7 @@
 
 #include <fstream>
 
+#include "tools/Common.hpp"
 #include "tools/Logger.hpp"
 #include "../auxillary/ErrorCodes.hpp"
 
@@ -101,9 +102,9 @@ ShaderPool::~ShaderPool() {
     // Clean the Shaders, if any
     if (!this->shaders.empty()) {
         logger.logc(Verbosity::details, ShaderPool::channel, "Destroying shaders...");
-        for (Shader* shader : this->shaders) {
-            vkDestroyShaderModule(this->gpu, shader->vk_shader_module, nullptr);
-            delete shader;
+        for (const auto& p : this->shaders) {
+            vkDestroyShaderModule(this->gpu, p.second->vk_shader_module, nullptr);
+            delete p.second;
         }
     }
 
@@ -114,10 +115,20 @@ ShaderPool::~ShaderPool() {
 
 /* Allocates a new Shader, loaded from the given location as a .spv. Optionally, create flags for the VkShaderModule can be set. */
 Rendering::Shader* ShaderPool::allocate(const std::string& path, VkShaderModuleCreateFlags create_flags) {
-    // First, we try to load the shader data
-    logger.logc(Verbosity::important, ShaderPool::channel, "Loading shader from file '", path, "'...");
+    // Pad the path with the exe location
+    std::string full_path = get_executable_path() + '/' + path;
+
+    // Try to find if we already allocated this shader
+    std::unordered_map<std::string, Rendering::Shader*>::iterator iter = this->shaders.find(full_path);
+    if (iter != this->shaders.end()) {
+        // Return that shader instead
+        return (*iter).second;
+    }
+
+    // Otherwise, we try to load the shader data form the path
+    logger.logc(Verbosity::important, ShaderPool::channel, "Loading shader from file '", full_path, "'...");
     uint32_t* data; uint32_t data_size;
-    load_raw_shader_data(path, &data, &data_size);
+    load_raw_shader_data(full_path, &data, &data_size);
 
     // If we succeeded, continue by populating the create info for the VkShaderModule
     VkShaderModuleCreateInfo shader_info;
@@ -131,8 +142,8 @@ Rendering::Shader* ShaderPool::allocate(const std::string& path, VkShaderModuleC
     }
 
     // If created, use it to populate the Shader object
-    Shader* result = new Shader(this->gpu, vk_shader_module, path);
-    this->shaders.insert(result);
+    Shader* result = new Shader(this->gpu, vk_shader_module, full_path);
+    this->shaders.insert({ full_path, result });
 
     // Deallocate the raw data and we're done
     delete[] data;
@@ -142,14 +153,14 @@ Rendering::Shader* ShaderPool::allocate(const std::string& path, VkShaderModuleC
 /* Frees the given Shader from the internal pool. Throws error if it isn't allocated here. */
 void ShaderPool::free(const Rendering::Shader* shader) {
     // First, try to find the Shader
-    std::unordered_set<Rendering::Shader*>::iterator iter = this->shaders.find(const_cast<Rendering::Shader*>(shader));
+    std::unordered_map<std::string, Rendering::Shader*>::iterator iter = this->shaders.find(shader->filepath);
     if (iter == this->shaders.end()) {
         logger.fatalc(ShaderPool::channel, "Cannot free shader @ ", shader, " that was not allocated with this pool.");
     }
 
     // If it was found, then delete it and return
-    vkDestroyShaderModule(this->gpu, (*iter)->vulkan(), nullptr);
-    delete *iter;
+    vkDestroyShaderModule(this->gpu, (*iter).second->vulkan(), nullptr);
+    delete (*iter).second;
 
     // Remove it from the set
     this->shaders.erase(iter);
@@ -160,9 +171,9 @@ void ShaderPool::free(const Rendering::Shader* shader) {
 /* Resets the pool, deleting all internal shaders. */
 void ShaderPool::reset() {
     // Simply delete everything first
-    for (Shader* shader : this->shaders) {
-        vkDestroyShaderModule(this->gpu, shader->vulkan(), nullptr);
-        delete shader;
+    for (const auto& p : this->shaders) {
+        vkDestroyShaderModule(this->gpu, p.second->vulkan(), nullptr);
+        delete p.second;
     }
 
     // Clear the set

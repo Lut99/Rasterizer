@@ -15,15 +15,16 @@
 #ifndef MODELS_OBJ_LOADER_HPP
 #define MODELS_OBJ_LOADER_HPP
 
+#include "ecs/components/Model.hpp"
+#include "materials/MaterialSystem.hpp"
 #include "rendering/auxillary/Vertex.hpp"
 #include "rendering/auxillary/Index.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
-#include "ecs/components/Meshes.hpp"
 #include "tools/Array.hpp"
 
 namespace Makma3D::Models {
-    /* Loads the file at the given path as a .obj file, and populates the given list of meshes from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
-    void load_obj_model(Rendering::MemoryManager& memory_manager, ECS::Meshes& meshes, const std::string& path);
+    /* Loads the file at the given path as a .obj file, and populates the given model data from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
+    void load_obj_model(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path);
 
 };
 

@@ -30,13 +30,14 @@
 #include <cerrno>
 #include <tuple>
 
-#include "../../auxillary/TokenizerTools.hpp"
+#include "../../../../auxillary/TokenizerTools.hpp"
 #include "ValueTerminal.hpp"
 #include "Tokenizer.hpp"
 
 using namespace std;
 using namespace Makma3D::Models;
 using namespace Makma3D::Models::Obj;
+using namespace Makma3D::Auxillary;
 
 
 

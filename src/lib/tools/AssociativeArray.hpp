@@ -24,7 +24,7 @@
 namespace Tools {
     /* The AssociativeArray class, which wraps around a normal Array to make it indexable not just by index, but also by an abstractive layer. */
     template <class ABSTRACT, class T, bool D = std::is_default_constructible<T>::value, bool C = std::is_copy_constructible<T>::value, bool M = std::is_move_constructible<T>::value>
-    class AssociativeArray: public _intern::CopyControl {
+    class AssociativeArray: public _intern::CopyControl<C> {
     public:
         /* The abstract type that we use for indexing. */
         using abstract_t = ABSTRACT;
@@ -113,24 +113,29 @@ namespace Tools {
         inline array_size_t capacity() const { return this->storage.capacity(); }
 
         /* Returns a constant iterator to iterate over the internal abstract indices. Note that it will not iterate in order, so to get the indices you should call get_index(). */
-        inline std::unordered_map<abstract_t, array_size_t>::const_iterator& begin() const { return this->abstract_index_map.begin(); }
+        inline typename std::unordered_map<abstract_t, array_size_t>::const_iterator& begin() const { return this->abstract_index_map.begin(); }
         /* Returns a constant iterator to the end of the internal abstract indices. Note that it will not iterate in order, so to get the indices you should call get_index(). */
-        inline std::unordered_map<abstract_t, array_size_t>::const_iterator& end() const { return this->abstract_index_map.end(); }
+        inline typename std::unordered_map<abstract_t, array_size_t>::const_iterator& end() const { return this->abstract_index_map.end(); }
         /* Returns a constant iterator to iterate over the internal abstract indices. Note that it will not iterate in order, so to get the indices you should call get_index(). */
-        inline std::unordered_map<abstract_t, array_size_t>::const_iterator& cbegin() const { return this->abstract_index_map.cbegin(); }
+        inline typename std::unordered_map<abstract_t, array_size_t>::const_iterator& cbegin() const { return this->abstract_index_map.cbegin(); }
         /* Returns a constant reverse iterator to the end of the internal abstract indices. Note that it will not iterate in order, so to get the indices you should call get_index(). */
-        inline std::unordered_map<abstract_t, array_size_t>::const_iterator& cend() const { return this->abstract_index_map.cend(); }
+        inline typename std::unordered_map<abstract_t, array_size_t>::const_iterator& cend() const { return this->abstract_index_map.cend(); }
 
         /* Swap operator for the AssociativeArray class. */
         friend void swap(AssociativeArray& a1, AssociativeArray& a2) {
             using std::swap;
 
             swap(a1.storage, a2.storage);
-            swap(a1.abstract_index_map, s2.abstract_index_map);
-            swap(a1.index_abstract_map, s2.index_abstract_map);
+            swap(a1.abstract_index_map, a2.abstract_index_map);
+            swap(a1.index_abstract_map, a2.index_abstract_map);
         }
 
     };
+
+
+
+    // Don't forget to include the .cpp
+    #include "AssociativeArray.cpp"
 
 }
 

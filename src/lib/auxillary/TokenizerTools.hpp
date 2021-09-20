@@ -12,8 +12,8 @@
  *   Contains common macros and functions for Tokenizers.
 **/
 
-#ifndef MODELS_TOKENIZER_TOOLS_HPP
-#define MODELS_TOKENIZER_TOOLS_HPP
+#ifndef AUXILLARY_TOKENIZER_TOOLS_HPP
+#define AUXILLARY_TOKENIZER_TOOLS_HPP
 
 #include <cstdio>
 #include <cstring>
@@ -104,7 +104,7 @@
 
 
 
-namespace Makma3D::Models {
+namespace Makma3D::Auxillary {
     // /* Function that, given a file stream and the start of this line, parses an entire line. */
     // std::string get_line(FILE* file, long sentence_start);
     /* Function that, given a file stream and the start of this line, parses an entire line. */

@@ -13,8 +13,8 @@
  *   in a file to use in (error) messages.
 **/
 
-#ifndef MODELS_DEBUG_INFO_HPP
-#define MODELS_DEBUG_INFO_HPP
+#ifndef AUXILLARY_DEBUG_INFO_HPP
+#define AUXILLARY_DEBUG_INFO_HPP
 
 #include <cstddef>
 #include <string>
@@ -24,7 +24,7 @@
 
 #include "FileCoord.hpp"
 
-namespace Makma3D::Models {
+namespace Makma3D::Auxillary {
     /* The DebugInfo class, which keeps track of relevant origin information of the symbol we're looking at. */
     class DebugInfo {
     public:

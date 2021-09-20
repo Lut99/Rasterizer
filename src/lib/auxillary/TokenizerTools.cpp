@@ -22,7 +22,7 @@ using namespace Makma3D;
 
 // /***** LIBRARY FUNCTIONS *****/
 /* Function that, given a file stream and the start of this line, parses an entire line. */
-std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
+std::string Auxillary::get_line(std::istream* is, std::streampos sentence_start) {
     // Backup the current cursor and go to the start of the line
     std::streampos old_cursor = is->tellg();
     // Go to the start of the line
@@ -68,7 +68,7 @@ std::string Models::get_line(std::istream* is, std::streampos sentence_start) {
 
 
 /* Given a char, returns a readable string representation of it. */
-const char* Models::readable_char(char c) {
+const char* Auxillary::readable_char(char c) {
     switch(c) {
         case 'a': return "a";
         case 'b': return "b";
@@ -176,7 +176,7 @@ const char* Models::readable_char(char c) {
 
 
 /* Splits a given string in two strings on the first slash it finds. */
-void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2) {
+void Auxillary::split_string(const std::string& to_split, std::string& part1, std::string& part2) {
     // Loop to find the slash, noting everything in the stringstream
     std::stringstream sstr;
     size_t i = 0;
@@ -198,7 +198,7 @@ void Models::split_string(const std::string& to_split, std::string& part1, std::
 }
 
 /* Splits a given string in three strings on the first and second slash it finds. */
-void Models::split_string(const std::string& to_split, std::string& part1, std::string& part2, std::string& part3) {
+void Auxillary::split_string(const std::string& to_split, std::string& part1, std::string& part2, std::string& part3) {
     // Loop to find the slash, noting everything in the stringstream
     std::stringstream sstr;
     size_t i = 0;

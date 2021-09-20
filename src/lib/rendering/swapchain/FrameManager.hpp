@@ -51,8 +51,8 @@ namespace Makma3D::Rendering {
         uint32_t frame_index;
 
     public:
-        /* Constructor for the FrameManager class, which takes a MemoryManager for stuff allocation, a Swapchain to draw images from, a layout for the frame's global descriptor and a layout for the frame's per-object descriptors. */
-        FrameManager(Rendering::MemoryManager& memory_manager, const Rendering::Swapchain& swapchain, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& object_layout);
+        /* Constructor for the FrameManager class, which takes a MemoryManager for stuff allocation, a Swapchain to draw images from, a layout for the frame's global descriptor, a layout for the material descriptors and a layout for the frame's per-object descriptors. */
+        FrameManager(Rendering::MemoryManager& memory_manager, const Rendering::Swapchain& swapchain, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& object_layout);
         /* Copy constructor for the FrameManager class, which is deleted. */
         FrameManager(const FrameManager& other) = delete;
         /* Move constructor for the FrameManager class. */

@@ -13,8 +13,8 @@
  *   a more abstract way.
 **/
 
-#ifndef MODELS_MTL_TOKENIZER_HPP
-#define MODELS_MTL_TOKENIZER_HPP
+#ifndef MATERIALS_MTL_TOKENIZER_HPP
+#define MATERIALS_MTL_TOKENIZER_HPP
 
 #include <string>
 #include <istream>
@@ -22,7 +22,7 @@
 
 #include "Terminal.hpp"
 
-namespace Makma3D::Models::Mtl {
+namespace Makma3D::Materials::Mtl {
     /* The Tokenizer for .mtl model files. */
     class Tokenizer {
     public:

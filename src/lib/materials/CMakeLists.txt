@@ -8,8 +8,10 @@ target_include_directories(MaterialSystem PUBLIC
 # Add it to the list of includes & linked libraries
 list(APPEND EXTRA_LIBS MaterialSystem)
 
-# # Add the subdirectories
-# add_subdirectory(variants)
+# # Add the subdirectories, then add the new dependencies
+add_subdirectory(formats)
+add_subdirectory(variants)
+add_dependencies(MaterialSystem ${EXTRA_TARGETS})
 
 # Carry the list to the parent scope
 set(EXTRA_LIBS "${EXTRA_LIBS}" PARENT_SCOPE)

@@ -24,6 +24,8 @@ namespace Makma3D::Materials {
 
     /* The null value of the material_t. */
     static constexpr const material_t NullMaterial = 0;
+    /* The default material value, which is a SimpleColoured red one. */
+    static constexpr const material_t DefaultMaterial = 1;
 }
 
 #endif

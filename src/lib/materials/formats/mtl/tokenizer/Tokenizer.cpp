@@ -26,14 +26,14 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include "../../auxillary/TokenizerTools.hpp"
+#include "../../../../auxillary/TokenizerTools.hpp"
 #include "ValueTerminal.hpp"
 #include "Tokenizer.hpp"
 
 using namespace std;
 using namespace Makma3D;
-using namespace Makma3D::Models;
-using namespace Makma3D::Models::Mtl;
+using namespace Makma3D::Materials;
+using namespace Makma3D::Materials::Mtl;
 
 
 
@@ -158,7 +158,7 @@ start: {
         // If it's a newline, update the line counters
         DEBUG_PATH("whitespace", "retrying");
         if (c == '\n') {
-            // cout << ' ' << pad_spaces(this->line, 4) << " | " << get_line(file, this->last_sentence_start) << endl;
+            // cout << ' ' << pad_spaces(this->line, 4) << " | " << Auxillary::get_line(file, this->last_sentence_start) << endl;
             this->col = 0;
             ++this->line;
         }
@@ -169,12 +169,12 @@ start: {
     } else if (c == EOF) {
         // End-of-file; return that we reached it
         DEBUG_PATH("EOF", "done");
-        return new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { "" }));
+        return new Terminal(TerminalType::eof, Auxillary::DebugInfo(this->path, this->line, this->col, { "" }));
 
     } else {
         // Unexpected token
-        DebugInfo debug(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) });
-        debug.print_error(cerr, std::string("Unexpected character '") + readable_char(c) + "'");
+        Auxillary::DebugInfo debug(this->path, this->line, this->col, { Auxillary::get_line(file, this->last_sentence_start) });
+        debug.print_error(cerr, std::string("Unexpected character '") + Auxillary::readable_char(c) + "'");
         return nullptr;
 
     }
@@ -315,7 +315,7 @@ newmtl: {
         // Make sure that the next one is a whitespace
         DEBUG_PATH("whitespace", "going name_start");
         UNGET_CHAR(this->file, this->col);
-        to_return = new Terminal(TerminalType::newmtl, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        to_return = new Terminal(TerminalType::newmtl, Auxillary::DebugInfo(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(this->file, this->last_sentence_start) }));
         goto name_start;
 
     } else {
@@ -366,7 +366,7 @@ Kd: {
         // Make sure that the next one is a whitespace
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        return new Terminal(TerminalType::Kd, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Terminal(TerminalType::Kd, Auxillary::DebugInfo(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(this->file, this->last_sentence_start) }));
 
     } else {
         // Unknown token instead!
@@ -412,7 +412,7 @@ float_start: {
         UNGET_CHAR(this->file, this->col);
 
         // Create the debug info
-        DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+        Auxillary::DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(file, this->last_sentence_start) });
 
         // Try to parse the string as a uint32_t value
         float value;
@@ -467,7 +467,7 @@ float_dot: {
         UNGET_CHAR(this->file, this->col);
 
         // Create the debug info
-        DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+        Auxillary::DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(file, this->last_sentence_start) });
 
         // Try to parse the string as a uint32_t value
         float value;
@@ -513,7 +513,7 @@ float_e_start: {
     } else if (IS_WHITESPACE(c)) {
         // Found float with E but without value
         UNGET_CHAR(this->file, this->col);
-        DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+        Auxillary::DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(file, this->last_sentence_start) });
         debug_info.print_error(cerr, "Encountered scientific 'E' but without power.");
         return nullptr;
 
@@ -547,7 +547,7 @@ float_e: {
         UNGET_CHAR(this->file, this->col);
 
         // Create the debug info
-        DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+        Auxillary::DebugInfo debug_info(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(file, this->last_sentence_start) });
 
         // Try to parse the string as a uint32_t value
         float value;
@@ -608,8 +608,8 @@ name_start: {
 
     } else {
         // Not a name token!
-        DebugInfo debug_info(this->path, this->line, this->col - 1, { get_line(this->file, this->last_sentence_start) });
-        debug_info.print_error(cerr, "Illegal name character '" + std::string(readable_char(c)) + "'.");
+        Auxillary::DebugInfo debug_info(this->path, this->line, this->col - 1, { Auxillary::get_line(this->file, this->last_sentence_start) });
+        debug_info.print_error(cerr, "Illegal name character '" + std::string(Auxillary::readable_char(c)) + "'.");
         delete to_return;
         return nullptr;
 
@@ -630,7 +630,7 @@ name_contd: {
         // Reached the endof the filename
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
+        this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), Auxillary::DebugInfo(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(this->file, this->last_sentence_start) })));
         return to_return;
 
     } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
@@ -684,7 +684,7 @@ unknown_token: {
     if (IS_WHITESPACE(c)) {
         // We found the end of the token; unget it, then throw an error
         UNGET_CHAR(this->file, this->col);
-        DebugInfo debug(this->path, line_start, col_start, this->line, this->col, { get_line(file, this->last_sentence_start) });
+        Auxillary::DebugInfo debug(this->path, line_start, col_start, this->line, this->col, { Auxillary::get_line(file, this->last_sentence_start) });
         debug.print_error(cerr, "Unknown token '" + sstr.str() + "'.");
         return nullptr;
     } else {

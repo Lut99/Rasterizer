@@ -63,14 +63,15 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer*
 
 
 /***** CONCEPTUALFRAME CLASS *****/
-/* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor and a descriptor set layout for the per-object descriptors. */
-ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& object_layout) :
+/* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor, a descriptor set layout for per-material descriptors and a descriptor set layout for the per-object descriptors. */
+ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& object_layout) :
     memory_manager(memory_manager),
 
     swapchain_frame(nullptr),
     pipeline(nullptr),
 
     global_layout(global_layout),
+    material_layout(material_layout),
     object_layout(object_layout),
 
     image_ready_semaphore(this->memory_manager.gpu),
@@ -111,6 +112,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     pipeline(std::move(other.pipeline)),
 
     global_layout(std::move(other.global_layout)),
+    material_layout(std::move(material_layout)),
     object_layout(std::move(other.object_layout)),
 
     draw_cmd(std::move(other.draw_cmd)),
@@ -118,6 +120,9 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
 
     global_set(std::move(other.global_set)),
     camera_buffer(std::move(other.camera_buffer)),
+
+    material_sets(std::move(other.material_sets)),
+    material_buffers(std::move(other.material_buffers)),
 
     object_sets(std::move(other.object_sets)),
     object_buffers(std::move(other.object_buffers)),
@@ -132,6 +137,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     other.descriptor_pool = nullptr;
     other.global_set = nullptr;
     other.camera_buffer = nullptr;
+    // No need to clear the material sets/buffers, as the Array's move function already makes sure they're reset to empty
     // No need to clear the object sets/buffers, as the Array's move function already makes sure they're reset to empty
 }
 
@@ -143,6 +149,12 @@ ConceptualFrame::~ConceptualFrame() {
         // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning object buffers...");
         for (uint32_t i = 0; i < this->object_buffers.size(); i++) {
             this->memory_manager.draw_pool.free(this->object_buffers[i]);
+        }
+    }
+    if (this->material_buffers.size() > 0) {
+        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning material buffers...");
+        for (uint32_t i = 0; i < this->material_buffers.size(); i++) {
+            this->memory_manager.draw_pool.free(this->material_buffers[i]);
         }
     }
     if (this->camera_buffer != nullptr) {
@@ -167,9 +179,24 @@ ConceptualFrame::~ConceptualFrame() {
 
 
 
-/* Prepares rendering the frame as new by throwing out old data preparing to render at most the given number of objects. */
-void ConceptualFrame::prepare_render(uint32_t n_objects) {
-    // Rescale the internal array to the desired number of objects
+/* Prepares rendering the frame as new by throwing out old data preparing to render at most the given number of objects with at least the given number of materials different materials. */
+void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
+    // Rescale the internal array of materials to the desired size
+    if (this->material_buffers.size() < n_materials) {
+        // Extent the object buffer to more space and allocate new buffers
+        this->material_buffers.reserve_opt(n_materials);
+        for (uint32_t i = this->material_buffers.size(); i < n_materials; i++) {
+            this->material_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(MaterialData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+        }
+    } else if (this->material_buffers.size() > n_materials) {
+        // Remove the obsolete ones
+        for (uint32_t i = this->material_buffers.size(); i-- > n_materials ;) {
+            this->memory_manager.draw_pool.free(this->material_buffers[i]);
+            this->material_buffers.pop_back();
+        }
+    }
+
+    // Rescale the internal array to objects to the desired size
     if (this->object_buffers.size() < n_objects) {
         // Extent the object buffer to more space and allocate new buffers
         this->object_buffers.reserve_opt(n_objects);
@@ -201,6 +228,19 @@ void ConceptualFrame::upload_camera_data(const glm::mat4& proj_matrix, const glm
     this->camera_buffer->set((void*) &data, sizeof(CameraData), this->stage_buffer, this->memory_manager.copy_cmd);
 }
 
+/* Uploads the material data for the given material index. */
+void ConceptualFrame::upload_material_data(uint32_t material_index, const Rendering::MaterialData& material_data) {
+    #ifndef NDEBUG
+    // Throw errors if out-of-range
+    if (material_index > this->material_buffers.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->material_buffers.size(), " materials)");
+    }
+    #endif
+
+    // Otherwise, set the correct buffer using the staging buffer
+    this->material_buffers[material_index]->set((void*) &material_data, sizeof(MaterialData), this->stage_buffer, this->memory_manager.copy_cmd);
+}
+
 /* Uploads object data for the given object to its buffer. */
 void ConceptualFrame::upload_object_data(uint32_t object_index, const Rendering::ObjectData& object_data) {
     #ifndef NDEBUG
@@ -216,25 +256,20 @@ void ConceptualFrame::upload_object_data(uint32_t object_index, const Rendering:
 
 
 
-/* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue, followed by binding the given pipeline. */
-void ConceptualFrame::schedule_start(const Rendering::Pipeline* pipeline) {
+/* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue. */
+void ConceptualFrame::schedule_start() {
     #ifndef NDEBUG
     // Check if the swapchain frame is set
     if (this->swapchain_frame == nullptr) {
         logger.fatalc(ConceptualFrame::channel, "Cannot start scheduling without assigned swapchain frame.");
     }
     #endif
-    
-    // Store the pipeline internally
-    this->pipeline = pipeline;
 
     // Begin the command buffer
     this->draw_cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     // First, schedule the render pass start
     this->swapchain_frame->render_pass.start_scheduling(this->draw_cmd, this->swapchain_frame->framebuffer(), this->swapchain_frame->extent());
-    // Then the pipeline bind
-    this->pipeline->bind(this->draw_cmd);
 }
 
 /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
@@ -243,6 +278,30 @@ void ConceptualFrame::schedule_global() {
     this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
     // Bind the descriptor itself
     this->global_set->schedule(this->draw_cmd, this->pipeline->layout(), 0);
+}
+
+/* Binds the given pipeline on the internal draw command queue. */
+void ConceptualFrame::schedule_pipeline(const Rendering::Pipeline* pipeline) {
+    // First, set the pipeline internally
+    this->pipeline = pipeline;
+
+    // Bind the pipeline to the command buffer
+    pipeline->bind(this->draw_cmd);
+}
+
+/* Schedules the stuff for a material. */
+void ConceptualFrame::schedule_material(uint32_t material_index) {
+    #ifndef NDEBUG
+    // Throw errors if out-of-range
+    if (material_index > this->material_buffers.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->material_buffers.size(), " materials)");
+    }
+    #endif
+
+    // Bind the material's buffer to the correct set
+    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->material_buffers[material_index] });
+    // Schedule the material's descriptor set
+    this->material_sets[material_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
 }
 
 /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
@@ -257,7 +316,7 @@ void ConceptualFrame::schedule_object(uint32_t object_index) {
     // Bind the correct object buffer to the correct set
     this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
     // Schedule the object's descriptor set
-    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
+    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->layout(), 2);
 }
 
 /* Schedules a draw command for the given mesh on the internal draw queue. */

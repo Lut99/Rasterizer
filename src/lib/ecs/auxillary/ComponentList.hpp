@@ -35,7 +35,7 @@ namespace Makma3D::ECS {
     
     public:
         /* Constructor for the ComponentList class, which takes the type of the Component as a flag and an initial array size. */
-        ComponentList(ComponentFlags type_flags, component_list_size_t initial_capacity = 16);
+        ComponentList(ComponentFlags type_flags = ComponentFlags::none, component_list_size_t initial_capacity = 16);
         /* Copy constructor for the ComponentList class. */
         ComponentList(const ComponentList<T>& other);
         /* Move constructor for the ComponentList class. */

@@ -18,7 +18,7 @@
 
 #include <string>
 
-#include "../../auxillary/DebugInfo.hpp"
+#include "../../../../auxillary/DebugInfo.hpp"
 
 namespace Makma3D::Models::Obj {
     /* Lists all Terminal types. */
@@ -97,11 +97,11 @@ namespace Makma3D::Models::Obj {
         /* The type of the terminal. */
         TerminalType type;
         /* The DebugInfo describing the terminal's location. */
-        DebugInfo debug_info;
+        Auxillary::DebugInfo debug_info;
 
 
         /* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */
-        Terminal(TerminalType type, const DebugInfo& debug_info);
+        Terminal(TerminalType type, const Auxillary::DebugInfo& debug_info);
 
     };
 

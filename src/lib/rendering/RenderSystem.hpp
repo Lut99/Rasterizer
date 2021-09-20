@@ -19,11 +19,12 @@
 
 #include "tools/StaticArray.hpp"
 
-#include "ecs/EntityManager.hpp"
 #include "window/Window.hpp"
-#include "memory_manager/MemoryManager.hpp"
+#include "ecs/EntityManager.hpp"
+#include "materials/MaterialSystem.hpp"
 #include "models/ModelSystem.hpp"
-#include "textures/TextureSystem.hpp"
+
+#include "memory_manager/MemoryManager.hpp"
 
 #include "depthtesting/DepthStencil.hpp"
 
@@ -58,14 +59,18 @@ namespace Makma3D::Rendering {
         Window& window;
         /* The MemoryManager that contains the pools we might need. */
         MemoryManager& memory_manager;
+        /* The MaterialSystem which we use to load materials with and render them. */
+        const Materials::MaterialSystem& material_system;
         /* The ModelSystem which we use to schedule the model buffers with. */
         const Models::ModelSystem& model_system;
-        /* The TextureSystem which we use to schedule the texture buffers with. */
-        const Textures::TextureSystem& texture_system;
+        // /* The TextureSystem which we use to schedule the texture buffers with. */
+        // const Textures::TextureSystem& texture_system;
 
     private:
         /* Descriptor set layout for general data, such as the camera information. */
         Rendering::DescriptorSetLayout global_descriptor_layout;
+        /* Descriptor set layout for per-material data, such as its colour. */
+        Rendering::DescriptorSetLayout material_descriptor_layout;
         /* Descriptor set layout for per-object data, such as its position. */
         Rendering::DescriptorSetLayout object_descriptor_layout;
 
@@ -82,8 +87,8 @@ namespace Makma3D::Rendering {
         Rendering::PipelineCache pipeline_cache;
         /* The constructor we use to (hopefully) efficiently pump out new pipelines. */
         Rendering::PipelineConstructor pipeline_constructor;
-        /* The graphics pipeline we use to render. */
-        Rendering::Pipeline* pipeline;
+        /* The graphics pipelines we use to render, sorted by material types. */
+        std::unordered_map<Materials::MaterialType, Rendering::Pipeline*> pipelines;
 
         /* The FrameManager in charge for giving us frames we can render to. */
         Rendering::FrameManager* frame_manager;
@@ -93,8 +98,8 @@ namespace Makma3D::Rendering {
         void _resize();
 
     public:
-        /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a model system to schedule the model buffers with and a texture system to schedule texture images with. */
-        RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system, const Textures::TextureSystem& texture_system);
+        /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a material system to create pipelines with, a model system to schedule the model buffers with and a texture system to schedule texture images with. */
+        RenderSystem(Window& window, MemoryManager& memory_manager, const Materials::MaterialSystem& material_system, const Models::ModelSystem& model_system/*, const Textures::TextureSystem& texture_system*/);
         /* Copy constructor for the RenderSystem class, which is deleted. */
         RenderSystem(const RenderSystem& other) = delete;
         /* Move constructor for the RenderSystem class. */

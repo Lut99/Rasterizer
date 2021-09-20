@@ -21,7 +21,7 @@ using namespace Makma3D::Models::Obj;
 
 /***** TERMINAL CLASS *****/
 /* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */
-Terminal::Terminal(TerminalType type, const DebugInfo& debug_info) :
+Terminal::Terminal(TerminalType type, const Auxillary::DebugInfo& debug_info) :
     type(type),
     debug_info(debug_info)
 {}

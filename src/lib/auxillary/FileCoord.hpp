@@ -12,10 +12,10 @@
  *   Contains a simple helper struct for (line, col) pair coordinates.
 **/
 
-#ifndef MODELS_FILE_COORD_HPP
-#define MODELS_FILE_COORD_HPP
+#ifndef AUXILLARY_FILE_COORD_HPP
+#define AUXILLARY_FILE_COORD_HPP
 
-namespace Makma3D::Models {
+namespace Makma3D::Auxillary {
     /* A simple helper for (line, col) coordinates in some file. */
     struct FileCoord {
         /* The line number. */

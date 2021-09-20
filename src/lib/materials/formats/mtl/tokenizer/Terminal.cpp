@@ -15,12 +15,12 @@
 #include "Terminal.hpp"
 
 using namespace std;
-using namespace Makma3D::Models::Mtl;
+using namespace Makma3D::Materials::Mtl;
 
 
 /***** TERMINAL CLASS *****/
 /* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */
-Terminal::Terminal(TerminalType type, const DebugInfo& debug_info) :
+Terminal::Terminal(TerminalType type, const Auxillary::DebugInfo& debug_info) :
     type(type),
     debug_info(debug_info)
 {}

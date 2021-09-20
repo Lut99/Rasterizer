@@ -21,9 +21,8 @@
 
 #include "tools/Common.hpp"
 #include "ecs/components/Transform.hpp"
-#include "ecs/components/Meshes.hpp"
+#include "ecs/components/Model.hpp"
 #include "ecs/components/Camera.hpp"
-#include "ecs/components/Textures.hpp"
 #include "models/ModelSystem.hpp"
 
 #include "auxillary/ErrorCodes.hpp"
@@ -40,14 +39,16 @@ using namespace Makma3D::Rendering;
 
 
 /***** RENDERSYSTEM CLASS *****/
-/* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a model system to schedule the model buffers with and a texture system to schedule texture images with. */
-RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system, const Textures::TextureSystem& texture_system) :
+/* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a material system to create pipelines with, a model system to schedule the model buffers with and a texture system to schedule texture images with. */
+RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Materials::MaterialSystem& material_system, const Models::ModelSystem& model_system/*, const Textures::TextureSystem& texture_system*/) :
     window(window),
     memory_manager(memory_manager),
+    material_system(material_system),
     model_system(model_system),
-    texture_system(texture_system),
+    // texture_system(texture_system),
 
     global_descriptor_layout(this->window.gpu()),
+    material_descriptor_layout(this->window.gpu()),
     object_descriptor_layout(this->window.gpu()),
 
     depth_stencil(this->window.gpu(), this->memory_manager.draw_pool, this->window.swapchain().extent()),
@@ -63,14 +64,12 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->global_descriptor_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     this->global_descriptor_layout.finalize();
 
+    // Initialize the descritpor set layout for the per-material data
+    Materials::MaterialSystem::init_layout(this->material_descriptor_layout);
+
     // Initialize the descriptor set layout for the per-object data
     this->object_descriptor_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     this->object_descriptor_layout.finalize();
-
-    // Load the shaders
-    Tools::Array<ShaderStage> shader_stages(2);
-    shader_stages.push_back(ShaderStage(this->shader_pool.allocate(get_executable_path() + "/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT));
-    shader_stages.push_back(ShaderStage(this->shader_pool.allocate(get_executable_path() + "/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT));
 
     // Initialize the render pass
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -80,7 +79,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->render_pass.finalize();
 
     // Prepare pipeline construction by settings the constructor properties
-    this->pipeline_constructor.shaders = shader_stages;
     this->pipeline_constructor.vertex_input_state = VertexInputState(
         { VertexBinding(0, sizeof(Vertex)) },
         {
@@ -98,12 +96,22 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
         VK_FALSE, VK_LOGIC_OP_NO_OP,
         { ColorBlending(0, VK_FALSE, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD) }
     );
-    this->pipeline_constructor.pipeline_layout = PipelineLayout({ this->global_descriptor_layout, this->object_descriptor_layout }, {});
-    // Create the pipeline
-    this->pipeline = this->pipeline_constructor.construct(this->render_pass, 0, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT);
+    this->pipeline_constructor.pipeline_layout = PipelineLayout({ this->global_descriptor_layout, this->material_descriptor_layout, this->object_descriptor_layout }, {});
+
+    // Create the pipeline for all materials
+    for (uint32_t i = 0; i < Materials::MaterialSystem::n_types; i++) {
+        // Modify the pipeline constructor for this type
+        this->material_system.init_props(Materials::MaterialSystem::types[i], this->shader_pool, this->pipeline_constructor);
+
+        // Construct the new pipeline and insert it into the list
+        this->pipelines.insert({
+            Materials::MaterialSystem::types[i],
+            this->pipeline_constructor.construct(this->render_pass, 0, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT)
+        });
+    }
 
     // Initialize the frame manager
-    this->frame_manager = new FrameManager(this->memory_manager, this->window.swapchain(), this->global_descriptor_layout, this->object_descriptor_layout);
+    this->frame_manager = new FrameManager(this->memory_manager, this->window.swapchain(), this->global_descriptor_layout, this->material_descriptor_layout, this->object_descriptor_layout);
     this->frame_manager->bind(this->render_pass, this->depth_stencil);
 
     // Done initializing
@@ -114,10 +122,12 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 RenderSystem::RenderSystem(RenderSystem&& other)  :
     window(other.window),
     memory_manager(other.memory_manager),
+    material_system(other.material_system),
     model_system(other.model_system),
-    texture_system(other.texture_system),
+    // texture_system(other.texture_system),
 
     global_descriptor_layout(std::move(other.global_descriptor_layout)),
+    material_descriptor_layout(std::move(other.material_descriptor_layout)),
     object_descriptor_layout(std::move(other.object_descriptor_layout)),
 
     depth_stencil(std::move(other.depth_stencil)),
@@ -128,13 +138,13 @@ RenderSystem::RenderSystem(RenderSystem&& other)  :
 
     pipeline_cache(std::move(other.pipeline_cache)),
     pipeline_constructor(std::move(other.pipeline_constructor)),
-    pipeline(other.pipeline),
+    pipelines(other.pipelines),
 
     frame_manager(other.frame_manager)
 {
     // Prevent the frame manager from being deallocated
-    this->pipeline = nullptr;
-    this->frame_manager = nullptr;
+    other.pipelines.clear();
+    other.frame_manager = nullptr;
 }
 
 /* Destructor for the RenderSystem class. */
@@ -145,9 +155,11 @@ RenderSystem::~RenderSystem() {
     if (this->frame_manager != nullptr) {
         delete this->frame_manager;
     }
-    // Deallocate the pipeline
-    if (this->pipeline != nullptr) {
-        delete this->pipeline;
+    // Deallocate the pipelines
+    if (!this->pipelines.empty()) {
+        for (const auto& p : this->pipelines) {
+            delete p.second;
+        }
     }
 
     logger.logc(Verbosity::important, RenderSystem::channel, "Cleaned.");
@@ -170,16 +182,24 @@ void RenderSystem::_resize() {
     // Re-create all frames in the frame manager
     this->frame_manager->bind(this->render_pass, this->depth_stencil);
 
-    // Recreate the pipeline
+    // Update the pipeline constructor with the new viewport data
     this->pipeline_constructor.viewport_transformation.viewport.width  = (float) this->window.swapchain().extent().width;
     this->pipeline_constructor.viewport_transformation.viewport.height = (float) this->window.swapchain().extent().height;
     this->pipeline_constructor.viewport_transformation.scissor.extent = this->window.swapchain().extent();
-    this->pipeline_constructor.set_base_pipeline(this->pipeline);
-    Pipeline* new_pipeline = this->pipeline_constructor.construct(this->render_pass, 0);
-    
-    // Delete the old pipeline, then set the new one as the current one
-    delete this->pipeline;
-    this->pipeline = new_pipeline;
+
+    // Recreate our pipelines
+    for (auto& p : this->pipelines) {
+        // Update the constructo to this type's preferences
+        this->material_system.init_props(p.first, this->shader_pool, this->pipeline_constructor);
+        // Set the current pipeline as the base
+        this->pipeline_constructor.set_base_pipeline(p.second);
+        
+        // Now, recreate it
+        Pipeline* new_pipeline = this->pipeline_constructor.construct(this->render_pass, 0);
+        // Replace it with the current one
+        delete p.second;
+        p.second = new_pipeline;
+    }
 }
 
 
@@ -202,8 +222,41 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     }
 
     // Prepare rendering to the frame
-    const ECS::ComponentList<ECS::Meshes>& objects = entity_manager.get_list<ECS::Meshes>();
-    frame->prepare_render(objects.size());
+    const ECS::ComponentList<ECS::Model>& objects = entity_manager.get_list<ECS::Model>();
+    frame->prepare_render(objects.size(), this->material_system.size());
+
+    // Sort the objects by material type
+    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, ECS::ComponentList<Tools::Array<const ECS::Mesh*>>>> sorted_objects;
+    for (uint32_t i = 0; i < objects.size(); i++) {
+        // Get the data from the entity
+        entity_t entity = objects.get_entity(i);
+        const ECS::Model& model = objects[i];
+
+        // Sort all of the model's meshes
+        for (uint32_t j = 0; j < model.meshes.size(); j++) {
+            // Get the meshes' material
+            Materials::material_t material = model.meshes[i].material;
+
+            // Make sure there is enough space in the material list in a little efficient way
+            ECS::ComponentList<Tools::Array<const ECS::Mesh*>>& material_list = sorted_objects[this->material_system.get_type(material)][material];
+            if (material_list.size() == 0) {
+                material_list.reserve(16);
+            }
+            while (material_list.size() >= material_list.capacity()) {
+                material_list.reserve(2 * material_list.capacity());
+            }
+
+            // Check if this model already has a mesh scheduled here
+            if (!material_list.contains(entity)) {
+                material_list.add(entity, Tools::Array<const ECS::Mesh*>(16));
+            }
+            Tools::Array<const ECS::Mesh*>& mesh_list = material_list.get(entity);
+
+            // Add this mesh to the list of meshes
+            while (mesh_list.capacity() >= mesh_list.size()) { mesh_list.reserve(2 * mesh_list.capacity()); }
+            mesh_list.push_back(&model.meshes[i]);
+        }
+    }
 
     // Populate the frame's camera data
     const Camera& cam = entity_manager.get_list<Camera>()[0];
@@ -215,27 +268,45 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
     /* RECORDING */
     // Start recording the frame's command buffer
-    frame->schedule_start(this->pipeline);
+    frame->schedule_start();
 
     // Schedule the global data too
     frame->schedule_global();
 
-    // Next, loop through all objects
-    for (uint32_t i = 0; i < objects.size(); i++) {
-        // Get the relevant components for this entity
-        entity_t entity = objects.get_entity(i);
-        const ECS::Meshes& meshes = objects[i];
-        const ECS::Transform& transform = entity_manager.get_component<Transform>(entity);
+    // Loop through all present material types
+    uint32_t material_index = 0;
+    uint32_t object_index = 0;
+    for (const auto& p1 : sorted_objects) {
+        // Schedule the pipeline for this material
+        frame->schedule_pipeline(this->pipelines.at(p1.first));
+        // Get the list of data for this material type
+        const Tools::AssociativeArray<Materials::material_t, MaterialData>& material_data = this->material_system.get_list(p1.first);
 
-        // Populate the buffer for this entity
-        frame->upload_object_data(i, ObjectData{ transform.translation });
-        // Schedule the object's buffer too
-        frame->schedule_object(i);
+        // Loop through all specific materials for this type
+        for (const auto& p2 : p1.second) {
+            // Upload & schedule the data for this material
+            frame->upload_material_data(material_index, material_data.get(p2.first));
+            frame->schedule_material(material_index++);
 
-        // Loop through all meshes of this object to render them
-        for (uint32_t j = 0; j < meshes.size(); j++) {
-            // Schedule its draw
-            frame->schedule_draw(this->model_system, meshes[j]);
+            // Next, loop through all entities of this material to render them
+            for (uint32_t i = 0; i < p2.second.size(); i++) {
+                // Get the relevant components for this mesh' entity
+                entity_t entity = p2.second.get_entity(i);
+                const Tools::Array<const ECS::Mesh*>& models = p2.second[i];
+                const ECS::Transform& transform = entity_manager.get_component<Transform>(entity);
+
+                // Populate the buffer for this entity
+                frame->upload_object_data(object_index, ObjectData{ transform.translation });
+                // Schedule the object's buffer too
+                frame->schedule_object(object_index++);
+
+                // Loop through all meshes of this object to render them
+                for (uint32_t j = 0; j < models.size(); j++) {
+                    // Schedule its draw
+                    frame->schedule_draw(this->model_system, *models[j]);
+                }
+            }
+
         }
     }
 
@@ -272,14 +343,16 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
     #ifndef NDEBUG
     if (&rs1.window != &rs2.window) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different windows"); }
     if (&rs1.memory_manager != &rs2.memory_manager) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different memory managers"); }
+    if (&rs1.material_system != &rs2.material_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different material systems"); }
     if (&rs1.model_system != &rs2.model_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different model systems"); }
-    if (&rs1.texture_system != &rs2.texture_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different texture systems"); }
+    // if (&rs1.texture_system != &rs2.texture_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different texture systems"); }
     #endif
 
     // Simply swap everything
     using std::swap;
 
     swap(rs1.global_descriptor_layout, rs2.global_descriptor_layout);
+    swap(rs1.material_descriptor_layout, rs2.material_descriptor_layout);
     swap(rs1.object_descriptor_layout, rs2.object_descriptor_layout);
 
     swap(rs1.depth_stencil, rs2.depth_stencil);
@@ -290,7 +363,7 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
 
     swap(rs1.pipeline_cache, rs2.pipeline_cache);
     swap(rs1.pipeline_constructor, rs2.pipeline_constructor);
-    swap(rs1.pipeline, rs2.pipeline);
+    swap(rs1.pipelines, rs2.pipelines);
 
     swap(rs1.frame_manager, rs2.frame_manager);
 }

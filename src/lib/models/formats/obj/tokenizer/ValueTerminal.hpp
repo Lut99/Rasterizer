@@ -28,7 +28,7 @@ namespace Makma3D::Models::Obj {
 
 
         /* Constructor for the ValueTerminal class, which takes its type, its value and the DebugInfo. */
-        ValueTerminal(TerminalType type, const T& value, const DebugInfo& debug_info);
+        ValueTerminal(TerminalType type, const T& value, const Auxillary::DebugInfo& debug_info);
 
     };
 }

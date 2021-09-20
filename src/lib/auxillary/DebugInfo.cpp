@@ -27,7 +27,7 @@
 
 using namespace std;
 using namespace Makma3D;
-using namespace Makma3D::Models;
+using namespace Makma3D::Auxillary;
 
 
 /***** HELPER FUNCTIONS *****/

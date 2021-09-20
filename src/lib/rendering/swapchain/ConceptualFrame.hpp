@@ -17,9 +17,10 @@
 #define RENDERING_CONCEPTUAL_FRAME_HPP
 
 #include "tools/Array.hpp"
-#include "ecs/components/Meshes.hpp"
+#include "ecs/components/Model.hpp"
 #include "models/ModelSystem.hpp"
 
+#include "../data/MaterialData.hpp"
 #include "../data/ObjectData.hpp"
 #include "../memory_manager/MemoryManager.hpp"
 #include "../memory/Buffer.hpp"
@@ -57,6 +58,8 @@ namespace Makma3D::Rendering {
     public:
         /* Descriptor set layout for the global descriptor. */
         Rendering::DescriptorSetLayout global_layout;
+        /* Descriptor set layout for the per-material descriptors. */
+        Rendering::DescriptorSetLayout material_layout;
         /* Descriptor set layout for the per-object descriptors. */
         Rendering::DescriptorSetLayout object_layout;
 
@@ -69,6 +72,11 @@ namespace Makma3D::Rendering {
         Rendering::DescriptorSet* global_set;
         /* Global camera buffer for this frame. */
         Rendering::Buffer* camera_buffer;
+        
+        /* Descriptors for all materials drawn with this buffer. */
+        Tools::Array<Rendering::DescriptorSet*> material_sets;
+        /* Buffers for all materials. */
+        Tools::Array<Rendering::Buffer*> material_buffers;
 
         /* Descriptors for all objects drawn with this buffer. */
         Tools::Array<Rendering::DescriptorSet*> object_sets;
@@ -83,8 +91,8 @@ namespace Makma3D::Rendering {
         Rendering::Fence in_flight_fence;
 
     public:
-        /* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor and a descriptor set layout for the per-object descriptors. */
-        ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& object_layout);
+        /* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor, a descriptor set layout for per-material descriptors and a descriptor set layout for the per-object descriptors. */
+        ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& object_layout);
         /* Copy constructor for the ConceptualFrame class, which is deleted. */
         ConceptualFrame(const ConceptualFrame& other) = delete;
         /* Move constructor for the ConceptualFrame class. */
@@ -92,18 +100,24 @@ namespace Makma3D::Rendering {
         /* Destructor for the ConceptualFrame class. */
         ~ConceptualFrame();
 
-        /* Prepares rendering the frame as new by throwing out old data preparing to render at most the given number of objects. */
-        void prepare_render(uint32_t n_objects);
+        /* Prepares rendering the frame as new by throwing out old data preparing to render at most the given number of objects with at least the given number of materials different materials. */
+        void prepare_render(uint32_t n_materials, uint32_t n_objects);
 
         /* Populates the internal camera buffer with the given projection and view matrices. */
         void upload_camera_data(const glm::mat4& proj_matrix, const glm::mat4& view_matrix);
+        /* Uploads the material data for the given material index. */
+        void upload_material_data(uint32_t material_index, const Rendering::MaterialData& material_data);
         /* Uploads object data for the given object to its buffer. */
         void upload_object_data(uint32_t object_index, const Rendering::ObjectData& object_data);
 
-        /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue, followed by binding the given pipeline. */
-        void schedule_start(const Rendering::Pipeline* pipeline);
+        /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue. */
+        void schedule_start();
         /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
         void schedule_global();
+        /* Binds the given pipeline on the internal draw command queue. */
+        void schedule_pipeline(const Rendering::Pipeline* pipeline);
+        /* Schedules the stuff for a material. */
+        void schedule_material(uint32_t material_index);
         /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
         void schedule_object(uint32_t object_index);
         /* Schedules a draw command for the given mesh on the internal draw queue. */

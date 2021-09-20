@@ -21,7 +21,8 @@
 #include <vulkan/vulkan.h>
 
 #include "ecs/EntityManager.hpp"
-#include "ecs/components/Meshes.hpp"
+#include "ecs/components/Model.hpp"
+#include "materials/MaterialSystem.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
 #include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "ModelFormat.hpp"
@@ -35,10 +36,12 @@ namespace Makma3D::Models {
 
         /* Reference to the memory manager that contains the pools we need. */
         Rendering::MemoryManager& memory_manager;
+        /* Reference to the MaterialSystem which we use to load new materials with. */
+        Materials::MaterialSystem& material_system;
 
     public:
-        /* Constructor for the ModelSystem class, which takes a MemoryManager struct for the required memory pools. */
-        ModelSystem(Rendering::MemoryManager& memory_manager);
+        /* Constructor for the ModelSystem class, which takes a MemoryManager struct for the required memory pools and a material system to possibly define new materials found in, for example, .obj files. */
+        ModelSystem(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system);
         /* Copy constructor for the ModelSystem class. */
         ModelSystem(const ModelSystem& other);
         /* Move constructor for the ModelSystem class. */

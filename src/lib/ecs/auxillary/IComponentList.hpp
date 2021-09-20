@@ -56,6 +56,8 @@ namespace Makma3D::ECS {
         /* Removes an 'entity', by de-associating the given entity ID and removing the Component from the internal list. */
         virtual void remove(entity_t entity) = 0;
 
+        /* Checks if the given entity is present in this lost. */
+        inline bool contains(entity_t entity) const { return this->entity_map.find(entity) != this->entity_map.end(); }
         /* Returns the index matching with the given entity. */
         inline component_list_size_t get_index(entity_t entity) const { return this->entity_map.at(entity); }
         /* Returns the entity matching with the given index. */

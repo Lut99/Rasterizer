@@ -18,7 +18,7 @@
 #define RENDERING_SHADER_POOL_HPP
 
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <vulkan/vulkan.h>
 
 #include "../gpu/GPU.hpp"
@@ -36,8 +36,8 @@ namespace Makma3D::Rendering {
         const Rendering::GPU& gpu;
 
     private:
-        /* List of internally allocated Shader objects. */
-        std::unordered_set<Rendering::Shader*> shaders;
+        /* List of internally allocated Shader objects, identified by path. */
+        std::unordered_map<std::string, Rendering::Shader*> shaders;
     
     public:
         /* Constructor for the ShaderPool class, which takes the GPU where the Shaders will live. */

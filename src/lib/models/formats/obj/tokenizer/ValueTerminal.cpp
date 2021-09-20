@@ -22,7 +22,7 @@ using namespace Makma3D::Models::Obj;
 /***** VALUETERMINAL CLASS *****/
 /* Constructor for the ValueTerminal class, which takes its type, its value and the DebugInfo. */
 template <class T>
-ValueTerminal<T>::ValueTerminal(TerminalType type, const T& value, const DebugInfo& debug_info) :
+ValueTerminal<T>::ValueTerminal(TerminalType type, const T& value, const Auxillary::DebugInfo& debug_info) :
     Terminal(type, debug_info),
     value(value)
 {}

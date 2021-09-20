@@ -30,8 +30,9 @@
 
 #include "world/WorldSystem.hpp"
 
+#include "materials/MaterialSystem.hpp"
 #include "models/ModelSystem.hpp"
-#include "textures/TextureSystem.hpp"
+// #include "textures/TextureSystem.hpp"
 
 #include "rendering/instance/Instance.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
@@ -239,12 +240,14 @@ int main(int argc, const char** argv) {
         Rendering::MemoryManager memory_manager(window.gpu(), opts.local_memory_size, opts.visible_memory_size);
         // Initialize the WorldSystem
         World::WorldSystem world_system;
+        // Initialize the MaterialSystem
+        Materials::MaterialSystem material_system(window.gpu());
         // Initialize the ModelSystem
-        Models::ModelSystem model_system(memory_manager);
-        // Initialize the TextureSystem
-        Textures::TextureSystem texture_system(memory_manager);
+        Models::ModelSystem model_system(memory_manager, material_system);
+        // // Initialize the TextureSystem
+        // Textures::TextureSystem texture_system(memory_manager);
         // Initialize the RenderSystem
-        Rendering::RenderSystem render_system(window, memory_manager, model_system, texture_system);
+        Rendering::RenderSystem render_system(window, memory_manager, material_system, model_system/*, texture_system*/);
         // Initialize the entity manager
         ECS::EntityManager entity_manager;
 
@@ -269,7 +272,7 @@ int main(int argc, const char** argv) {
         world_system.set_controllable(entity_manager, cam, 1.0f, 10.0f);
 
         // Prepare the teddy bear
-        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
+        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
         world_system.set(entity_manager, obj, { 0.0f, 0.0f, 0.0f }, { 0.5f * M_PI, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
@@ -281,7 +284,7 @@ int main(int argc, const char** argv) {
         // texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
 
         // Prepare the second object
-        entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
+        entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
         world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
         model_system.load_model(entity_manager, obj2, exe_path + "/data/models/capsule.obj", Models::ModelFormat::obj);
         // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);

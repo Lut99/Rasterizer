@@ -13,14 +13,14 @@
  *   streamed from the input file.
 **/
 
-#ifndef MODELS_MTL_TERMINAL_HPP
-#define MODELS_MTL_TERMINAL_HPP
+#ifndef MATERIALS_MTL_TERMINAL_HPP
+#define MATERIALS_MTL_TERMINAL_HPP
 
 #include <string>
 
-#include "../../auxillary/DebugInfo.hpp"
+#include "../../../../auxillary/DebugInfo.hpp"
 
-namespace Makma3D::Models::Mtl {
+namespace Makma3D::Materials::Mtl {
     /* Lists all Terminal types. */
     enum class TerminalType {
         /* The undefined symbol. */
@@ -58,11 +58,11 @@ namespace Makma3D::Models::Mtl {
         /* The type of the terminal. */
         TerminalType type;
         /* The DebugInfo describing the terminal's location. */
-        DebugInfo debug_info;
+        Auxillary::DebugInfo debug_info;
 
 
         /* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */
-        Terminal(TerminalType type, const DebugInfo& debug_info);
+        Terminal(TerminalType type, const Auxillary::DebugInfo& debug_info);
 
     };
 

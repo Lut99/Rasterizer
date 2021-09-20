@@ -31,13 +31,13 @@
 #include "tokenizer/ValueTerminal.hpp"
 #include "tokenizer/Tokenizer.hpp"
 
-#include "../auxillary/ParserTools.hpp"
+#include "../../../auxillary/ParserTools.hpp"
 #include "MtlLoader.hpp"
 
 using namespace std;
 using namespace Makma3D;
-using namespace Makma3D::Models;
-using namespace Makma3D::Models::Mtl;
+using namespace Makma3D::Materials;
+using namespace Makma3D::Materials::Mtl;
 
 
 /***** CONSTANTS *****/
@@ -69,7 +69,7 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
             // Start of a colour definition, but only continue if we're in a material
             if (current_mtl.empty()) {
                 term->debug_info.print_error(cerr, "Encountered colour definition without newmtl.");
-                remove_stack_bottom(symbol_stack, iter);
+                Auxillary::remove_stack_bottom(symbol_stack, iter);
                 return "error";
             }
             goto Kd_start;
@@ -77,7 +77,7 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
         case TerminalType::decimal:
             // Looking at a decimal without a colour definition; stop
             term->debug_info.print_error(cerr, "Encountered stray colour value.");
-            remove_stack_bottom(symbol_stack, iter);
+            Auxillary::remove_stack_bottom(symbol_stack, iter);
             return "error";
         
         case TerminalType::newmtl:
@@ -91,7 +91,7 @@ static std::string reduce(std::string& current_mtl, std::unordered_map<std::stri
         default:
             // Unexpected token
             term->debug_info.print_error(cerr, "Unexpected token '" + terminal_type_names[(int) term->type] + "'.");
-            remove_stack_bottom(symbol_stack, iter);;
+            Auxillary::remove_stack_bottom(symbol_stack, iter);;
             return "error";
 
     }
@@ -116,11 +116,11 @@ Kd_start: {
             // Check if the color is too small or large
             if (i - 2 < 3) {
                 term->debug_info.print_error(cerr, "Too few values given for diffuse colour (got " + std::to_string(i - 2) + ", expected 3)");
-                remove_stack_bottom(symbol_stack, --iter);
+                Auxillary::remove_stack_bottom(symbol_stack, --iter);
                 return "error";
             } else if (i - 2 > 3) {
                 term->debug_info.print_error(cerr, "Too many values given for diffuse colour (got " + std::to_string(i - 2) + ", expected 3)");
-                remove_stack_bottom(symbol_stack, --iter);
+                Auxillary::remove_stack_bottom(symbol_stack, --iter);
                 return "error";
             }
 
@@ -134,7 +134,7 @@ Kd_start: {
             new_materials.at(current_mtl) = glm::vec3(r, g, b);
 
             // Remove the used symbols off the top of the stack (except the next one), then return
-            remove_stack_bottom(symbol_stack, --iter);
+            Auxillary::remove_stack_bottom(symbol_stack, --iter);
             return "Kd";
 
     }
@@ -154,13 +154,13 @@ newmtl_start: {
             // Parse the material and set it as current
             current_mtl = ((ValueTerminal<std::string>*) term)->value;
             new_materials.insert(make_pair(current_mtl, glm::vec3(-1.0, -1.0, -1.0)));
-            remove_stack_bottom(symbol_stack, iter);
+            Auxillary::remove_stack_bottom(symbol_stack, iter);
             return "newmtl";
         
         default:
             // Missing filename
             (*(iter - 1))->debug_info.print_error(cerr, "Missing name after new material definition.");
-            remove_stack_bottom(symbol_stack, --iter);
+            Auxillary::remove_stack_bottom(symbol_stack, --iter);
             return "error";
 
     }
@@ -178,7 +178,7 @@ newmtl_start: {
 
 /***** LIBRARY FUNCTIONS *****/
 /* Loads the file at the given path as a .mtl file, and returns a map of material name: color schemes for it. */
-void Models::load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materials, const std::string& path) {
+void Materials::load_mtl_lib(std::unordered_map<std::string, glm::vec3>& new_materials, const std::string& path) {
     // Prepare the Tokenizer
     Tokenizer tokenizer(path);
     // Prepare the 'symbol stack'

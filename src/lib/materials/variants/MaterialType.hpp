@@ -24,16 +24,19 @@ namespace Makma3D::Materials {
         /* Meta enum that denotes a default, unknown material. */
         unknown = 0,
 
+        /* Material type that basically is not material, just passes the per-vertex colours. */
+        simple = 1,
         /* Material type for a material with no lighting model and no texture. */
-        simple_coloured = 1,
+        simple_coloured = 2,
         /* Material type for a material with no lighting model, but with a texture. */
-        simple_textured = 2
+        simple_textured = 3
     };
 
     /* Maps MaterialType enum values to readable strings. */
     static const std::string material_type_names[] = {
         "unknown",
 
+        "simple",
         "simple_coloured",
         "simple_textured"
     };
