@@ -46,3 +46,6 @@ vgcore.*
 
 # Skip uploading the pipeline caches
 *.cache
+
+# The export folder
+export/*
