@@ -9,7 +9,8 @@ project(Rasterizer VERSION 1.0.0)
 
 # If we're on Windows, prefix the GLFW path
 IF(WIN32)
-list(APPEND CMAKE_PREFIX_PATH "C:/Program Files (x86)/GLFW/lib/cmake/glfw3")
+set(GLFW3_PATH "C:/Program Files (x86)/GLFW/lib/cmake/glfw3")
+list(APPEND CMAKE_PREFIX_PATH "${GLFW3_PATH}")
 ENDIF()
 
 # Get the VULKAN, GLM & CppDebugger library
@@ -78,6 +79,22 @@ add_custom_target(shaders
     COMMAND glslc -fshader-stage=frag -o ${PROJECT_SOURCE_DIR}/bin/shaders/frag_v2.spv ${PROJECT_SOURCE_DIR}/src/shaders/fragment_v2.glsl
     COMMENT "Building shaders..."
 )
+
+
+
+##### EXPORT #####
+if (WIN32)
+# Define the relations between the output binary and its export location
+configure_file(${PROJECT_SOURCE_DIR}/bin/rasterizer.exe ${PROJECT_SOURCE_DIR}/export/rasterizer/rasterizer.exe COPYONLY)
+# Do the same for the shaders
+configure_file(${PROJECT_SOURCE_DIR}/bin/shaders/vertex_v5.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/vertex_v5.spv COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/bin/shaders/frag_v1.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/frag_v1.spv COPYONLY)
+# And for used models/textures
+configure_file(${PROJECT_SOURCE_DIR}/bin/data/models/viking_room.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/viking_room.obj COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/bin/data/textures/viking_room.png ${PROJECT_SOURCE_DIR}/export/rasterizer/data/textures/viking_room.png COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/bin/data/models/capsule.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/capsule.obj COPYONLY)
+configure_file(${PROJECT_SOURCE_DIR}/bin/data/textures/capsule.jpg ${PROJECT_SOURCE_DIR}/export/rasterizer/data/textures/capsule.jpg COPYONLY)
+endif()
 
 
 
