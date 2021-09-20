@@ -263,9 +263,21 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
                 // Get the relevant components for this entity
                 const ECS::Transform& transform = entity_manager.get_component<Transform>(entities.first);
 
+                logger.debug("Processing entity '", entities.first, "'...");
+                logger.debug(" - Entity position : ", transform.position);
+                logger.debug(" - Entity rotation : ", transform.rotation);
+                logger.debug(" - Entity scale    : ", transform.scale);
+                logger.debug(" - Entity translate: ", transform.translation[0]);
+                logger.debug("                     ", transform.translation[1]);
+                logger.debug("                     ", transform.translation[2]);
+                logger.debug("                     ", transform.translation[3]);
+
                 // Populate the buffer for this entity and upload it
+                logger.debug("No?");
                 frame->upload_object_data(object_index, ObjectData{ transform.translation });
+                logger.debug("Maybe?");
                 frame->schedule_object(object_index++);
+                logger.debug("Yes?");
 
                 // Loop through the meshes of this entity to render each of those
                 for (uint32_t i = 0; i < entities.second.size(); i++) {

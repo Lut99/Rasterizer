@@ -97,6 +97,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             mesh.name = "triangle";
             mesh.material = Materials::DefaultMaterial;
             mesh.vertices = this->memory_manager.draw_pool.allocate(n_vertices * sizeof(Rendering::Vertex ), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.n_vertices = n_vertices;
             mesh.indices = this->memory_manager.draw_pool.allocate(n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             mesh.n_indices = n_indices;
 

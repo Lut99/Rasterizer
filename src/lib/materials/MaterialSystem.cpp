@@ -120,10 +120,10 @@ void MaterialSystem::init_props_simple(Rendering::ShaderPool& shader_pool, Rende
     // Set the pipeline shaders
     pipeline_constructor.shaders = shaders;
     // Set the pipeline input vertex attributes
-    pipeline_constructor.vertex_input_state.vertex_attributes = {
-        VertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32B32_SFLOAT),
-        VertexAttribute(0, 1, offsetof(Vertex, colour), VK_FORMAT_R32G32B32_SFLOAT)
-    };
+    pipeline_constructor.vertex_input_state = VertexInputState(
+        { VertexBinding(0, sizeof(Vertex)) },
+        { VertexAttribute(0, 0, offsetof(Vertex, pos), VK_FORMAT_R32G32B32_SFLOAT), VertexAttribute(0, 1, offsetof(Vertex, colour), VK_FORMAT_R32G32B32_SFLOAT) }
+    );
     // Set the input assembly
     pipeline_constructor.input_assembly_state = InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_FALSE);
 
