@@ -32,9 +32,7 @@ ColorLogic::ColorLogic(VkBool32 enabled, VkLogicOp logic_op, const Tools::Array<
     enabled(enabled),
     logic_op(logic_op),
     color_blends(color_blend_attachments)
-{
-    printf("Initialized ColorLogic\n");
-}
+{}
 
 
 

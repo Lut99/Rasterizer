@@ -4,7 +4,7 @@
  * Created:
  *   25/07/2021, 14:11:20
  * Last edited:
- *   17/09/2021, 22:21:21
+ *   20/09/2021, 14:04:18
  * Auto updated?
  *   Yes
  *
@@ -23,7 +23,8 @@
 #include <thread>
 #include <mutex>
 #include <exception>
-#include "date.h"
+
+#include "StreamOperators.hpp"
 
 namespace Tools {
     /* Namespace encapsulating the verbosity enum. */
@@ -92,13 +93,11 @@ namespace Tools {
         /* Internal helper function that populates a given stringstream with all given types, converted to strings. */
         template <class T>
         static void _add_args(std::ostream* os, const T& arg) {
-            using namespace date;
             *os << arg;
         }
         /* Internal helper function that populates a given stringstream with all given types, converted to strings. */
         template <class T, class... Ts>
         static void _add_args(std::ostream* os, const T& arg, const Ts&... rest) {
-            using namespace date;
             *os << arg;
             Logger::_add_args(os, rest...);
         }

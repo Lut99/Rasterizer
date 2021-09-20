@@ -43,7 +43,7 @@ layout(set = 1, binding = 0) uniform Object {
 void main() {
     // Return the vertex as a 4D vertex
     // gl_Position = camera.proj * camera.view * camera.model * vec4(vertex, 0.0, 1.0);
-    gl_Position = camera.proj * camera.view * vec4(vertex, 1.0);
+    gl_Position = camera.proj * camera.view * object.translation * vec4(vertex, 1.0);
     // Also return the color for the fragment shader
     frag_color = color;
 }

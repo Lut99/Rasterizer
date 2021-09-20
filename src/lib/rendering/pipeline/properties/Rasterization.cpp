@@ -43,9 +43,7 @@ Rasterization::Rasterization(VkBool32 enabled, VkCullModeFlags cull_mode, VkFron
     depth_clamp(depth_clamp),
     polygon_mode(polygon_mode),
     line_width(line_width)
-{
-    printf("Initialized Rasterization\n");
-}
+{}
 
 
 

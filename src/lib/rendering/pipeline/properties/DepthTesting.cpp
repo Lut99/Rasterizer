@@ -31,9 +31,7 @@ DepthTesting::DepthTesting() :
 DepthTesting::DepthTesting(VkBool32 enabled, VkCompareOp compare_op) :
     enabled(enabled),
     compare_op(compare_op)
-{
-    printf("Initializing DepthTesting\n");
-}
+{}
 
 
 

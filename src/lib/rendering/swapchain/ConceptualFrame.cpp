@@ -96,7 +96,7 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
 
     // Initialize the global descriptor set & camera buffer
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing global frame data...");
-    this->camera_buffer = this->memory_manager.draw_pool.allocate(sizeof(CameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    this->camera_buffer = this->memory_manager.draw_pool.allocate(sizeof(CameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
     // And that's it
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Init success.");

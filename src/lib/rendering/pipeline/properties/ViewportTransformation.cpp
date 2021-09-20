@@ -46,7 +46,6 @@ ViewportTransformation::ViewportTransformation(VkOffset2D viewport_offset, VkExt
     this->scissor.extent = scissor_extent;
 
     // Done
-    printf("Initialized ViewportTransformation\n");
 }
 
 

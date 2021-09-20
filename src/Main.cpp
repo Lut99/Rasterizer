@@ -12,6 +12,10 @@
  *   Entry point to the rasterizer executable
 **/
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#endif
 #include <string>
 #include <chrono>
 #define _USE_MATH_DEFINES
@@ -214,6 +218,10 @@ int main(int argc, const char** argv) {
         logger.log(Verbosity::important, "Starting Rasterizer on ", logger.get_start_time());
         logger.log(Verbosity::important, "Initializing Rasterizer...");
 
+        // Query the .exe path
+        std::string exe_path = get_executable_path();
+        logger.log(Verbosity::important, "Running from '", exe_path, "'...");
+
         // Initialize the GLFW library
         logger.log(Verbosity::important, "Initializing GLFW...");
         glfwInit();
@@ -267,16 +275,16 @@ int main(int argc, const char** argv) {
         // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
         // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
         // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
-        model_system.load_model(entity_manager, obj, "data/models/viking_room.obj", Models::ModelFormat::obj);
-        texture_system.load_texture(entity_manager, obj, "data/textures/viking_room.png", Textures::TextureFormat::png);
+        model_system.load_model(entity_manager, obj, exe_path + "/data/models/viking_room.obj", Models::ModelFormat::obj);
+        // texture_system.load_texture(entity_manager, obj, exe_path + "/data/textures/viking_room.png", Textures::TextureFormat::png);
         // model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
         // texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
 
         // Prepare the second object
         entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::meshes | ECS::ComponentFlags::texture);
         world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
-        model_system.load_model(entity_manager, obj2, "data/models/capsule.obj", Models::ModelFormat::obj);
-        // texture_system.load_texture(entity_manager, obj2, "data/textures/capsule.jpg", Textures::TextureFormat::jpg);
+        model_system.load_model(entity_manager, obj2, exe_path + "/data/models/capsule.obj", Models::ModelFormat::obj);
+        // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);
 
         // Do the render
         uint32_t fps = 0;

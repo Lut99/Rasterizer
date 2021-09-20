@@ -30,9 +30,7 @@ VertexInputState::VertexInputState() :
 VertexInputState::VertexInputState(const Tools::Array<VertexBinding>& vertex_bindings, const Tools::Array<VertexAttribute>& vertex_attributes) :
     vertex_bindings(vertex_bindings),
     vertex_attributes(vertex_attributes)
-{
-    printf("Initializing VertexInputState\n");
-}
+{}
 
 
 

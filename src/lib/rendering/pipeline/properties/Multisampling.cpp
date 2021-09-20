@@ -28,9 +28,7 @@ using namespace Makma3D::Rendering;
 // {}
 
 /* Constructor for the Multisampling class, which takes nothing as we don't do that for now. */
-Multisampling::Multisampling() {
-    printf("Initialized Multisampling\n");
-}
+Multisampling::Multisampling() {}
 
 
 

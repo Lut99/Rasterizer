@@ -48,9 +48,7 @@ PipelineLayout::PipelineLayout() :
 PipelineLayout::PipelineLayout(const Tools::Array<Rendering::DescriptorSetLayout>& descriptor_layouts, const Tools::Array<std::pair<VkShaderStageFlags, uint32_t>>& push_constant_layouts) :
     descriptor_layouts(descriptor_layouts),
     push_constant_layouts(push_constant_layouts)
-{
-    printf("Initialized PipelineLayout\n");
-}
+{}
 
 
 

@@ -18,6 +18,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+
+#include "tools/Common.hpp"
 #include "ecs/components/Transform.hpp"
 #include "ecs/components/Meshes.hpp"
 #include "ecs/components/Camera.hpp"
@@ -54,10 +56,9 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     render_pass(this->window.gpu()),
 
-    pipeline_cache(this->window.gpu(), "pipeline.cache"),
+    pipeline_cache(this->window.gpu(), get_executable_path() + "/pipeline.cache"),
     pipeline_constructor(this->window.gpu(), this->pipeline_cache)
 {
-    logger.debug("Test 1");
     // Initialize the descriptor set layout for the global data
     this->global_descriptor_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     this->global_descriptor_layout.finalize();
@@ -67,13 +68,11 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->object_descriptor_layout.finalize();
 
     // Load the shaders
-    logger.debug("Test 2");
     Tools::Array<ShaderStage> shader_stages(2);
-    shader_stages.push_back(ShaderStage(this->shader_pool.allocate("bin/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT));
-    shader_stages.push_back(ShaderStage(this->shader_pool.allocate("bin/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT));
+    shader_stages.push_back(ShaderStage(this->shader_pool.allocate(get_executable_path() + "/shaders/vertex_v5.spv"), VK_SHADER_STAGE_VERTEX_BIT));
+    shader_stages.push_back(ShaderStage(this->shader_pool.allocate(get_executable_path() + "/shaders/frag_v1.spv"), VK_SHADER_STAGE_FRAGMENT_BIT));
 
     // Initialize the render pass
-    logger.debug("Test 3");
     uint32_t col_index = this->render_pass.add_attachment(this->window.swapchain().format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     uint32_t dep_index = this->render_pass.add_attachment(this->depth_stencil.format(), VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     this->render_pass.add_subpass({ std::make_pair(col_index, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) }, std::make_pair(dep_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL));
@@ -81,7 +80,6 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->render_pass.finalize();
 
     // Prepare pipeline construction by settings the constructor properties
-    logger.debug("Test 4");
     this->pipeline_constructor.shaders = shader_stages;
     this->pipeline_constructor.vertex_input_state = VertexInputState(
         { VertexBinding(0, sizeof(Vertex)) },
@@ -102,11 +100,9 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     );
     this->pipeline_constructor.pipeline_layout = PipelineLayout({ this->global_descriptor_layout, this->object_descriptor_layout }, {});
     // Create the pipeline
-    logger.debug("Test 5");
     this->pipeline = this->pipeline_constructor.construct(this->render_pass, 0, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT);
 
     // Initialize the frame manager
-    logger.debug("Test 6");
     this->frame_manager = new FrameManager(this->memory_manager, this->window.swapchain(), this->global_descriptor_layout, this->object_descriptor_layout);
     this->frame_manager->bind(this->render_pass, this->depth_stencil);
 
