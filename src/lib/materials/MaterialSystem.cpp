@@ -32,7 +32,7 @@ MaterialSystem::MaterialSystem(const Rendering::GPU& gpu) :
     logger.logc(Verbosity::important, MaterialSystem::channel, "Initializing...");
 
     // Add in the default material
-    this->material_ids.insert({ DefaultMaterial, MaterialType::simple });
+    this->material_ids.insert({ DefaultMaterial, { "DefaultMaterial", MaterialType::simple } });
     this->simple.add(DefaultMaterial, {});
 
     logger.logc(Verbosity::important, MaterialSystem::channel, "Init success.");
@@ -135,12 +135,12 @@ void MaterialSystem::init_props_simple_coloured(Rendering::ShaderPool& shader_po
     // Load the shaders to use
     Tools::Array<ShaderStage> shaders(2);
     shaders.push_back(ShaderStage(
-        shader_pool.allocate("shaders/materials/simple_vert.spv"),
+        shader_pool.allocate("shaders/materials/simple_coloured_vert.spv"),
         VK_SHADER_STAGE_VERTEX_BIT,
         {}
     ));
     shaders.push_back(ShaderStage(
-        shader_pool.allocate("shaders/materials/simple_frag.spv"),
+        shader_pool.allocate("shaders/materials/simple_coloured_frag.spv"),
         VK_SHADER_STAGE_FRAGMENT_BIT,
         {}
     ));
@@ -202,7 +202,7 @@ std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_m
             const ECS::Mesh& mesh = model.meshes[j];
             material_t material = mesh.material;
             // Also lookup the meshes MaterialType based on its material index
-            MaterialType material_type = this->material_ids.at(material);
+            MaterialType material_type = this->material_ids.at(material).second;
 
             // Next, add a new unordered map to the main map if this is the first time we see this type
             std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>>::iterator type_iter = result.find(material_type);
@@ -255,8 +255,8 @@ AssociativeArray<material_t, Rendering::MaterialData>& MaterialSystem::get_list(
 
 
 
-/* Adds a new material that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
-material_t MaterialSystem::create_simple_coloured(const glm::vec3& colour) {
+/* Adds a new material with the given debug name that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
+material_t MaterialSystem::create_simple_coloured(const std::string& name, const glm::vec3& colour) {
     // Check if a material with this colour already exists
     for (uint32_t i = 0; i < this->simple_coloured.size(); i++) {
         if (this->simple_coloured[i].colour == colour) {
@@ -269,23 +269,24 @@ material_t MaterialSystem::create_simple_coloured(const glm::vec3& colour) {
     material_t material = this->get_available_id("SimpleColoured");
 
     // Store the ID internally
-    this->material_ids.insert({ material, MaterialType::simple_coloured });
+    this->material_ids.insert({ material, { name, MaterialType::simple_coloured } });
     // Simply add a new structure of this type
     MaterialData data{};
     data.colour = colour;
     this->simple_coloured.add(material, data);
 
     // Return the material ID we found
+    logger.debug("Created SimpleColoured material '", name, "' with ID ", material, " (colour: ", colour, ")");
     return material;
 }
 
-/* Adds a new material that uses the simple lighting model with a texture. The texture used is the given one. */
-material_t MaterialSystem::create_simple_textured(const Textures::Texture& texture) {
+/* Adds a new material with the given debug name that uses the simple lighting model with a texture. The texture used is the given one. */
+material_t MaterialSystem::create_simple_textured(const std::string& name, const Textures::Texture& texture) {
     // First, find a valid material ID
     material_t material = this->get_available_id("SimpleTextured");
 
     // Store the ID internally
-    this->material_ids.insert({ material, MaterialType::simple_textured });
+    this->material_ids.insert({ material, { name, MaterialType::simple_textured } });
     // Simply add a new structure of this type
     MaterialData data{};
     /* TBD */
@@ -313,7 +314,7 @@ Tools::Array<std::pair<std::string, material_t>> MaterialSystem::load_simple_col
     // Add the materials internally
     Tools::Array<std::pair<std::string, material_t>> result(static_cast<uint32_t>(new_formats.size()));
     for (const auto& p : new_formats) {
-        result.push_back({ p.first, this->create_simple_coloured(p.second) });
+        result.push_back({ p.first, this->create_simple_coloured(p.first, p.second) });
     }
 
     // Done
@@ -323,13 +324,13 @@ Tools::Array<std::pair<std::string, material_t>> MaterialSystem::load_simple_col
 /* Removes the material with the given ID from the system. Throws errors if no such material exists. */
 void MaterialSystem::remove(material_t material) {
     // Try to find the material ID
-    std::unordered_map<material_t, MaterialType>::iterator iter = this->material_ids.find(material);
+    std::unordered_map<material_t, std::pair<std::string, MaterialType>>::iterator iter = this->material_ids.find(material);
     if (iter == this->material_ids.end()) {
         logger.fatalc(MaterialSystem::channel, "Cannot remove unknown material with ID ", material, '.');
     }
 
     // Remove the material from its component map
-    switch((*iter).second) {
+    switch((*iter).second.second) {
         case MaterialType::simple:
             logger.fatalc(MaterialSystem::channel, "Cannot remove the default material.");
 
@@ -342,7 +343,7 @@ void MaterialSystem::remove(material_t material) {
             break;
 
         default:
-            logger.fatalc(MaterialSystem::channel, "Cannot remove material with ID ", material, " because it has an unsupported type '", material_type_names[(int) (*iter).second], "'.");
+            logger.fatalc(MaterialSystem::channel, "Cannot remove material with ID ", material, " because it has an unsupported type '", material_type_names[(int) (*iter).second.second], "'.");
 
     }
 

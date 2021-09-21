@@ -213,7 +213,7 @@ DescriptorPool::~DescriptorPool() {
     if (this->descriptor_sets.size() > 0) {
         logger.logc(Verbosity::details, DescriptorPool::channel, "Deallocating descriptor sets...");
         for (uint32_t i = 0; i < this->descriptor_sets.size(); i++) {
-            if ((vk_result = vkFreeDescriptorSets(this->gpu, this->vk_descriptor_pool, 1, &this->descriptor_sets[i]->descriptor_set())) != VK_SUCCESS) {
+            if ((vk_result = vkFreeDescriptorSets(this->gpu, this->vk_descriptor_pool, 1, &this->descriptor_sets[i]->vulkan())) != VK_SUCCESS) {
                 logger.errorc(DescriptorPool::channel, "Could not deallocate descriptor sets: ", vk_error_map[vk_result]);
             }
         }
@@ -361,7 +361,7 @@ void DescriptorPool::free(const DescriptorSet* set) {
     }
 
     // Destroy the VkCommandBuffer
-    vkFreeDescriptorSets(this->gpu, this->vk_descriptor_pool, 1, &set->descriptor_set());
+    vkFreeDescriptorSets(this->gpu, this->vk_descriptor_pool, 1, &set->vulkan());
     
     // Destroy the pointer itself
     delete set;
@@ -385,7 +385,7 @@ void DescriptorPool::nfree(const Tools::Array<DescriptorSet*>& sets) {
         }
 
         // Mark the Vk object for removal
-        to_remove.push_back(sets[i]->descriptor_set());
+        to_remove.push_back(sets[i]->vulkan());
 
         // Delete the pointer
         delete sets[i];

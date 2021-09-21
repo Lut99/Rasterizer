@@ -121,9 +121,11 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     global_set(std::move(other.global_set)),
     camera_buffer(std::move(other.camera_buffer)),
 
+    material_index_map(std::move(other.material_index_map)),
     material_sets(std::move(other.material_sets)),
     material_buffers(std::move(other.material_buffers)),
 
+    object_index_map(std::move(other.object_index_map)),
     object_sets(std::move(other.object_sets)),
     object_buffers(std::move(other.object_buffers)),
 
@@ -181,6 +183,10 @@ ConceptualFrame::~ConceptualFrame() {
 
 /* Prepares rendering the frame as new by throwing out old data preparing to render at most the given number of objects with at least the given number of materials different materials. */
 void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
+    // Reset the index maps
+    this->material_index_map.clear();
+    this->object_index_map.clear();
+
     // Rescale the internal array of materials to the desired size
     if (this->material_buffers.size() < n_materials) {
         // Extent the object buffer to more space and allocate new buffers
@@ -232,7 +238,14 @@ void ConceptualFrame::upload_camera_data(const glm::mat4& proj_matrix, const glm
 }
 
 /* Uploads the material data for the given material index. */
-void ConceptualFrame::upload_material_data(uint32_t material_index, const Rendering::MaterialData& material_data) {
+void ConceptualFrame::upload_material_data(Materials::material_t material, const Rendering::MaterialData& material_data) {
+    // Map the material
+    std::unordered_map<Materials::material_t, uint32_t>::iterator iter = this->material_index_map.find(material);
+    if (iter == this->material_index_map.end()) {
+        iter = this->material_index_map.insert({ material, static_cast<uint32_t>(this->material_index_map.size()) }).first;
+    }
+    uint32_t material_index = (*iter).second;
+
     #ifndef NDEBUG
     // Throw errors if out-of-range
     if (material_index > this->material_buffers.size()) {
@@ -247,7 +260,14 @@ void ConceptualFrame::upload_material_data(uint32_t material_index, const Render
 }
 
 /* Uploads object data for the given object to its buffer. */
-void ConceptualFrame::upload_object_data(uint32_t object_index, const Rendering::ObjectData& object_data) {
+void ConceptualFrame::upload_object_data(ECS::entity_t object, const Rendering::ObjectData& object_data) {
+    // Map the object
+    std::unordered_map<ECS::entity_t, uint32_t>::iterator iter = this->object_index_map.find(object);
+    if (iter == this->object_index_map.end()) {
+        iter = this->object_index_map.insert({ object, static_cast<uint32_t>(this->object_index_map.size()) }).first;
+    }
+    uint32_t object_index = (*iter).second;
+
     #ifndef NDEBUG
     // Throw errors if out-of-range
     if (object_index > this->object_buffers.size()) {
@@ -256,8 +276,10 @@ void ConceptualFrame::upload_object_data(uint32_t object_index, const Rendering:
     #endif
 
     // Otherwise, set the correct buffer using the staging buffer
+    // this->object_buffers.at(object_index)->set((void*) &object_data, sizeof(ObjectData), this->stage_buffer, this->memory_manager.copy_cmd);
     this->object_buffers[object_index]->set((void*) &object_data, sizeof(ObjectData), this->stage_buffer, this->memory_manager.copy_cmd);
     // Bind the correct object buffer to the correct set
+    // this->object_sets.at(object_index)->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers.at(object_index) });
     this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
 }
 
@@ -295,7 +317,14 @@ void ConceptualFrame::schedule_global() {
 }
 
 /* Schedules the stuff for a material. */
-void ConceptualFrame::schedule_material(uint32_t material_index) {
+void ConceptualFrame::schedule_material(Materials::material_t material) {
+    // Map the material
+    std::unordered_map<Materials::material_t, uint32_t>::iterator iter = this->material_index_map.find(material);
+    if (iter == this->material_index_map.end()) {
+        logger.fatalc(ConceptualFrame::channel, "Cannot schedule material ", material, " for which nothing has been uploaded.");
+    }
+    uint32_t material_index = (*iter).second;
+
     #ifndef NDEBUG
     // Throw errors if out-of-range
     if (material_index > this->material_buffers.size()) {
@@ -308,7 +337,14 @@ void ConceptualFrame::schedule_material(uint32_t material_index) {
 }
 
 /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
-void ConceptualFrame::schedule_object(uint32_t object_index) {
+void ConceptualFrame::schedule_object(ECS::entity_t object) {
+    // Map the object
+    std::unordered_map<ECS::entity_t, uint32_t>::iterator iter = this->object_index_map.find(object);
+    if (iter == this->object_index_map.end()) {
+        logger.fatalc(ConceptualFrame::channel, "Cannot schedule object ", object, " for which nothing has been uploaded.");
+    }
+    uint32_t object_index = (*iter).second;
+
     #ifndef NDEBUG
     // Throw errors if out-of-range
     if (object_index > this->object_buffers.size()) {
@@ -354,6 +390,18 @@ void ConceptualFrame::submit(const VkQueue& vk_queue) {
     if ((vk_result = vkQueueSubmit(vk_queue, 1, &submit_info, this->in_flight_fence)) != VK_SUCCESS) {
         logger.fatalc(ConceptualFrame::channel, "Could not submit frame to queue: ", vk_error_map[vk_result]);
     }
+
+    // // Before we go, debug print all DescriptorSetLayouts
+    // logger.debug("Global sets:");
+    // logger.debug(" - DescriptorSet @ ", this->global_set->vulkan());
+    // logger.debug("Material sets:");
+    // for (uint32_t i = 0; i < this->material_sets.size(); i++) {
+    //     logger.debug(" - DescriptorSet @ ", this->material_sets[i]->vulkan());
+    // }
+    // logger.debug("Object sets:");
+    // for (uint32_t i = 0; i < this->object_sets.size(); i++) {
+    //     logger.debug(" - DescriptorSet @ ", this->object_sets[i]->vulkan());
+    // }
 
     // Done
 }

@@ -271,23 +271,32 @@ int main(int argc, const char** argv) {
         world_system.set_cam(entity_manager, cam, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, 45, (float) width / (float) height);
         world_system.set_controllable(entity_manager, cam, 1.0f, 10.0f);
 
-        // Prepare the teddy bear
-        entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
-        world_system.set(entity_manager, obj, { 0.0f, 0.0f, 0.0f }, { 0.5f * M_PI, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
-        // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
-        // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
-        // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
-        // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
-        model_system.load_model(entity_manager, obj, exe_path + "/data/models/viking_room.obj", Models::ModelFormat::obj);
-        // texture_system.load_texture(entity_manager, obj, exe_path + "/data/textures/viking_room.png", Textures::TextureFormat::png);
-        // model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
-        // texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
+        // // Prepare the teddy bear
+        // entity_t obj = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
+        // world_system.set(entity_manager, obj, { 0.0f, 0.0f, 0.0f }, { 0.5f * M_PI, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
+        // // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.5, 0.5, 0.5 });
+        // // world_system.set(entity_manager, obj, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.03, 0.03, 0.03 });
+        // // model_system.load_model(entity_manager, obj, "F:\\Downloads\\Kenney Game Assets (version 41)\\3D assets\\Fantasy Town Kit\\Models\\OBJ format\\watermill.obj", Models::ModelFormat::obj);
+        // // model_system.load_model(entity_manager, obj, "src/lib/models/formats/obj/pegleg/test.obj", Models::ModelFormat::obj);
+        // model_system.load_model(entity_manager, obj, "data/models/viking_room.obj", Models::ModelFormat::obj);
+        // // texture_system.load_texture(entity_manager, obj, exe_path + "/data/textures/viking_room.png", Textures::TextureFormat::png);
+        // // model_system.load_model(entity_manager, obj, "square", Models::ModelFormat::square);
+        // // texture_system.load_texture(entity_manager, obj, "F:\\Pictures\\WhatsApp Stickers\\png\\pollo.png", Textures::TextureFormat::png);
+        // logger.log(Verbosity::details, "VikingRoom is mapped to entity index ", obj);
 
-        // Prepare the second object
-        entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
-        world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
-        model_system.load_model(entity_manager, obj2, "triangle", Models::ModelFormat::triangle);
+        // // Prepare the second object
+        // entity_t obj2 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
+        // world_system.set(entity_manager, obj2, { -3.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
+        // model_system.load_model(entity_manager, obj2, "triangle", Models::ModelFormat::triangle);
+        // // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);
+        // logger.log(Verbosity::details, "Triangle is mapped to entity index ", obj2);
+
+        // And the third object, with a different material
+        entity_t obj3 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
+        world_system.set(entity_manager, obj3, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
+        model_system.load_model(entity_manager, obj3, "data/models/watermill.obj", Models::ModelFormat::obj);
         // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);
+        logger.log(Verbosity::details, "Watermill is mapped to entity index ", obj3);
 
         // Do the render
         uint32_t fps = 0;

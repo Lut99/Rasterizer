@@ -4,7 +4,7 @@
  * Created:
  *   26/04/2021, 14:39:16
  * Last edited:
- *   10/09/2021, 10:55:55
+ *   21/09/2021, 14:58:04
  * Auto updated?
  *   Yes
  *
@@ -83,7 +83,7 @@ namespace Makma3D::Rendering {
         inline size_t capacity() const { return static_cast<size_t>(this->vk_max_sets); }
 
         /* Explicitly returns the internal VkDescriptorPool object. */
-        inline const VkDescriptorPool& descriptor_pool() const { return this->vk_descriptor_pool; }
+        inline const VkDescriptorPool& vulkan() const { return this->vk_descriptor_pool; }
         /* Implicitly returns the internal VkDescriptorPool object. */
         inline operator VkDescriptorPool() const { return this->vk_descriptor_pool; }
 

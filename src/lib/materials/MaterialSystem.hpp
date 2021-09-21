@@ -51,7 +51,7 @@ namespace Makma3D::Materials {
 
     private:
         /* List of all material IDs in use. */
-        std::unordered_map<material_t, MaterialType> material_ids;
+        std::unordered_map<material_t, std::pair<std::string, MaterialType>> material_ids;
         /* List of materials that use the Simple lighting model, are not textured and have nothing special about them. */
         Tools::AssociativeArray<material_t, Rendering::MaterialData> simple;
         /* List of materials that use the Simple lighting model and that are not textured. */
@@ -87,19 +87,21 @@ namespace Makma3D::Materials {
         /* Sorts given list of 'entities' (list of their Model components) in such a way that they can be rendered material-by-material efficiently. */
         std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> sort_entities(const ECS::ComponentList<ECS::Model>& entities) const;
 
+        /* Returns the human readable name of the given material. */
+        inline const std::string& get_name(material_t material) const { return this->material_ids.at(material).first; }
         /* Returns the MaterialType of the given material. */
-        inline MaterialType get_type(material_t material) const { return this->material_ids.at(material); }
+        inline MaterialType get_type(material_t material) const { return this->material_ids.at(material).second; }
         /* Returns a muteable reference to the list of all materials of the given type so that it can be iterated over. */
         AssociativeArray<material_t, Rendering::MaterialData>& get_list(MaterialType material_type);
         /* Returns an immuteable reference to the list of all materials of the given type so that it can be iterated over. */
         inline const AssociativeArray<material_t, Rendering::MaterialData>& get_list(MaterialType material_type) const { return const_cast<MaterialSystem*>(this)->get_list(material_type); }
 
-        /* Adds a new material that uses the simple lighting model, no textures and not even anything model-specific. Returns the ID of the new material. */
+        /* 'Adds' a new material that uses the simple lighting model, no textures and not even anything model-specific. However, since there is only one of this type and its the default material, returns that. */
         inline constexpr material_t create_simple() const { return DefaultMaterial; }
-        /* Adds a new material that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
-        material_t create_simple_coloured(const glm::vec3& colour);
-        /* Adds a new material that uses the simple lighting model with a texture. The texture used is the given one. */
-        material_t create_simple_textured(const Textures::Texture& texture);
+        /* Adds a new material with the given debug name that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
+        material_t create_simple_coloured(const std::string& name, const glm::vec3& colour);
+        /* Adds a new material with the given debug name that uses the simple lighting model with a texture. The texture used is the given one. */
+        material_t create_simple_textured(const std::string& name, const Textures::Texture& texture);
         /* Loads a new material that uses the simple lighting model and no textures from the given file. Returns the ID of the new material. */
         Tools::Array<std::pair<std::string, material_t>> load_simple_coloured(const std::string& filepath, MaterialFormat format = MaterialFormat::mtl);
         /* Removes the material with the given ID from the system. Throws errors if no such material exists. */

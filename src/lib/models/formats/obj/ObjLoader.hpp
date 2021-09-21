@@ -23,7 +23,12 @@
 #include "tools/Array.hpp"
 
 namespace Makma3D::Models {
-    /* Loads the file at the given path as a .obj file, and populates the given model data from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded. */
+    /* Loads the file at the given path as a .obj file, and populates the given model data from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded.
+     *
+     * Parsing .obj files has been done with the help of:
+     *  - https://en.wikipedia.org/wiki/Wavefront_.obj_file
+     *  - http://paulbourke.net/dataformats/obj/
+     */
     void load_obj_model(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path);
 
 };

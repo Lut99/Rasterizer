@@ -1,24 +1,22 @@
-/* TERMINAL.hpp
+/* TERMINAL TYPE.hpp
  *   by Lut99
  *
  * Created:
- *   04/07/2021, 16:43:51
+ *   21/09/2021, 16:55:54
  * Last edited:
- *   04/07/2021, 16:43:51
+ *   21/09/2021, 16:55:54
  * Auto updated?
  *   Yes
  *
  * Description:
- *   Contains the Terminal class, which is used to describe irreducible
- *   tokens, read directly from the file.
+ *   Contains an enum describing all the possible terminal types in the
+ *   Tokenizer.
 **/
 
-#ifndef MODELS_OBJ_TERMINAL_HPP
-#define MODELS_OBJ_TERMINAL_HPP
+#ifndef MODELS_OBJ_TERMINAL_TYPE_HPP
+#define MODELS_OBJ_TERMINAL_TYPE_HPP
 
 #include <string>
-
-#include "../../../../auxillary/DebugInfo.hpp"
 
 namespace Makma3D::Models::Obj {
     /* Lists all Terminal types. */
@@ -64,6 +62,7 @@ namespace Makma3D::Models::Obj {
         /* Some name used internally in the obj file structure. */
         name = 18
     };
+
     /* Converts the given TerminalType to a string. */
     static std::string terminal_type_names[] = {
         "undefined",
@@ -87,22 +86,6 @@ namespace Makma3D::Models::Obj {
         "v//vn",
         "filename",
         "name"
-    };
-
-
-
-    /* The Terminal class, which represents a non-reducible symbol. */
-    class Terminal {
-    public:
-        /* The type of the terminal. */
-        TerminalType type;
-        /* The DebugInfo describing the terminal's location. */
-        Auxillary::DebugInfo debug_info;
-
-
-        /* Constructor for the Terminal class, which takes its type and the DebugInfo describing its origin. */
-        Terminal(TerminalType type, const Auxillary::DebugInfo& debug_info);
-
     };
 
 }

@@ -58,7 +58,7 @@ namespace Makma3D::Rendering {
         void schedule(const Rendering::CommandBuffer* buffer, VkPipelineLayout pipeline_layout, uint32_t set_index = 0) const;
 
         /* Explicity returns the internal VkDescriptorSet object. */
-        inline const VkDescriptorSet& descriptor_set() const { return this->vk_descriptor_set; }
+        inline const VkDescriptorSet& vulkan() const { return this->vk_descriptor_set; }
         /* Implicitly returns the internal VkDescriptorSet object. */
         inline operator const VkDescriptorSet&() const { return this->vk_descriptor_set; }
 

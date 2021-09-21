@@ -33,10 +33,13 @@
 #include "tools/Logger.hpp"
 #include "tools/LinkedArray.hpp"
 
-#include "tokenizer/ValueTerminal.hpp"
-#include "tokenizer/Tokenizer.hpp"
+#include "auxillary/parsers/Symbol.hpp"
+#include "auxillary/parsers/ParserTools.hpp"
 
-#include "../../../auxillary/ParserTools.hpp"
+#include "tokenizer/ValueToken.hpp"
+#include "tokenizer/Tokenizer.hpp"
+#include "ast/Nonterm.hpp"
+#include "ast/Vertex.hpp"
 #include "ObjLoader.hpp"
 
 using namespace std;
@@ -58,10 +61,7 @@ static constexpr const char* channel = "ObjLoader";
 /* Keeps track of the parser's state in between reduce() calls. */
 struct ParserState {
     /* The symbol stack we're operating on. */
-    Tools::LinkedArray<Terminal*> symbol_stack;
-
-    /* The current Mesh we're working on. */
-    ECS::Mesh mesh;
+    Tools::LinkedArray<Symbol*> symbol_stack;
 
     /* 'Global' (i.e., file-wide) list of vertex points. */
     Tools::Array<glm::vec4> vertices;
@@ -70,13 +70,12 @@ struct ParserState {
     /* 'Global' (i.e., file-wide) list of texture coordinates. */
     Tools::Array<glm::vec2> texels;
 
-    /* Collection of Rendering::Vertex objects that are collected uniquely. */
-    std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>> temp_vertices;
-    /* Temporary list of indices that we collect in main memory before we move it to GPU memory. */
-    Tools::Array<Rendering::index_t> temp_indices;
-
-    /* Library of materials, as defined in .mtl files. */
-    std::unordered_map<std::string, Materials::material_t> mtl_lib;
+    /* 'Global' (i.e., file-wide) collection of vertex/normal/texel pairs, as used in our renderer. Each is identifyable by their unique index set. */
+    std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>> model_vertices;
+    /* List of index lists, each of which uses a separate material. */
+    Tools::Array<Tools::Array<Rendering::index_t>> model_indices;
+    /* For each list of indices, defines the material with which it should be rendered. */
+    Tools::Array<Materials::material_t> model_materials;
 
 };
 
@@ -130,15 +129,15 @@ static void transfer_to_mesh(Rendering::MemoryManager& memory_manager, ECS::Mesh
 static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t texture_index = std::numeric_limits<uint32_t>::max(), uint32_t normal_index = std::numeric_limits<uint32_t>::max()) {
     // First, check if the pair already exists
     glm::uvec3 index = {vertex_index, normal_index, texture_index};
-    std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>::iterator iter = state.temp_vertices.find(index);
-    if (iter != state.temp_vertices.end()) {
+    std::unordered_map<glm::uvec3, std::pair<uint32_t, Rendering::Vertex>>::iterator iter = state.model_vertices.find(index);
+    if (iter != state.model_vertices.end()) {
         // Simply return the existing index
         return (*iter).second.first;
     } else {
         // Generate the new index
-        uint32_t to_return = static_cast<uint32_t>(state.temp_vertices.size());
-        // Insert the new vertex, with flipped texture coordinates cuz of Vulkan
-        state.temp_vertices.insert(make_pair(
+        uint32_t to_return = static_cast<uint32_t>(state.model_vertices.size());
+        // Insert the new vertex, with flipped texture y-coordinates cuz of Vulkan
+        state.model_vertices.insert(make_pair(
             index,
             make_pair(
                 to_return,
@@ -157,14 +156,141 @@ static uint32_t store_vertex(ParserState& state, uint32_t vertex_index, uint32_t
 /* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
 static std::string reduce(ParserState& state, Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path) {
     // Prepare the iterator over the linked array
-    Tools::LinkedArray<Terminal*>::iterator iter = state.symbol_stack.begin();
+    Tools::LinkedArray<Symbol*>::reverse_iterator iter = state.symbol_stack.rbegin();
     Tools::linked_array_size_t i = 0;
 
 
 
 /* start */ {
     // If we're at the end of the symbol stack, then assume we just have to wait for more
-    if (iter == state.symbol_stack.end()) { return ""; }
+    if (iter == state.symbol_stack.rend()) { return ""; }
+    ++i;
+
+    // Do different things depending on if we're looking at a terminal or a nonterminal
+    Symbol* sym = *iter;
+    if (sym->is_term()) {
+        // It's a terminal
+        Token* token = sym->as<Token>();
+        switch(token->type()) {
+            case TerminalType::vertex:
+                // Wait, as more interesting things are bound to come
+                return "";
+            
+            case TerminalType::decimal:
+                // Could be the end of a vertex
+                goto decimal_start;
+
+            default:
+                // Unexpected token
+                token->debug_info().print_error(cerr, "Unexpected token '" + terminal_type_names[(int) token->type()] + "'.");
+                remove_stack_bottom(state.symbol_stack, iter);;
+                return "error";
+
+        }
+    } else {
+        // It's a nonterminal
+        Nonterm* nterm = sym->as<Nonterm>();
+        switch(nterm->type()) {
+            case NonterminalType::vertex:
+                // Wait, as more interesting things are bound to come
+                return "";
+
+            default:
+                // Unexpected nonterminal
+                nterm->debug_info().print_error(cerr, "Unexpected nonterminal '" + nonterminal_type_names[(int) nterm->type()] + "'.");
+                remove_stack_bottom(state.symbol_stack, iter);;
+                return "error";
+
+        }
+    }
+}
+
+
+
+decimal_start: {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (iter == state.symbol_stack.rend()) { return ""; }
+    ++i;
+
+    // Do different things depending on if we're looking at a terminal or a nonterminal
+    Symbol* sym = *iter;
+    if (sym->is_term()) {
+        // It's a terminal
+        Token* token = sym->as<Token>();
+        switch(token->type()) {
+            case TerminalType::vertex:
+                // Make sure there are enough coordinates
+                if (i - 1 < 3) {
+                    // Not enough coordinates; we probably have to wait
+                    return "";
+
+                } else if (i - 1 > 4) {
+                    token->debug_info().print_error(cerr, "Too many coordinates given for vector (got " + std::to_string(i - 1) + ", expected 3-4)");
+                    remove_stack_bottom(state.symbol_stack, iter);
+                    return "error";
+
+                }
+
+                // Parse the values
+                AST::Vertex* new_nterm;
+                if (i - 1 == 3) {
+                    // Retrieve them from the stack, walking back
+                    Tools::LinkedArray<Symbol*>::reverse_iterator value_iter = iter;
+                    float x = (*(--value_iter))->as<ValueToken<float>>()->value;
+                    float y = (*(--value_iter))->as<ValueToken<float>>()->value;
+                    float z = (*(--value_iter))->as<ValueToken<float>>()->value;
+
+                    // Create the Vertex nonterminal
+                    new_nterm = new AST::Vertex(x, y, z, (*iter)->debug_info() + (*value_iter)->debug_info());
+                } else if (i - 1 == 4) {
+                    // Retrieve them from the stack, walking back
+                    Tools::LinkedArray<Symbol*>::reverse_iterator value_iter = iter;
+                    float x = (*(--value_iter))->as<ValueToken<float>>()->value;
+                    float y = (*(--value_iter))->as<ValueToken<float>>()->value;
+                    float z = (*(--value_iter))->as<ValueToken<float>>()->value;
+                    float w = (*(--value_iter))->as<ValueToken<float>>()->value;
+
+                    // Create the Vertex nonterminal
+                    new_nterm = new AST::Vertex(x, y, z, w, (*iter)->debug_info() + (*value_iter)->debug_info());
+                }
+
+                // Replace the new vertex nonterminal on the stack
+                /* TBD */
+
+                return "";
+            
+            case TerminalType::decimal:
+                // Try to find more decimals
+                goto decimal_start;
+
+            default:
+                // Unexpected token
+                token->debug_info().print_error(cerr, "Unexpected token '" + terminal_type_names[(int) token->type()] + "'.");
+                remove_stack_bottom(state.symbol_stack, iter);;
+                return "error";
+
+        }
+    } else {
+        // Any nonterminal counts as a stray decimal
+        sym->debug_info().print_error(cerr, "Encountered stray coordinate.");
+        remove_stack_bottom(state.symbol_stack, --iter);;
+        return "error";
+    }
+}
+
+}
+
+/* Given a symbol stack, tries to reduce it according to the rules to parse new vertices and indices. Returns the rule applied. */
+static std::string reduce_old(ParserState& state, Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path) {
+    // Prepare the iterator over the linked array
+    Tools::LinkedArray<Symbol*>::reverse_iterator iter = state.symbol_stack.rbegin();
+    Tools::linked_array_size_t i = 0;
+
+
+
+/* start */ {
+    // If we're at the end of the symbol stack, then assume we just have to wait for more
+    if (iter == state.symbol_stack.rend()) { return ""; }
     ++i;
 
     // Get the symbol for this iterator
@@ -278,6 +404,9 @@ vertex_start: {
             float z = ((ValueTerminal<float>*) (*(--value_iter)))->value;
             float y = ((ValueTerminal<float>*) (*(--value_iter)))->value;
             float x = ((ValueTerminal<float>*) (*(--value_iter)))->value;
+
+            // /* DEBUG */: Add extra padding to separate the individual groups
+            x += model.meshes.size();
 
             // Store the vertex
             state.vertices.push_back({ x, y, z, w });
@@ -912,15 +1041,15 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
 
         // If there's no change and we're not at the end, pop a new terminal
         if (!changed && !tokenizer.eof()) {
-            Terminal* term = tokenizer.get();
-            if (term == nullptr) {
+            Token* token = tokenizer.get();
+            if (token == nullptr) {
                 // Early quit
                 #ifdef EXTRA_DEBUG
                 printf("[objloader] Tokenizer failed.\n");
                 #endif
                 exit(EXIT_FAILURE);
-            } else if (term->type != TerminalType::eof) {
-                state.symbol_stack.push_back(term);
+            } else if (token->type() != TerminalType::eof) {
+                state.symbol_stack.push_back((Symbol*) token);
                 changed = true;
                 #ifdef EXTRA_DEBUG
                 printf("[objloader] Shifted new token: %s\n", terminal_type_names[(int) term->type].c_str());
@@ -930,11 +1059,11 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
                 #endif
             } else {
                 // Add the EOF token at the end if there isn't one already
-                if (state.symbol_stack.size() == 0 || state.symbol_stack.last()->type != TerminalType::eof) {
-                    state.symbol_stack.push_back(term);
+                if (state.symbol_stack.size() == 0 || state.symbol_stack.last()->as<Token>()->type() != TerminalType::eof) {
+                    state.symbol_stack.push_back((Symbol*) token);
                     changed = true;
                 } else {
-                    delete term;
+                    delete token;
                 }
                 #ifdef EXTRA_DEBUG
                 printf("[objloader] No tokens to shift anymore.\n");
@@ -968,11 +1097,11 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     }
 
     // When done, delete everything left on the symbol stack (we assume all errors have been processed)
-    if (state.symbol_stack.size() > 1 || (state.symbol_stack.size() == 1 && state.symbol_stack.first()->type != TerminalType::eof)) {
+    if (state.symbol_stack.size() > 1 || (state.symbol_stack.size() == 1 && state.symbol_stack.first()->as<Token>()->type() != TerminalType::eof)) {
         logger.warningc(channel, "Symbol stack hasn't been completely emptied by parser");
         std::stringstream sstr;
         bool first = true;
-        for (Terminal* term : state.symbol_stack) {
+        for (Symbol* term : state.symbol_stack) {
             if (first) { first = false; }
             else { sstr << " "; }
             sstr << terminal_type_names[(int) term->type];

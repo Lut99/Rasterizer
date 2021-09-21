@@ -78,7 +78,7 @@
     ++(I);
 
 #endif
-    
+
 /* Helper macro for ungetting the last fetched character. */
 #define UNGET_CHAR(FILE, COL) \
     (FILE)->seekg(-1, ios_base::cur); \

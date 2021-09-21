@@ -55,7 +55,7 @@ namespace Makma3D::Auxillary {
 
 
         /* Private helper function that does most of the printing. */
-        void _print(std::ostream& os, const std::string& message, const std::string& accent_colour);
+        void _print(std::ostream& os, const std::string& message, const std::string& accent_colour) const;
 
     public:
         /* Constructor for the DebugInfo class, which takes the filename of the token's file, a start line, a start column and a file handle to read the relevant lines from. Although the given file object isn't constant, it should be reinstated back to its original state once the constructor is done. */
@@ -78,11 +78,11 @@ namespace Makma3D::Auxillary {
         DebugInfo& operator+=(const DebugInfo& other);
 
         /* Pretty prints a given note to the given stream using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. */
-        void print_note(std::ostream& os, const std::string& note);
+        void print_note(std::ostream& os, const std::string& note) const;
         /* Pretty prints a given warning message to the given stream using the internal debug information about the symbol. */
-        void print_warning(std::ostream& os, const std::string& warning_message);
+        void print_warning(std::ostream& os, const std::string& warning_message) const;
         /* Pretty prints a given error message to the given stream using the internal debug information about the symbol. */
-        void print_error(std::ostream& os, const std::string& error_message);
+        void print_error(std::ostream& os, const std::string& error_message) const;
 
         /* Returns the filename of the file. */
         inline const std::string& path() const { return this->filename; }

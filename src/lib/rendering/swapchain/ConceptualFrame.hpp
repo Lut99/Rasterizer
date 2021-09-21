@@ -73,11 +73,15 @@ namespace Makma3D::Rendering {
         /* Global camera buffer for this frame. */
         Rendering::Buffer* camera_buffer;
         
+        /* Maps material IDs to material indices into the arrays. */
+        std::unordered_map<Materials::material_t, uint32_t> material_index_map;
         /* Descriptors for all materials drawn with this buffer. */
         Tools::Array<Rendering::DescriptorSet*> material_sets;
         /* Buffers for all materials. */
         Tools::Array<Rendering::Buffer*> material_buffers;
 
+        /* Maps object IDs to object indices into the arrays. */
+        std::unordered_map<ECS::entity_t, uint32_t> object_index_map;
         /* Descriptors for all objects drawn with this buffer. */
         Tools::Array<Rendering::DescriptorSet*> object_sets;
         /* Buffers for all objects. */
@@ -106,9 +110,9 @@ namespace Makma3D::Rendering {
         /* Populates the internal camera buffer with the given projection and view matrices. */
         void upload_camera_data(const glm::mat4& proj_matrix, const glm::mat4& view_matrix);
         /* Uploads the material data for the given material index. */
-        void upload_material_data(uint32_t material_index, const Rendering::MaterialData& material_data);
+        void upload_material_data(Materials::material_t material, const Rendering::MaterialData& material_data);
         /* Uploads object data for the given object to its buffer. */
-        void upload_object_data(uint32_t object_index, const Rendering::ObjectData& object_data);
+        void upload_object_data(ECS::entity_t object, const Rendering::ObjectData& object_data);
 
         /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue. */
         void schedule_start();
@@ -117,9 +121,9 @@ namespace Makma3D::Rendering {
         /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
         void schedule_global();
         /* Schedules the stuff for a material. */
-        void schedule_material(uint32_t material_index);
+        void schedule_material(Materials::material_t material);
         /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
-        void schedule_object(uint32_t object_index);
+        void schedule_object(ECS::entity_t object);
         /* Schedules a draw command for the given mesh on the internal draw queue. */
         void schedule_draw(const Models::ModelSystem& model_system, const ECS::Mesh& mesh);
         /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
@@ -128,8 +132,10 @@ namespace Makma3D::Rendering {
         /* "Renders" the frame by sending the internal draw queue to the given device queue. */
         void submit(const VkQueue& vk_queue);
 
+        /* Returns whether or not the given object has already uploaded its data to the GPU this round. */
+        inline bool already_uploaded(ECS::entity_t object) const { return this->object_index_map.find(object) != this->object_index_map.end(); }
         /* Returns the index of the internal frame. */
-        inline uint32_t index() const { printf("Swapchain frame pointer: %p\n", this->swapchain_frame); return this->swapchain_frame->index(); }
+        inline uint32_t index() const { return this->swapchain_frame->index(); }
 
         /* Copy assignment operator for the ConceptualFrame class, which is deleted. */
         ConceptualFrame& operator=(const ConceptualFrame& other) = delete;

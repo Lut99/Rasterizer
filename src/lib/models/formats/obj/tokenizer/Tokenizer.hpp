@@ -18,9 +18,12 @@
 
 #include <string>
 #include <istream>
-#include "tools/Array.hpp"
 
-#include "Terminal.hpp"
+#include "tools/Array.hpp"
+#include "auxillary/parsers/Terminal.hpp"
+
+#include "Token.hpp"
+#include "TerminalType.hpp"
 
 namespace Makma3D::Models::Obj {
     /* The Tokenizer for .obj model files. */
@@ -44,7 +47,7 @@ namespace Makma3D::Models::Obj {
         /* The last stream position of a sentence start. */
         std::streampos last_sentence_start;
         /* Buffer for temporary tokens. */
-        Tools::Array<Terminal*> terminal_buffer;
+        Tools::Array<Token*> terminal_buffer;
     
     public:
         /* Constructor for the Tokenizer class, which takes the path to the file to tokenizer. */
@@ -57,9 +60,9 @@ namespace Makma3D::Models::Obj {
         ~Tokenizer();
         
         /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
-        Terminal* get();
+        Token* get();
         /* Puts a token back on the internal list of tokens, so it can be returned next get call. Note that the Tokenizer will deallocate these if it gets deallocated. */
-        inline void unget(Terminal* term) { this->terminal_buffer.push_back(term); }
+        inline void unget(Token* term) { this->terminal_buffer.push_back(term); }
         /* Returns whether or not the Tokenizer is done parsing. */
         inline bool eof() const { return this->file->eof(); }
 

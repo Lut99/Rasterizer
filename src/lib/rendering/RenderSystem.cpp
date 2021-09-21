@@ -90,7 +90,8 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->pipeline_constructor.input_assembly_state = InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     this->pipeline_constructor.depth_testing = DepthTesting(VK_TRUE, VK_COMPARE_OP_LESS);
     this->pipeline_constructor.viewport_transformation = ViewportTransformation(VkOffset2D{ 0, 0 }, this->window.swapchain().extent(), VkOffset2D{ 0, 0 }, this->window.swapchain().extent());
-    this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    // this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     this->pipeline_constructor.multisampling = Multisampling();
     this->pipeline_constructor.color_logic = ColorLogic(
         VK_FALSE, VK_LOGIC_OP_NO_OP,
@@ -223,7 +224,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
     // Prepare rendering to the frame
     const ECS::ComponentList<ECS::Model>& objects = entity_manager.get_list<ECS::Model>();
-    frame->prepare_render(objects.size(), this->material_system.size());
+    frame->prepare_render(this->material_system.size(), objects.size());
 
     // Sort the objects by material type
     std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> sorted_objects = this->material_system.sort_entities(objects);
@@ -241,8 +242,6 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     frame->schedule_start();
 
     // Loop through all present material types
-    uint32_t material_index = 0;
-    uint32_t object_index = 0;
     for (const auto& material_types : sorted_objects) {
         // Schedule the pipeline for this material
         frame->schedule_pipeline(this->pipelines.at(material_types.first));
@@ -254,35 +253,34 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
         // Loop through all specific materials for this type
         for (const auto& materials : material_types.second) {
+            // if (this->material_system.get_name(materials.first) == "_defaultMat") { continue; }
+
             // Upload & schedule the data for this material
-            frame->upload_material_data(material_index, material_data.get(materials.first));
-            frame->schedule_material(material_index++);
+            // logger.debug("Pre material ", materials.first, " ('", this->material_system.get_name(materials.first), "') upload");
+            frame->upload_material_data(materials.first, material_data.get(materials.first));
+            frame->schedule_material(materials.first);
+            // logger.debug("Post material upload");
 
             // Next, loop through all entities of this material to render them
             for (const auto& entities : materials.second) {
                 // Get the relevant components for this entity
                 const ECS::Transform& transform = entity_manager.get_component<Transform>(entities.first);
 
-                logger.debug("Processing entity '", entities.first, "'...");
-                logger.debug(" - Entity position : ", transform.position);
-                logger.debug(" - Entity rotation : ", transform.rotation);
-                logger.debug(" - Entity scale    : ", transform.scale);
-                logger.debug(" - Entity translate: ", transform.translation[0]);
-                logger.debug("                     ", transform.translation[1]);
-                logger.debug("                     ", transform.translation[2]);
-                logger.debug("                     ", transform.translation[3]);
-
-                // Populate the buffer for this entity and upload it
-                logger.debug("No?");
-                frame->upload_object_data(object_index, ObjectData{ transform.translation });
-                logger.debug("Maybe?");
-                frame->schedule_object(object_index++);
-                logger.debug("Yes?");
+                // Populate the buffer for this entity and upload it - but only if we haven't done so for another material
+                if (!frame->already_uploaded(entities.first)) {
+                    // logger.debug("Pre object ", entities.first, " upload");
+                    frame->upload_object_data(entities.first, ObjectData{ transform.translation });
+                    frame->schedule_object(entities.first);
+                    // logger.debug("Post object upload");
+                }
 
                 // Loop through the meshes of this entity to render each of those
                 for (uint32_t i = 0; i < entities.second.size(); i++) {
                     // Schedule its draw
+                    // logger.debug("Pre draw");
+                    // logger.debug("Drawing mesh with material ", materials.first, " ('", this->material_system.get_name(materials.first), "')");
                     frame->schedule_draw(this->model_system, *entities.second[i]);
+                    // logger.debug("Post draw");
                 }
             }
         }
@@ -312,6 +310,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
     /* RETURNING */
     return true;
+    // return false;
 }
 
 

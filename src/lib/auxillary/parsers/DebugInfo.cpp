@@ -212,7 +212,7 @@ DebugInfo& DebugInfo::operator+=(const DebugInfo& other) {
 
 
 /* Private helper function that does most of the printing. */
-void DebugInfo::_print(std::ostream& os, const std::string& message, const std::string& accent_colour) {
+void DebugInfo::_print(std::ostream& os, const std::string& message, const std::string& accent_colour) const {
     // First, print the error message properly
     bool supports_ansi = terminal_supports_colours();
     if (supports_ansi) {
@@ -264,7 +264,7 @@ void DebugInfo::_print(std::ostream& os, const std::string& message, const std::
 }
 
 /* Pretty prints a given note to the CLI using the internal debug information about the symbol. Usually used with another DebugInfo to refer some secondary symbol in an error message. */
-void DebugInfo::print_note(std::ostream& os, const std::string& note) {
+void DebugInfo::print_note(std::ostream& os, const std::string& note) const {
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::note_accent) + "note: \033[0m" + note, DebugInfo::note_accent);
     } else {
@@ -275,7 +275,7 @@ void DebugInfo::print_note(std::ostream& os, const std::string& note) {
 }
 
 /* Pretty prints a given warning message to the CLI using the internal debug information about the symbol. */
-void DebugInfo::print_warning(std::ostream& os, const std::string& warning_message) {
+void DebugInfo::print_warning(std::ostream& os, const std::string& warning_message) const {
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::warning_accent) + "warning: \033[0m" + warning_message, DebugInfo::warning_accent);
     } else {
@@ -286,7 +286,7 @@ void DebugInfo::print_warning(std::ostream& os, const std::string& warning_messa
 }
 
 /* Pretty prints a given error message to the CLI using the internal debug information about the symbol. */
-void DebugInfo::print_error(std::ostream& os, const std::string& error_message) {
+void DebugInfo::print_error(std::ostream& os, const std::string& error_message) const {
     if (terminal_supports_colours()) {
         this->_print(os, std::string(DebugInfo::error_accent) + "error: \033[0m" + error_message, DebugInfo::error_accent);
     } else {

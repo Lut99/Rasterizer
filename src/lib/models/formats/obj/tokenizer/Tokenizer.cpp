@@ -30,18 +30,16 @@
 #include <cerrno>
 #include <tuple>
 
-#include "../../../../auxillary/TokenizerTools.hpp"
-#include "ValueTerminal.hpp"
+#include "auxillary/parsers/TokenizerTools.hpp"
+#include "auxillary/parsers/ValueTerminal.hpp"
+
+#include "ValueToken.hpp"
 #include "Tokenizer.hpp"
 
 using namespace std;
 using namespace Makma3D::Models;
 using namespace Makma3D::Models::Obj;
 using namespace Makma3D::Auxillary;
-
-
-
-
 
 
 /***** TOKENIZER CLASS *****/
@@ -92,8 +90,6 @@ Tokenizer::Tokenizer(Tokenizer&& other) :
 
 /* Destructor for the Tokenizer class. */
 Tokenizer::~Tokenizer() {
-    
-
     for (uint32_t i = 0; i < this->terminal_buffer.size(); i++) {
         delete this->terminal_buffer[i];
     }
@@ -105,10 +101,10 @@ Tokenizer::~Tokenizer() {
 
 
 /* Returns the next Token from the stream. If no more tokens are available, returns an EOF token. Note that, due to polymorphism, the token is allocated on the heap and has to be deallocated manually. */
-Terminal* Tokenizer::get() {
+Token* Tokenizer::get() {
     // If there's something in the buffer, pop that off first
     if (this->terminal_buffer.size() > 0) {
-        Terminal* result = this->terminal_buffer.last();
+        Token* result = this->terminal_buffer.last();
         this->terminal_buffer.pop_back();
         return result;
     }
@@ -117,7 +113,7 @@ Terminal* Tokenizer::get() {
     char c;
     int i = 0;
     size_t line_start, col_start;
-    Terminal* to_return;
+    Token* to_return;
     std::stringstream sstr;
 
 
@@ -223,7 +219,7 @@ start: {
     } else if (c == EOF) {
         // End-of-file; return that we reached it
         DEBUG_PATH("EOF", "done");
-        return new Terminal(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
+        return new Token(TerminalType::eof, DebugInfo(this->path, this->line, this->col, { get_line(file, this->last_sentence_start) }));
 
     } else {
         // Unexpected token
@@ -248,7 +244,7 @@ vertex: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        return new Terminal(TerminalType::vertex, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Token(TerminalType::vertex, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
 
     } else if (c == 'n') {
         DEBUG_PATH("n", "going vertex_normal");
@@ -279,7 +275,7 @@ vertex_normal: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        return new Terminal(TerminalType::normal, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Token(TerminalType::normal, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
 
     } else {
         // Parse as unknown keyword
@@ -302,7 +298,7 @@ vertex_texture: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        return new Terminal(TerminalType::texture, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Token(TerminalType::texture, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
 
     } else {
         // Parse as unknown keyword
@@ -327,7 +323,7 @@ face: {
     if (IS_WHITESPACE(c)) {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
-        return new Terminal(TerminalType::face, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        return new Token(TerminalType::face, DebugInfo(this->path, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
     } else {
         // Parse as unknown keyword
         DEBUG_PATH("other", "parsing as unknown token");
@@ -352,7 +348,7 @@ g_end: {
         // It's the start of a groupname; we can parse the group token already
         DEBUG_PATH("whitespace", "going name_start");
         UNGET_CHAR(this->file, this->col);
-        to_return = new Terminal(TerminalType::group, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
+        to_return = new Token(TerminalType::group, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
         goto name_start;
 
     } else {
@@ -380,7 +376,7 @@ o_end: {
         // It's the start of a groupname; we can parse the group token already
         DEBUG_PATH("whitespace", "going name_start");
         UNGET_CHAR(this->file, this->col);
-        to_return = new Terminal(TerminalType::object, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
+        to_return = new Token(TerminalType::object, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
         goto name_start;
 
     } else {
@@ -518,7 +514,7 @@ mtllib: {
         // We know for sure it's an mtllib token. Create it, then try to parse the filename (essentially entering a special tokenizer mode)
         DEBUG_PATH("whitespace", "going filename_start");
         UNGET_CHAR(this->file, this->col);
-        to_return = new Terminal(TerminalType::mtllib, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        to_return = new Token(TerminalType::mtllib, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
         goto filename_start;
 
     } else {
@@ -654,7 +650,7 @@ usemtl: {
         // We know for sure it's an mtllib token. Create it, then try to parse the filename (essentially entering a special tokenizer mode)
         DEBUG_PATH("whitespace", "going name_start");
         UNGET_CHAR(this->file, this->col);
-        to_return = new Terminal(TerminalType::usemtl, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
+        to_return = new Token(TerminalType::usemtl, DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) }));
         goto name_start;
 
     } else {
@@ -680,7 +676,7 @@ s_start: {
         // It's the start of a groupname; we can parse the group token already
         DEBUG_PATH("whitespace", "going name_start");
         UNGET_CHAR(this->file, this->col);
-        to_return = new Terminal(TerminalType::smooth, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
+        to_return = new Token(TerminalType::smooth, DebugInfo(this->path, line_start, col_start, { get_line(this->file, this->last_sentence_start) }));
         goto name_start;
 
     } else {
@@ -735,7 +731,7 @@ digit_start: {
         PARSE_UINT(value, sstr.str(), debug_info);
 
         // Otherwise, we have a valid value
-        return (Terminal*) new ValueTerminal<uint32_t>(TerminalType::uint, value, debug_info);
+        return (Token*) new ValueToken<uint32_t>(TerminalType::uint, value, debug_info);
 
     } else {
         // Parse as unknown
@@ -822,7 +818,7 @@ v_vt: {
         PARSE_UINT(itexture, texture, DebugInfo(this->path, line_start, col_start + vertex.size() + 1, this->line, this->col, lines));
 
         // Otherwise, we have a valid value
-        return (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vt, { ivertex, itexture }, debug_info);
+        return (Token*) new ValueToken<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vt, { ivertex, itexture }, debug_info);
 
     } else {
         // Parse as unknown
@@ -872,7 +868,7 @@ v_vn: {
         PARSE_UINT(inormal, normal, DebugInfo(this->path, line_start, col_start + vertex.size() + 1, this->line, this->col, lines));
 
         // Otherwise, we have a valid value
-        return (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vn, { ivertex, inormal }, debug_info);
+        return (Token*) new ValueToken<std::tuple<uint32_t, uint32_t>>(TerminalType::v_vn, { ivertex, inormal }, debug_info);
 
     } else {
         // Parse as unknown
@@ -960,7 +956,7 @@ v_vt_vn: {
         PARSE_UINT(inormal, normal, DebugInfo(this->path, line_start, col_start + vertex.size() + texture.size() + 2, this->line, this->col, lines));
 
         // Otherwise, we have a valid value
-        return (Terminal*) new ValueTerminal<std::tuple<uint32_t, uint32_t, uint32_t>>(TerminalType::v_vt_vn, { ivertex, itexture, inormal }, debug_info);
+        return (Token*) new ValueToken<std::tuple<uint32_t, uint32_t, uint32_t>>(TerminalType::v_vt_vn, { ivertex, itexture, inormal }, debug_info);
 
     } else {
         // Parse as unknown
@@ -1047,7 +1043,7 @@ float_start: {
         }
 
         // Otherwise, we have a valid value
-        return (Terminal*) new ValueTerminal<int32_t>(TerminalType::sint, value, debug_info);
+        return (Token*) new ValueToken<int32_t>(TerminalType::sint, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -1102,7 +1098,7 @@ float_dot: {
         }
 
         // Otherwise, we have a valid value
-        return (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        return (Token*) new ValueToken<float>(TerminalType::decimal, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -1182,7 +1178,7 @@ float_e: {
         }
 
         // Otherwise, we have a valid value
-        return (Terminal*) new ValueTerminal<float>(TerminalType::decimal, value, debug_info);
+        return (Token*) new ValueToken<float>(TerminalType::decimal, value, debug_info);
 
     } else {
         // Parse as unknown token
@@ -1240,7 +1236,7 @@ filename_contd: {
         DEBUG_PATH("newline", "done");
         UNGET_CHAR(this->file, this->col);
         // ++this->line;
-        this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::filename, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
+        this->terminal_buffer.push_back((Token*) new ValueToken<std::string>(TerminalType::filename, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
         return to_return;
 
     } else {
@@ -1308,7 +1304,7 @@ name_contd: {
         DEBUG_PATH("whitespace", "done");
         UNGET_CHAR(this->file, this->col);
         // if (c == '\n') { ++this->line; }
-        this->terminal_buffer.push_back((Terminal*) new ValueTerminal<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
+        this->terminal_buffer.push_back((Token*) new ValueToken<std::string>(TerminalType::name, sstr.str(), DebugInfo(this->path, line_start, col_start, this->line, this->col, { get_line(this->file, this->last_sentence_start) })));
         return to_return;
 
     } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_') {
