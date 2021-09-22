@@ -100,7 +100,8 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     // Create the materials we parsed, if any, and map them to the local material indices
     std::unordered_map<int, Materials::material_t> material_collection;
     for (size_t i = 0; i < materials.size(); i++) {
-        /* TBD */
+        // Store the name and colour as a SimpleTexture
+        Materials::material_t new_material = material_system.create_simple_coloured(materials[i].name, glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]));
     }
 
     // Go through the meshes to collect the data
@@ -144,7 +145,7 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     // Prepare a stage buffer to use
     Rendering::Buffer* stage = memory_manager.stage_pool.allocate(model.n_vertices * sizeof(Rendering::Vertex), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     // Use the stage buffer to populate the main buffer
-    mesh.indices->set((void*) vertices.rdata(), model.n_vertices * sizeof(Rendering::Vertex), stage, memory_manager.copy_cmd);
+    model.vertices->set((void*) vertices.rdata(), model.n_vertices * sizeof(Rendering::Vertex), stage, memory_manager.copy_cmd);
     // We can free the buffer again
     memory_manager.stage_pool.free(stage);
 
