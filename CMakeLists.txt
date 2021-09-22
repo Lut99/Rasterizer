@@ -85,18 +85,21 @@ add_custom_target(shaders
 ##### EXPORT #####
 if (WIN32)
 add_custom_target(export
-                  # Copy the rasterizer exe
+                  # Copy the rasterizer exe & libraries
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/rasterizer.exe ${PROJECT_SOURCE_DIR}/export/rasterizer/rasterizer.exe
+                  # COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/assimp-vc142-mtd.dll ${PROJECT_SOURCE_DIR}/export/rasterizer/assimp-vc142-mtd.dll
                   # Copy the necessary shaders
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_vert.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_vert.spv
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_frag.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_frag.spv
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_coloured_vert.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_coloured_vert.spv
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_coloured_frag.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_coloured_frag.spv
-                  # Copy the necessary models/textures
+                  # Copy the necessary models/materials/textures
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/models/viking_room.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/viking_room.obj
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/textures/viking_room.png ${PROJECT_SOURCE_DIR}/export/rasterizer/data/textures/viking_room.png
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/models/capsule.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/capsule.obj
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/textures/capsule.jpg ${PROJECT_SOURCE_DIR}/export/rasterizer/data/textures/capsule.jpg
+                  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/models/watermill.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/watermill.obj
+                  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/materials/watermill.mtl ${PROJECT_SOURCE_DIR}/export/rasterizer/data/materials/watermill.mtl
                   )
 endif()
 

@@ -26,11 +26,6 @@
 namespace Makma3D::ECS {
     /* Helper struct for the Model component, which contains data about a single mesh for the Model. */
     struct Mesh {
-        /* The buffer containing the vertex data for this Mesh. */
-        Rendering::Buffer* vertices;
-        /* The number of vertices stored in the buffer. */
-        uint32_t n_vertices;
-
         /* The buffer containing the index data for this Mesh. */
         Rendering::Buffer* indices;
         /* The number of indices stored in the buffer. */
@@ -48,8 +43,14 @@ namespace Makma3D::ECS {
 
     /* The Model component, which contains everything needed to render all meshes of an entity. */
     struct Model {
+        /* All vertices belonging to this Model. Because we sort everything by Vertex, also includes normal and texel coordinates. */
+        Rendering::Buffer* vertices;
+        /* The number of vertices in this Model. */
+        uint32_t n_vertices;
+
         /* The list of meshes for this entity. */
         Tools::Array<Mesh> meshes;
+
     };
 
 }

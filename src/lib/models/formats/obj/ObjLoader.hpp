@@ -2,35 +2,31 @@
  *   by Lut99
  *
  * Created:
- *   03/07/2021, 17:37:19
+ *   22/09/2021, 14:50:12
  * Last edited:
- *   9/19/2021, 5:56:32 PM
+ *   22/09/2021, 14:50:12
  * Auto updated?
  *   Yes
  *
  * Description:
- *   Contains the code that loads models from .obj files.
+ *   Contains a function that can load .obj files and associated .mtl
+ *   files. Uses the assimp library to actually parse the files, and then
+ *   converts its format to the one we wanna see.
 **/
 
-#ifndef MODELS_OBJ_LOADER_HPP
-#define MODELS_OBJ_LOADER_HPP
+#ifndef MODELS_OBJLOADER_HPP
+#define MODELS_OBJLOADER_HPP
+
+#include <string>
 
 #include "ecs/components/Model.hpp"
 #include "materials/MaterialSystem.hpp"
-#include "rendering/auxillary/Vertex.hpp"
-#include "rendering/auxillary/Index.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
-#include "tools/Array.hpp"
 
 namespace Makma3D::Models {
-    /* Loads the file at the given path as a .obj file, and populates the given model data from it. The n_vertices and n_indices are debug counters, to keep track of the total number of vertices and indices loaded.
-     *
-     * Parsing .obj files has been done with the help of:
-     *  - https://en.wikipedia.org/wiki/Wavefront_.obj_file
-     *  - http://paulbourke.net/dataformats/obj/
-     */
+    /* Loads the file at the given path as a .obj file, and populates the given model data from it. Uses the assimp library for most of the work. */
     void load_obj_model(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path);
 
-};
+}
 
 #endif
