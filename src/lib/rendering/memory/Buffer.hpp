@@ -104,7 +104,7 @@ namespace Makma3D::Rendering {
         /* Returns the actual size of the buffer as allocated. */
         inline VkDeviceSize rsize() const { return this->vk_requirements.size; }
         /* Explicitly returns the internal VkBuffer object. */
-        inline const VkBuffer& buffer() const { return this->vk_buffer; }
+        inline const VkBuffer& vulkan() const { return this->vk_buffer; }
         /* Implicitly returns the internal VkBuffer object. */
         inline operator const VkBuffer&() const { return this->vk_buffer; }
 

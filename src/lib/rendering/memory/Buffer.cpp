@@ -195,7 +195,7 @@ void Buffer::schedule_copyto(const Buffer* destination, VkDeviceSize n_bytes, Vk
     copy_region.srcOffset = source_offset;
     copy_region.dstOffset = target_offset;
     copy_region.size = n_bytes;
-    vkCmdCopyBuffer(command_buffer->command_buffer(), this->vk_buffer, destination->vk_buffer, 1, &copy_region);
+    vkCmdCopyBuffer(command_buffer->vulkan(), this->vk_buffer, destination->vk_buffer, 1, &copy_region);
 }
 
 /* Schedules a copy to the given image on the given command buffer. Also accepts a new image layout, since we need to transition to copy destination layout anyway. Only part of the source buffer can be copied by specifying a size other than VK_WHOLE_SIZE, and also an offset in the source and target buffers can be given (the latter of which is three dimensional). */
@@ -240,7 +240,7 @@ void Buffer::schedule_copyto(Image* destination, VkImageLayout new_layout, VkDev
 
     // Schedule the copy
     vkCmdCopyBufferToImage(
-        command_buffer->command_buffer(),
+        command_buffer->vulkan(),
         this->vk_buffer, destination->vk_image,
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         1, &buffer_image_copy

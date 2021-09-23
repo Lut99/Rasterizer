@@ -32,7 +32,6 @@
 #include "rendering/pipeline/PipelineConstructor.hpp"
 
 #include "Material.hpp"
-#include "MaterialFormat.hpp"
 #include "variants/MaterialType.hpp"
 
 namespace Makma3D::Materials {
@@ -84,9 +83,6 @@ namespace Makma3D::Materials {
         /* Takes a PipelineConstructor and modifies the relevant properties so that it's suitable to render the SimpleTextured material. The shaders are allocated with the given ShaderPool. As little properties as possible are changed. */
         static void init_props_simple_textured(Rendering::ShaderPool& shader_pool, Rendering::PipelineConstructor& pipeline_constructor);
 
-        /* Sorts given list of 'entities' (list of their Model components) in such a way that they can be rendered material-by-material efficiently. */
-        std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> sort_entities(const ECS::ComponentList<ECS::Model>& entities) const;
-
         /* Returns the human readable name of the given material. */
         inline const std::string& get_name(material_t material) const { return this->material_ids.at(material).first; }
         /* Returns the MaterialType of the given material. */
@@ -102,8 +98,6 @@ namespace Makma3D::Materials {
         material_t create_simple_coloured(const std::string& name, const glm::vec3& colour);
         /* Adds a new material with the given debug name that uses the simple lighting model with a texture. The texture used is the given one. */
         material_t create_simple_textured(const std::string& name, const Textures::Texture& texture);
-        /* Loads a new material that uses the simple lighting model and no textures from the given file. Returns the ID of the new material. */
-        Tools::Array<std::pair<std::string, material_t>> load_simple_coloured(const std::string& filepath, MaterialFormat format = MaterialFormat::mtl);
         /* Removes the material with the given ID from the system. Throws errors if no such material exists. */
         void remove(material_t material);
 

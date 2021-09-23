@@ -1,4 +1,4 @@
-/* OBJECT DATA.hpp
+/* ENTITY DATA.hpp
  *   by Lut99
  *
  * Created:
@@ -10,18 +10,18 @@
  *
  * Description:
  *   Struct that contains data that can be uploaded for each to-be-rendered
- *   object.
+ *   entity.
 **/
 
-#ifndef RENDERING_OBJECT_DATA_HPP
-#define RENDERING_OBJECT_DATA_HPP
+#ifndef RENDERING_ENTITY_DATA_HPP
+#define RENDERING_ENTITY_DATA_HPP
 
 #include "glm/glm.hpp"
 
 namespace Makma3D::Rendering {
-    /* The ObjectData struct, which is used to carry object-specific data to the GPU. */
-    struct ObjectData {
-        /* The translation matrix of the Object. */
+    /* The EntityData struct, which is used to carry entity-specific data to the GPU. */
+    struct EntityData {
+        /* The translation matrix of the Entity. */
         glm::mat4 translation;
     };
 }

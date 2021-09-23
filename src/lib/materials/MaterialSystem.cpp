@@ -15,7 +15,6 @@
 #include "tools/Logger.hpp"
 #include "rendering/auxillary/Vertex.hpp"
 
-#include "formats/mtl/MtlLoader.hpp"
 #include "MaterialSystem.hpp"
 
 using namespace std;
@@ -187,54 +186,6 @@ void MaterialSystem::init_props_simple_textured(Rendering::ShaderPool& shader_po
 
 
 
-/* Sorts given list of 'entities' (list of their Model components) in such a way that they can be rendered material-by-material efficiently. */
-std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> MaterialSystem::sort_entities(const ECS::ComponentList<ECS::Model>& entities) const {
-    // Start by looping through the possible entities
-    std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> result;
-    for (uint32_t i = 0; i < entities.size(); i++) {
-        // Get the entity and its component
-        ECS::entity_t entity = entities.get_entity(i);
-        const ECS::Model& model = entities[i];
-
-        // Next, loop through all the entity's meshes
-        for (uint32_t j = 0; j < model.meshes.size(); j++) {
-            // Get a shortcut to the mesh & material in question
-            const ECS::Mesh& mesh = model.meshes[j];
-            material_t material = mesh.material;
-            // Also lookup the meshes MaterialType based on its material index
-            MaterialType material_type = this->material_ids.at(material).second;
-
-            // Next, add a new unordered map to the main map if this is the first time we see this type
-            std::unordered_map<MaterialType, std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>>::iterator type_iter = result.find(material_type);
-            if (type_iter == result.end()) {
-                // Insert a new map
-                type_iter = result.insert({ material_type, {} }).first;
-            }
-
-            // Next, check if we have seen this specific material before
-            std::unordered_map<material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>::iterator material_iter = (*type_iter).second.find(material);
-            if (material_iter == (*type_iter).second.end()) {
-                material_iter = (*type_iter).second.insert({ material, {} }).first;
-            }
-
-            // Finally, see if we need to add an entry for this entity
-            std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>::iterator entity_iter = (*material_iter).second.find(entity);
-            if (entity_iter == (*material_iter).second.end()) {
-                entity_iter = (*material_iter).second.insert({ entity, Tools::Array<const ECS::Mesh*>(16) }).first;
-            }
-
-            // Finally, add this mesh to the list
-            while ((*entity_iter).second.size() >= (*entity_iter).second.capacity()) { (*entity_iter).second.reserve(2 * (*entity_iter).second.capacity()); }
-            (*entity_iter).second.push_back(&mesh);
-        }
-    }
-
-    // Done, return the map
-    return result;
-}
-
-
-
 /* Returns a muteable reference to the list of all materials of the given type so that it can be iterated over. */
 AssociativeArray<material_t, Rendering::MaterialData>& MaterialSystem::get_list(MaterialType material_type) {
     switch(material_type) {
@@ -294,31 +245,6 @@ material_t MaterialSystem::create_simple_textured(const std::string& name, const
 
     // Return the material ID we found
     return material;
-}
-
-/* Loads a new material that uses the simple lighting model and no textures from the given file. Returns the ID of the new material(s) loaded this way. */
-Tools::Array<std::pair<std::string, material_t>> MaterialSystem::load_simple_coloured(const std::string& filepath, MaterialFormat format) {
-    // Switch on material types
-    std::unordered_map<std::string, glm::vec3> new_formats;
-    switch(format) {
-        case MaterialFormat::mtl:
-            // Load using the MtlLoader
-            load_mtl_lib(new_formats, filepath);
-            break;
-        
-        default:
-            logger.fatalc(MaterialSystem::channel, "Cannot load file as SimpleColoured material with unknown format '", material_format_names[(int) format], "'");
-
-    }
-
-    // Add the materials internally
-    Tools::Array<std::pair<std::string, material_t>> result(static_cast<uint32_t>(new_formats.size()));
-    for (const auto& p : new_formats) {
-        result.push_back({ p.first, this->create_simple_coloured(p.first, p.second) });
-    }
-
-    // Done
-    return result;
 }
 
 /* Removes the material with the given ID from the system. Throws errors if no such material exists. */

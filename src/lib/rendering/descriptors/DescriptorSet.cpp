@@ -25,14 +25,14 @@ using namespace Makma3D::Rendering;
 
 /***** POPULATE FUNCTIONS *****/
 /* Populates a given VkDescriptorBufferInfo struct. */
-static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const Buffer* buffer) {
+static void populate_buffer_info(VkDescriptorBufferInfo& buffer_info, const VkBuffer& vk_buffer, VkDeviceSize vk_buffer_size) {
     // Set to default
     buffer_info = {};
     
     // Set the memory properties
-    buffer_info.buffer = buffer->buffer();
+    buffer_info.buffer = vk_buffer;
     buffer_info.offset = 0; // Note that this offset is (probably) relative to the buffer itself, not the vk_memory object it was allocated with
-    buffer_info.range = buffer->size();
+    buffer_info.range = vk_buffer_size;
 }
 
 /* Populates a given VkDescriptorImageInfo struct. */
@@ -119,7 +119,7 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
     for (uint32_t i = 0; i < buffers.size(); i++) {
         // Start by creating the buffer info so that the descriptor knows smthng about the buffer
         VkDescriptorBufferInfo buffer_info;
-        populate_buffer_info(buffer_info, buffers[i]);
+        populate_buffer_info(buffer_info, buffers[i]->vulkan(), buffers[i]->size());
 
         // Add to the list
         buffer_infos.push_back(buffer_info);
@@ -181,5 +181,5 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
 /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
 void DescriptorSet::schedule(const CommandBuffer* buffer, VkPipelineLayout pipeline_layout, uint32_t set_index) const {
     // Add the binding
-    vkCmdBindDescriptorSets(buffer->command_buffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, set_index, 1, &this->vk_descriptor_set, 0, nullptr);
+    vkCmdBindDescriptorSets(buffer->vulkan(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, set_index, 1, &this->vk_descriptor_set, 0, nullptr);
 }

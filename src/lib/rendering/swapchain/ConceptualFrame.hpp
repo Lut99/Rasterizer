@@ -21,7 +21,7 @@
 #include "models/ModelSystem.hpp"
 
 #include "../data/MaterialData.hpp"
-#include "../data/ObjectData.hpp"
+#include "../data/EntityData.hpp"
 #include "../memory_manager/MemoryManager.hpp"
 #include "../memory/Buffer.hpp"
 #include "../commandbuffers/CommandBuffer.hpp"
@@ -61,7 +61,7 @@ namespace Makma3D::Rendering {
         /* Descriptor set layout for the per-material descriptors. */
         Rendering::DescriptorSetLayout material_layout;
         /* Descriptor set layout for the per-object descriptors. */
-        Rendering::DescriptorSetLayout object_layout;
+        Rendering::DescriptorSetLayout entity_layout;
 
         /* Command buffer for drawing to this Frame. */
         Rendering::CommandBuffer* draw_cmd;
@@ -80,12 +80,12 @@ namespace Makma3D::Rendering {
         /* Buffers for all materials. */
         Tools::Array<Rendering::Buffer*> material_buffers;
 
-        /* Maps object IDs to object indices into the arrays. */
-        std::unordered_map<ECS::entity_t, uint32_t> object_index_map;
-        /* Descriptors for all objects drawn with this buffer. */
-        Tools::Array<Rendering::DescriptorSet*> object_sets;
-        /* Buffers for all objects. */
-        Tools::Array<Rendering::Buffer*> object_buffers;
+        /* Maps entity IDs to entity indices into the arrays. */
+        std::unordered_map<ECS::entity_t, uint32_t> entity_index_map;
+        /* Descriptors for all entities drawn with this buffer. */
+        Tools::Array<Rendering::DescriptorSet*> entity_sets;
+        /* Buffers for all entities. */
+        Tools::Array<Rendering::Buffer*> entity_buffers;
 
         /* Semaphore that signals when the image is ready to be rendered to. */
         Rendering::Semaphore image_ready_semaphore;
@@ -95,8 +95,8 @@ namespace Makma3D::Rendering {
         Rendering::Fence in_flight_fence;
 
     public:
-        /* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor, a descriptor set layout for per-material descriptors and a descriptor set layout for the per-object descriptors. */
-        ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& object_layout);
+        /* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor, a descriptor set layout for per-material descriptors and a descriptor set layout for the per-entity descriptors. */
+        ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& entity_layout);
         /* Copy constructor for the ConceptualFrame class, which is deleted. */
         ConceptualFrame(const ConceptualFrame& other) = delete;
         /* Move constructor for the ConceptualFrame class. */
@@ -109,10 +109,10 @@ namespace Makma3D::Rendering {
 
         /* Populates the internal camera buffer with the given projection and view matrices. */
         void upload_camera_data(const glm::mat4& proj_matrix, const glm::mat4& view_matrix);
-        /* Uploads the material data for the given material index. */
+        /* Uploads the material data for the given material index and its descriptor set. */
         void upload_material_data(Materials::material_t material, const Rendering::MaterialData& material_data);
-        /* Uploads object data for the given object to its buffer. */
-        void upload_object_data(ECS::entity_t object, const Rendering::ObjectData& object_data);
+        /* Uploads entity data for the given entity to its buffer and its descriptor set. */
+        void upload_entity_data(ECS::entity_t entity, const Rendering::EntityData& entity_data);
 
         /* Starts to schedule the render pass associated with the wrapped SwapchainFrame on the internal draw queue. */
         void schedule_start();
@@ -122,18 +122,18 @@ namespace Makma3D::Rendering {
         void schedule_global();
         /* Schedules the stuff for a material. */
         void schedule_material(Materials::material_t material);
-        /* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
-        void schedule_object(ECS::entity_t object);
-        /* Schedules a draw command for the given mesh on the internal draw queue. */
-        void schedule_draw(const Models::ModelSystem& model_system, const ECS::Mesh& mesh);
+        /* Schedules the given entity's descriptor set on the internal draw queue. */
+        void schedule_entity(ECS::entity_t entity);
+        /* Binds the given vertex buffer to the internal draw queue. */
+        void schedule_vertex_buffer(const Rendering::Buffer* vertex_buffer);
+        /* Schedules a draw command for the given index buffer (with the given number of indices) on the internal draw queue. */
+        void schedule_draw(const Rendering::Buffer* index_buffer, uint32_t n_indices);
         /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
         void schedule_stop();
 
         /* "Renders" the frame by sending the internal draw queue to the given device queue. */
         void submit(const VkQueue& vk_queue);
 
-        /* Returns whether or not the given object has already uploaded its data to the GPU this round. */
-        inline bool already_uploaded(ECS::entity_t object) const { return this->object_index_map.find(object) != this->object_index_map.end(); }
         /* Returns the index of the internal frame. */
         inline uint32_t index() const { return this->swapchain_frame->index(); }
 

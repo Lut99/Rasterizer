@@ -38,6 +38,80 @@ using namespace Makma3D::ECS;
 using namespace Makma3D::Rendering;
 
 
+/***** HELPER STRUCTS *****/
+/* Used to store data for a single index buffer to render. */
+struct IndexBufferRenderData {
+    /* The entity to which the index buffer belongs. */
+    ECS::entity_t entity;
+    /* The vertex buffer of this entity. */
+    Rendering::Buffer* vertex_buffer;
+    /* The index buffer to render. */
+    Rendering::Buffer* index_buffer;
+    /* The number of indices to render. */
+    uint32_t n_indices;
+
+};
+
+
+
+
+
+/***** HELPER FUNCTIONS *****/
+/* Sorts given list of 'entities' (list of their Model components) in such a way that they can be rendered material-by-material efficiently. */
+static std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>> sort_entities(const Materials::MaterialSystem& material_system, const ECS::ComponentList<ECS::Model>& entities) {
+    // Delcare the result array
+    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>> result;
+
+    // Loop through the entities in the given list to sort them
+    for (uint32_t i = 0; i < entities.size(); i++) {
+        // Get the entity & their model
+        ECS::entity_t entity = entities.get_entity(i);
+        const ECS::Model& model = entities[i];
+
+        // Loop through the model's meshes and then per-mesh index buffers
+        for (uint32_t j = 0; j < model.meshes.size(); j++) {
+            const ECS::Mesh& mesh = model.meshes[j];
+            for (uint32_t k = 0; k < mesh.indices.size(); k++) {
+                // Get the data for this index buffer
+                Rendering::Buffer* indices = mesh.indices[k];
+                uint32_t n_indices = mesh.n_indices[k];
+                Materials::material_t material = mesh.materials[k];
+                // Also get the material type for this material
+                Materials::MaterialType material_type = material_system.get_type(material);
+
+                // With that collected, we first check if we have already seen a material with this type
+                std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>>::iterator type_iter = result.find(material_type);
+                if (type_iter == result.end()) {
+                    type_iter = result.insert({ material_type, {} }).first;
+                }
+
+                // Next, check if we have already seen index buffers of this type
+                std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>::iterator material_iter = (*type_iter).second.find(material);
+                if (material_iter == (*type_iter).second.end()) {
+                    material_iter = (*type_iter).second.insert({ material, Tools::Array<IndexBufferRenderData>(16) }).first;
+                }
+
+                // Populate the IndexBufferRenderData and add it to the list, resizing it in a more optimal fashion
+                Tools::Array<IndexBufferRenderData>& indices_to_render = (*material_iter).second;
+                if (indices_to_render.size() >= indices_to_render.capacity()) { indices_to_render.reserve(2 * indices_to_render.capacity()); }
+                indices_to_render.push_back({
+                    entity,
+                    model.vertices,
+                    indices,
+                    n_indices
+                });
+            }
+        }
+    }
+
+    // Done! Return the list
+    return result;
+}
+
+
+
+
+
 /***** RENDERSYSTEM CLASS *****/
 /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a material system to create pipelines with, a model system to schedule the model buffers with and a texture system to schedule texture images with. */
 RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Materials::MaterialSystem& material_system, const Models::ModelSystem& model_system/*, const Textures::TextureSystem& texture_system*/) :
@@ -90,8 +164,8 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->pipeline_constructor.input_assembly_state = InputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     this->pipeline_constructor.depth_testing = DepthTesting(VK_TRUE, VK_COMPARE_OP_LESS);
     this->pipeline_constructor.viewport_transformation = ViewportTransformation(VkOffset2D{ 0, 0 }, this->window.swapchain().extent(), VkOffset2D{ 0, 0 }, this->window.swapchain().extent());
-    // this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    // this->pipeline_constructor.rasterization = Rasterization(VK_TRUE, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
     this->pipeline_constructor.multisampling = Multisampling();
     this->pipeline_constructor.color_logic = ColorLogic(
         VK_FALSE, VK_LOGIC_OP_NO_OP,
@@ -223,15 +297,25 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     }
 
     // Prepare rendering to the frame
-    const ECS::ComponentList<ECS::Model>& objects = entity_manager.get_list<ECS::Model>();
-    frame->prepare_render(this->material_system.size(), objects.size());
+    const ECS::ComponentList<ECS::Model>& entities = entity_manager.get_list<ECS::Model>();
+    frame->prepare_render(this->material_system.size(), entities.size());
 
     // Sort the objects by material type
-    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, std::unordered_map<ECS::entity_t, Tools::Array<const ECS::Mesh*>>>> sorted_objects = this->material_system.sort_entities(objects);
+    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>> sorted_entities = sort_entities(this->material_system, entities);
 
     // Populate the frame's camera data
     const Camera& cam = entity_manager.get_list<Camera>()[0];
     frame->upload_camera_data(cam.proj, cam.view);
+
+    // Populate the object datas in advance
+    for (uint32_t i = 0; i < entities.size(); i++) {
+        // Get the entity's transform data
+        ECS::entity_t entity = entities.get_entity(i);
+        const ECS::Transform& transform = entity_manager.get_component<ECS::Transform>(entity);
+
+        // Upload it to the GPU
+        frame->upload_entity_data(entity, EntityData{ transform.translation });
+    }
 
 
 
@@ -242,7 +326,7 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
     frame->schedule_start();
 
     // Loop through all present material types
-    for (const auto& material_types : sorted_objects) {
+    for (const auto& material_types : sorted_entities) {
         // Schedule the pipeline for this material
         frame->schedule_pipeline(this->pipelines.at(material_types.first));
         // Schedule the frame global data on it
@@ -253,35 +337,21 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
         // Loop through all specific materials for this type
         for (const auto& materials : material_types.second) {
-            // if (this->material_system.get_name(materials.first) == "_defaultMat") { continue; }
-
             // Upload & schedule the data for this material
-            // logger.debug("Pre material ", materials.first, " ('", this->material_system.get_name(materials.first), "') upload");
             frame->upload_material_data(materials.first, material_data.get(materials.first));
             frame->schedule_material(materials.first);
-            // logger.debug("Post material upload");
 
-            // Next, loop through all entities of this material to render them
-            for (const auto& entities : materials.second) {
-                // Get the relevant components for this entity
-                const ECS::Transform& transform = entity_manager.get_component<Transform>(entities.first);
+            // Next, loop through all index buffers of this material to render them
+            for (uint32_t i = 0; i < materials.second.size(); i++) {
+                // Get a shortcut to the data we'll need
+                const IndexBufferRenderData& render_data = materials.second[i];
 
-                // Populate the buffer for this entity and upload it - but only if we haven't done so for another material
-                if (!frame->already_uploaded(entities.first)) {
-                    // logger.debug("Pre object ", entities.first, " upload");
-                    frame->upload_object_data(entities.first, ObjectData{ transform.translation });
-                    frame->schedule_object(entities.first);
-                    // logger.debug("Post object upload");
-                }
+                // Schedule the object data & its vertex buffer
+                frame->schedule_entity(render_data.entity);
+                frame->schedule_vertex_buffer(render_data.vertex_buffer);
 
-                // Loop through the meshes of this entity to render each of those
-                for (uint32_t i = 0; i < entities.second.size(); i++) {
-                    // Schedule its draw
-                    // logger.debug("Pre draw");
-                    // logger.debug("Drawing mesh with material ", materials.first, " ('", this->material_system.get_name(materials.first), "')");
-                    frame->schedule_draw(this->model_system, *entities.second[i]);
-                    // logger.debug("Post draw");
-                }
+                // Draw the given index buffer
+                frame->schedule_draw(render_data.index_buffer, render_data.n_indices);
             }
         }
     }

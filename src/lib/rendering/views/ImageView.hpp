@@ -58,7 +58,7 @@ namespace Makma3D::Rendering {
         ImageView(ImageView&& other) = delete;
 
         /* Explicitly returns the internal VkImageView object. */
-        inline const VkImageView& view() const { return this->vk_view; }
+        inline const VkImageView& vulkan() const { return this->vk_view; }
         /* Implicitly returns the internal VkImageView object. */
         inline operator const VkImageView&() const { return this->vk_view; }
 

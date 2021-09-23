@@ -54,8 +54,10 @@ namespace Makma3D::Models {
         /* Unloads the model belonging to the given entity in the given entity manager. */
         void unload_model(ECS::EntityManager& entity_manager, entity_t entity);
 
-        /* Binds the model-related buffers for the given mesh component to the given command buffer. */
-        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& entity_meshes) const;
+        /* Binds the global vertex buffer part of the given Model to the given draw command queue. */
+        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Model& model) const;
+        /* Binds the given per-mesh index buffer part of the given Mesh to the given draw command queue. */
+        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& mesh, uint32_t index_buffer_index) const;
 
         /* Copy assignment operator for the ModelSystem class. */
         inline ModelSystem& operator=(const ModelSystem& other) { return *this = ModelSystem(other); }

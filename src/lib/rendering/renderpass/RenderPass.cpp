@@ -259,13 +259,13 @@ void RenderPass::start_scheduling(const Rendering::CommandBuffer* cmd, const VkF
     populate_begin_info(begin_info, this->vk_render_pass, vk_framebuffer, render_area, clear_values);
 
     // Schedule it in the command buffer (and tell it to schedule everything in the primary command buffers instead of secondary ones)
-    vkCmdBeginRenderPass(cmd->command_buffer(), &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd->vulkan(), &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 /* Finishes scheduling the RenderPass. */
 void RenderPass::stop_scheduling(const Rendering::CommandBuffer* cmd) const {
     // Simply call the stop
-    vkCmdEndRenderPass(cmd->command_buffer());
+    vkCmdEndRenderPass(cmd->vulkan());
 }
 
 

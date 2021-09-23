@@ -57,9 +57,9 @@ namespace Makma3D::Rendering {
         /* Implicitly returns the internal Rendering::Image object. */
         inline operator const Rendering::Image&() const { return *this->rendering_image; }
         /* Explicitly returns the internal VkImage object. Note that this VkImage is not a reference, and should thus used in Vulkan calls with care. */
-        inline VkImage vk_image() const { return this->rendering_image->image(); }
+        inline VkImage vk_image() const { return this->rendering_image->vulkan(); }
         /* Implicitly returns the internal VkImage object. */
-        inline operator VkImage() const { return this->rendering_image->image(); }
+        inline operator VkImage() const { return this->rendering_image->vulkan(); }
         /* Expliticlty returns the internal VkImageView object. */
         inline const VkImageView& view() const { return this->vk_image_view; }
         /* Implicitly returns the internal VkImageView object. */

@@ -9,7 +9,7 @@ target_include_directories(MaterialSystem PUBLIC
 list(APPEND EXTRA_LIBS MaterialSystem)
 
 # # Add the subdirectories, then add the new dependencies
-add_subdirectory(formats)
+# add_subdirectory(formats)
 add_subdirectory(variants)
 add_dependencies(MaterialSystem ${EXTRA_TARGETS})
 

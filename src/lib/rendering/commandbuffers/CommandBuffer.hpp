@@ -53,7 +53,7 @@ namespace Makma3D::Rendering {
         VkSubmitInfo get_submit_info() const;
 
         /* Explititly returns the internal VkCommandBuffer object. */
-        inline const VkCommandBuffer& command_buffer() const { return this->vk_command_buffer; }
+        inline const VkCommandBuffer& vulkan() const { return this->vk_command_buffer; }
         /* Implicitly returns the internal VkCommandBuffer object. */
         inline operator const VkCommandBuffer&() const { return this->vk_command_buffer; }
 

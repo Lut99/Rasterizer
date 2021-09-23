@@ -104,7 +104,7 @@ ImageViewPool::~ImageViewPool() {
 ImageView* ImageViewPool::allocate(Rendering::Image* image, VkFormat view_format) {
     // Create the create info for the image view
     VkImageViewCreateInfo view_info;
-    populate_view_info(view_info, image->image(), view_format);
+    populate_view_info(view_info, image->vulkan(), view_format);
 
     // Create the image view
     VkImageView view;
@@ -114,7 +114,7 @@ ImageView* ImageViewPool::allocate(Rendering::Image* image, VkFormat view_format
     }
 
     // Create the wrapper and store it internally
-    ImageView* result = new ImageView(view, image->image(), view_format);
+    ImageView* result = new ImageView(view, image->vulkan(), view_format);
     this->views.push_back(result);
 
     // Done
@@ -159,7 +159,6 @@ void ImageViewPool::free(const ImageView* view) {
 
     // Destroy the vulkan object
     vkDestroyImageView(this->gpu, view->vk_view, nullptr);
-    
     // Destroy the pointer itself
     delete view;
 }

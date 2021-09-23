@@ -99,7 +99,7 @@ DepthStencil::DepthStencil(const Rendering::GPU& gpu, Rendering::MemoryPool& dra
     // Initialize the create info for the VkImageView
     logger.logc(Verbosity::details, DepthStencil::channel, "Initializing internal image view...");
     VkImageViewCreateInfo view_info;
-    populate_view_info(view_info, this->rendering_image->image(), this->rendering_image->format());
+    populate_view_info(view_info, this->rendering_image->vulkan(), this->rendering_image->format());
 
     // Actually create the view info
     VkResult vk_result;
@@ -125,7 +125,7 @@ DepthStencil::DepthStencil(const DepthStencil& other) :
 
     // Initialize the create info for the VkImageView
     VkImageViewCreateInfo view_info;
-    populate_view_info(view_info, this->rendering_image->image(), this->rendering_image->format());
+    populate_view_info(view_info, this->rendering_image->vulkan(), this->rendering_image->format());
 
     // Actually create the view info
     VkResult vk_result;
@@ -180,7 +180,7 @@ void DepthStencil::resize(const VkExtent2D& new_extent) {
 
     // Also re-create the image view
     VkImageViewCreateInfo view_info;
-    populate_view_info(view_info, this->rendering_image->image(), this->rendering_image->format());
+    populate_view_info(view_info, this->rendering_image->vulkan(), this->rendering_image->format());
     VkResult vk_result;
     if ((vk_result = vkCreateImageView(this->gpu, &view_info, nullptr, &this->vk_image_view)) != VK_SUCCESS) {
         logger.fatalc(DepthStencil::channel, "Could not resize image view: ", vk_error_map[vk_result]);

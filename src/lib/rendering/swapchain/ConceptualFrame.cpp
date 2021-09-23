@@ -46,7 +46,7 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer*
 
     // Attach the command buffer
     submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &cmd->command_buffer();
+    submit_info.pCommandBuffers = &cmd->vulkan();
 
     // Attach the data for which we wait
     submit_info.waitSemaphoreCount = 1;
@@ -63,8 +63,8 @@ static void populate_submit_info(VkSubmitInfo& submit_info, const CommandBuffer*
 
 
 /***** CONCEPTUALFRAME CLASS *****/
-/* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor, a descriptor set layout for per-material descriptors and a descriptor set layout for the per-object descriptors. */
-ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& object_layout) :
+/* Constructor for the ConceptualFrame class, which takes a MemoryManager to be able to draw games, a descriptor set layout for the global descriptor, a descriptor set layout for per-material descriptors and a descriptor set layout for the per-entity descriptors. */
+ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const Rendering::DescriptorSetLayout& global_layout, const Rendering::DescriptorSetLayout& material_layout, const Rendering::DescriptorSetLayout& entity_layout) :
     memory_manager(memory_manager),
 
     swapchain_frame(nullptr),
@@ -72,7 +72,7 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
 
     global_layout(global_layout),
     material_layout(material_layout),
-    object_layout(object_layout),
+    entity_layout(entity_layout),
 
     image_ready_semaphore(this->memory_manager.gpu),
     render_ready_semaphore(this->memory_manager.gpu),
@@ -82,7 +82,7 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
 
     // Initialize the stage buffer
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
-    this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(ObjectData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(EntityData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     logger.logc(Verbosity::debug, ConceptualFrame::channel, "Allocated stage buffer @ ", this->stage_buffer->offset());
 
     // Initialize the commandbuffer
@@ -113,7 +113,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
 
     global_layout(std::move(other.global_layout)),
     material_layout(std::move(other.material_layout)),
-    object_layout(std::move(other.object_layout)),
+    entity_layout(std::move(other.entity_layout)),
 
     draw_cmd(std::move(other.draw_cmd)),
     descriptor_pool(std::move(other.descriptor_pool)),
@@ -125,9 +125,9 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     material_sets(std::move(other.material_sets)),
     material_buffers(std::move(other.material_buffers)),
 
-    object_index_map(std::move(other.object_index_map)),
-    object_sets(std::move(other.object_sets)),
-    object_buffers(std::move(other.object_buffers)),
+    entity_index_map(std::move(other.entity_index_map)),
+    entity_sets(std::move(other.entity_sets)),
+    entity_buffers(std::move(other.entity_buffers)),
 
     image_ready_semaphore(std::move(other.image_ready_semaphore)),
     render_ready_semaphore(std::move(other.render_ready_semaphore)),
@@ -140,17 +140,17 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     other.global_set = nullptr;
     other.camera_buffer = nullptr;
     // No need to clear the material sets/buffers, as the Array's move function already makes sure they're reset to empty
-    // No need to clear the object sets/buffers, as the Array's move function already makes sure they're reset to empty
+    // No need to clear the entity sets/buffers, as the Array's move function already makes sure they're reset to empty
 }
 
 /* Destructor for the ConceptualFrame class. */
 ConceptualFrame::~ConceptualFrame() {
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning...");
 
-    if (this->object_buffers.size() > 0) {
-        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning object buffers...");
-        for (uint32_t i = 0; i < this->object_buffers.size(); i++) {
-            this->memory_manager.draw_pool.free(this->object_buffers[i]);
+    if (this->entity_buffers.size() > 0) {
+        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning entity buffers...");
+        for (uint32_t i = 0; i < this->entity_buffers.size(); i++) {
+            this->memory_manager.draw_pool.free(this->entity_buffers[i]);
         }
     }
     if (this->material_buffers.size() > 0) {
@@ -185,7 +185,7 @@ ConceptualFrame::~ConceptualFrame() {
 void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
     // Reset the index maps
     this->material_index_map.clear();
-    this->object_index_map.clear();
+    this->entity_index_map.clear();
 
     // Rescale the internal array of materials to the desired size
     if (this->material_buffers.size() < n_materials) {
@@ -203,17 +203,17 @@ void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
     }
 
     // Rescale the internal array to objects to the desired size
-    if (this->object_buffers.size() < n_objects) {
+    if (this->entity_buffers.size() < n_objects) {
         // Extent the object buffer to more space and allocate new buffers
-        this->object_buffers.reserve_opt(n_objects);
-        for (uint32_t i = this->object_buffers.size(); i < n_objects; i++) {
-            this->object_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(ObjectData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+        this->entity_buffers.reserve_opt(n_objects);
+        for (uint32_t i = this->entity_buffers.size(); i < n_objects; i++) {
+            this->entity_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(EntityData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
         }
-    } else if (this->object_buffers.size() > n_objects) {
+    } else if (this->entity_buffers.size() > n_objects) {
         // Remove the obsolete ones
-        for (uint32_t i = this->object_buffers.size(); i-- > n_objects ;) {
-            this->memory_manager.draw_pool.free(this->object_buffers[i]);
-            this->object_buffers.pop_back();
+        for (uint32_t i = this->entity_buffers.size(); i-- > n_objects ;) {
+            this->memory_manager.draw_pool.free(this->entity_buffers[i]);
+            this->entity_buffers.pop_back();
         }
     }
 
@@ -221,7 +221,7 @@ void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
     this->descriptor_pool->reset();
     this->global_set    = this->descriptor_pool->allocate(this->global_layout);
     this->material_sets = this->descriptor_pool->nallocate(n_materials, this->material_layout);
-    this->object_sets   = this->descriptor_pool->nallocate(n_objects, this->object_layout);
+    this->entity_sets   = this->descriptor_pool->nallocate(n_objects, this->entity_layout);
 }
 
 
@@ -237,7 +237,7 @@ void ConceptualFrame::upload_camera_data(const glm::mat4& proj_matrix, const glm
     this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
 }
 
-/* Uploads the material data for the given material index. */
+/* Uploads the material data for the given material index and its descriptor set. */
 void ConceptualFrame::upload_material_data(Materials::material_t material, const Rendering::MaterialData& material_data) {
     // Map the material
     std::unordered_map<Materials::material_t, uint32_t>::iterator iter = this->material_index_map.find(material);
@@ -259,28 +259,26 @@ void ConceptualFrame::upload_material_data(Materials::material_t material, const
     this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->material_buffers[material_index] });
 }
 
-/* Uploads object data for the given object to its buffer. */
-void ConceptualFrame::upload_object_data(ECS::entity_t object, const Rendering::ObjectData& object_data) {
+/* Uploads entity data for the given entity to its buffer and its descriptor set. */
+void ConceptualFrame::upload_entity_data(ECS::entity_t entity, const Rendering::EntityData& entity_data) {
     // Map the object
-    std::unordered_map<ECS::entity_t, uint32_t>::iterator iter = this->object_index_map.find(object);
-    if (iter == this->object_index_map.end()) {
-        iter = this->object_index_map.insert({ object, static_cast<uint32_t>(this->object_index_map.size()) }).first;
+    std::unordered_map<ECS::entity_t, uint32_t>::iterator iter = this->entity_index_map.find(entity);
+    if (iter == this->entity_index_map.end()) {
+        iter = this->entity_index_map.insert({ entity, static_cast<uint32_t>(this->entity_index_map.size()) }).first;
     }
-    uint32_t object_index = (*iter).second;
+    uint32_t entity_index = (*iter).second;
 
     #ifndef NDEBUG
     // Throw errors if out-of-range
-    if (object_index > this->object_buffers.size()) {
-        logger.fatalc(ConceptualFrame::channel, "Object index ", object_index, " is out of range (prepared for only ", this->object_buffers.size(), " objects)");
+    if (entity_index > this->entity_buffers.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Entity index ", entity_index, " is out of range (prepared for only ", this->entity_buffers.size(), " entities)");
     }
     #endif
 
     // Otherwise, set the correct buffer using the staging buffer
-    // this->object_buffers.at(object_index)->set((void*) &object_data, sizeof(ObjectData), this->stage_buffer, this->memory_manager.copy_cmd);
-    this->object_buffers[object_index]->set((void*) &object_data, sizeof(ObjectData), this->stage_buffer, this->memory_manager.copy_cmd);
+    this->entity_buffers[entity_index]->set((void*) &entity_data, sizeof(EntityData), this->stage_buffer, this->memory_manager.copy_cmd);
     // Bind the correct object buffer to the correct set
-    // this->object_sets.at(object_index)->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers.at(object_index) });
-    this->object_sets[object_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->object_buffers[object_index] });
+    this->entity_sets[entity_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->entity_buffers[entity_index] });
 }
 
 
@@ -327,8 +325,8 @@ void ConceptualFrame::schedule_material(Materials::material_t material) {
 
     #ifndef NDEBUG
     // Throw errors if out-of-range
-    if (material_index > this->material_buffers.size()) {
-        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->material_buffers.size(), " materials)");
+    if (material_index > this->material_sets.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->material_sets.size(), " materials)");
     }
     #endif
 
@@ -336,32 +334,39 @@ void ConceptualFrame::schedule_material(Materials::material_t material) {
     this->material_sets[material_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
 }
 
-/* Schedules the given object's buffer (and thus descriptor set) on the internal draw queue. */
-void ConceptualFrame::schedule_object(ECS::entity_t object) {
+/* Schedules the given entity's descriptor set on the internal draw queue. */
+void ConceptualFrame::schedule_entity(ECS::entity_t entity) {
     // Map the object
-    std::unordered_map<ECS::entity_t, uint32_t>::iterator iter = this->object_index_map.find(object);
-    if (iter == this->object_index_map.end()) {
-        logger.fatalc(ConceptualFrame::channel, "Cannot schedule object ", object, " for which nothing has been uploaded.");
+    std::unordered_map<ECS::entity_t, uint32_t>::iterator iter = this->entity_index_map.find(entity);
+    if (iter == this->entity_index_map.end()) {
+        logger.fatalc(ConceptualFrame::channel, "Cannot schedule entity ", entity, " for which nothing has been uploaded.");
     }
-    uint32_t object_index = (*iter).second;
+    uint32_t entity_index = (*iter).second;
 
     #ifndef NDEBUG
     // Throw errors if out-of-range
-    if (object_index > this->object_buffers.size()) {
-        logger.fatalc(ConceptualFrame::channel, "Object index ", object_index, " is out of range (prepared for only ", this->object_buffers.size(), " objects)");
+    if (entity_index > this->entity_sets.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Entity index ", entity_index, " is out of range (prepared for only ", this->entity_sets.size(), " entities)");
     }
     #endif
 
     // Schedule the object's descriptor set
-    this->object_sets[object_index]->schedule(this->draw_cmd, this->pipeline->layout(), 2);
+    this->entity_sets[entity_index]->schedule(this->draw_cmd, this->pipeline->layout(), 2);
 }
 
-/* Schedules a draw command for the given mesh on the internal draw queue. */
-void ConceptualFrame::schedule_draw(const Models::ModelSystem& model_system, const ECS::Mesh& mesh) {
-    // First, schedule the mesh as an indexed vertex buffer
-    model_system.schedule(this->draw_cmd, mesh);
+/* Binds the given vertex buffer to the internal draw queue. */
+void ConceptualFrame::schedule_vertex_buffer(const Rendering::Buffer* vertex_buffer) {
+    // Schedule the model's vertex buffer
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(this->draw_cmd->vulkan(), 0, 1, &vertex_buffer->vulkan(), offsets);
+}
+
+/* Schedules a draw command for the given index buffer (with the given number of indices) on the internal draw queue. */
+void ConceptualFrame::schedule_draw(const Rendering::Buffer* index_buffer, uint32_t n_indices) {
+    // First, schedule the mesh' index buffer
+    vkCmdBindIndexBuffer(this->draw_cmd->vulkan(), index_buffer->vulkan(), 0, VK_INDEX_TYPE_UINT32);
     // Next, schedule the draw call
-    this->pipeline->schedule_idraw(this->draw_cmd, mesh.n_indices, 1);
+    this->pipeline->schedule_idraw(this->draw_cmd, n_indices, 1);
 }
 
 /* Stops scheduling by stopping the render pass associated with the wrapped SwapchainFrame. Then also stops the command buffer itself. */
@@ -421,7 +426,8 @@ void Rendering::swap(ConceptualFrame& cf1, ConceptualFrame& cf2) {
     swap(cf1.pipeline, cf2.pipeline);
 
     swap(cf1.global_layout, cf2.global_layout);
-    swap(cf1.object_layout, cf2.object_layout);
+    swap(cf1.material_layout, cf2.material_layout);
+    swap(cf1.entity_layout, cf2.entity_layout);
     
     swap(cf1.draw_cmd, cf2.draw_cmd);
     swap(cf1.descriptor_pool, cf2.descriptor_pool);
@@ -429,8 +435,13 @@ void Rendering::swap(ConceptualFrame& cf1, ConceptualFrame& cf2) {
     swap(cf1.global_set, cf2.global_set);
     swap(cf1.camera_buffer, cf2.camera_buffer);
 
-    swap(cf1.object_sets, cf2.object_sets);
-    swap(cf1.object_buffers, cf2.object_buffers);
+    swap(cf1.material_index_map, cf2.material_index_map);
+    swap(cf1.material_sets, cf2.material_sets);
+    swap(cf1.material_buffers, cf2.material_buffers);
+
+    swap(cf1.entity_index_map, cf2.entity_index_map);
+    swap(cf1.entity_sets, cf2.entity_sets);
+    swap(cf1.entity_buffers, cf2.entity_buffers);
     
     swap(cf1.image_ready_semaphore, cf2.image_ready_semaphore);
     swap(cf1.render_ready_semaphore, cf2.render_ready_semaphore);

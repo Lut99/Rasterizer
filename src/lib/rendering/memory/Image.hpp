@@ -87,7 +87,7 @@ namespace Makma3D::Rendering {
         /* Returns the size of the image, in bytes. */
         inline VkDeviceSize rsize() const { return this->vk_requirements.size; }
         /* Explicit retrieval of the internal VkImage object. */
-        inline const VkImage& image() const { return this->vk_image; }
+        inline const VkImage& vulkan() const { return this->vk_image; }
         /* Implicit retrieval of the internal VkImage object. */
         inline operator const VkImage&() const { return this->vk_image; }
 

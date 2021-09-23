@@ -120,7 +120,7 @@ CommandPool::~CommandPool() {
     if (this->command_buffers.size() > 0) {
         logger.logc(Verbosity::details, CommandPool::channel, "Cleaning command buffers...");
         for (uint32_t i = 0; i < this->command_buffers.size(); i++) {
-            vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &this->command_buffers[i]->command_buffer());
+            vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &this->command_buffers[i]->vulkan());
         }
     }
 
@@ -200,7 +200,7 @@ void CommandPool::free(const CommandBuffer* buffer) {
     }
 
     // Destroy the VkCommandBuffer
-    vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &buffer->command_buffer());
+    vkFreeCommandBuffers(this->gpu, this->vk_command_pool, 1, &buffer->vulkan());
     
     // Destroy the pointer itself
     delete buffer;
@@ -224,7 +224,7 @@ void CommandPool::nfree(const Tools::Array<CommandBuffer*>& buffers) {
         }
 
         // Mark the Vk object for removal
-        to_remove.push_back(buffers[i]->command_buffer());
+        to_remove.push_back(buffers[i]->vulkan());
 
         // Delete the pointer
         delete buffers[i];

@@ -26,13 +26,12 @@
 namespace Makma3D::ECS {
     /* Helper struct for the Model component, which contains data about a single mesh for the Model. */
     struct Mesh {
-        /* The buffer containing the index data for this Mesh. */
-        Rendering::Buffer* indices;
-        /* The number of indices stored in the buffer. */
-        uint32_t n_indices;
-
-        /* Link to the material with which the mesh should be rendered. */
-        Materials::material_t material;
+        /* List of per-material indices to render. */
+        Tools::Array<Rendering::Buffer*> indices;
+        /* The number of indices per buffer to render. */
+        Tools::Array<uint32_t> n_indices;
+        /* The material for each buffer. */
+        Tools::Array<Materials::material_t> materials;
 
         /* Name for this Mesh (only used for debugging). */
         std::string name;
