@@ -17,13 +17,14 @@
 #define TEXTURES_TEXTURE_SYSTEM_HPP
 
 #include "ecs/EntityManager.hpp"
-#include "ecs/components/Textures.hpp"
 
 #include "rendering/memory_manager/MemoryManager.hpp"
 #include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "rendering/sampling/Sampler.hpp"
+#include "rendering/sampling/SamplerPool.hpp"
 
 #include "TextureFormat.hpp"
+#include "Texture.hpp"
 
 namespace Makma3D::Textures {
     /* The TextureSystem class, which is responsible for loading and managing textures. */
@@ -34,31 +35,28 @@ namespace Makma3D::Textures {
 
         /* The MemoryManager class used for allocating new images and stage buffers and the like. */
         Rendering::MemoryManager& memory_manager;
-
+    
     private:
-        /* The Sampler to use for all textures. */
-        Rendering::Sampler sampler;
+        /* The SamplerPool used to allocate new samplers from. */
+        Rendering::SamplerPool sampler_pool;
 
     public:
         /* Constructor for the TextureSystem class, which takes a reference to the MemoryManager from which we allocate buffers and images and junk. */
         TextureSystem(Rendering::MemoryManager& memory_manager);
-        /* Copy constructor for the TextureSystem class. */
-        TextureSystem(const TextureSystem& other);
+        /* Copy constructor for the TextureSystem class, which is deleted. */
+        TextureSystem(const TextureSystem& other) = delete;
         /* Move constructor for the TextureSystem class. */
         TextureSystem(TextureSystem&& other);
         /* Destructor for the TextureSystem class. */
         ~TextureSystem();
 
-        /* Loads a new texture for the given entity using the given format. */
-        void load_texture(ECS::EntityManager& entity_manager, entity_t entity, const std::string& path, TextureFormat format = TextureFormat::png);
-        /* Unloads the texture loaded for the given entity. */
-        void unload_texture(ECS::EntityManager& entity_manager, entity_t entity);
+        /* Loads a new texture from the given file with the given format into a Texture struct and returns that. */
+        Texture load_texture(const std::string& path, TextureFormat format = TextureFormat::png);
+        /* Destroys the data in the given texture struct. */
+        void unload_texture(const Texture& texture);
 
-        /* Binds the model-related buffers and junk for the given mesh component to the given command buffer. */
-        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Texture& entity_texture, const Rendering::DescriptorSet* descriptor_set) const;
-
-        /* Copy assignment operator for the TextureSystem class. */
-        inline TextureSystem& operator=(const TextureSystem& other) { return *this = TextureSystem(other); }
+        /* Copy assignment operator for the TextureSystem class, which is deleted. */
+        TextureSystem& operator=(const TextureSystem& other) = delete;
         /* Move assignment operator for the TextureSystem class. */
         inline TextureSystem& operator=(TextureSystem&& other) { if (this != &other) { swap(*this, other); } return *this; }
         /* Swap operator for the TextureSystem class. */

@@ -93,6 +93,8 @@ add_custom_target(export
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_frag.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_frag.spv
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_coloured_vert.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_coloured_vert.spv
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_coloured_frag.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_coloured_frag.spv
+                  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_textured_vert.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_textured_vert.spv
+                  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/shaders/materials/simple_textured_frag.spv ${PROJECT_SOURCE_DIR}/export/rasterizer/shaders/materials/simple_textured_frag.spv
                   # Copy the necessary models/materials/textures
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/models/viking_room.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/viking_room.obj
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/textures/viking_room.png ${PROJECT_SOURCE_DIR}/export/rasterizer/data/textures/viking_room.png

@@ -78,6 +78,7 @@ material_t MaterialSystem::get_available_id(const char* material_type) const {
 /* Initializes given DescriptorSetLayout with everything needed for materials. */
 void MaterialSystem::init_layout(Rendering::DescriptorSetLayout& descriptor_set_layout) {
     descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
+    descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
     descriptor_set_layout.finalize();
 }
 
@@ -210,7 +211,7 @@ AssociativeArray<material_t, Rendering::MaterialData>& MaterialSystem::get_list(
 material_t MaterialSystem::create_simple_coloured(const std::string& name, const glm::vec3& colour) {
     // Check if a material with this colour already exists
     for (uint32_t i = 0; i < this->simple_coloured.size(); i++) {
-        if (this->simple_coloured[i].colour == colour) {
+        if (this->simple_coloured[i].vertex.colour == colour) {
             // Simply return this material index
             return this->simple_coloured.get_abstract_index(i);
         }
@@ -223,16 +224,23 @@ material_t MaterialSystem::create_simple_coloured(const std::string& name, const
     this->material_ids.insert({ material, { name, MaterialType::simple_coloured } });
     // Simply add a new structure of this type
     MaterialData data{};
-    data.colour = colour;
+    data.vertex.colour = colour;
     this->simple_coloured.add(material, data);
 
     // Return the material ID we found
-    logger.debug("Created SimpleColoured material '", name, "' with ID ", material, " (colour: ", colour, ")");
     return material;
 }
 
 /* Adds a new material with the given debug name that uses the simple lighting model with a texture. The texture used is the given one. */
 material_t MaterialSystem::create_simple_textured(const std::string& name, const Textures::Texture& texture) {
+    // Check if a material with this texture already exists
+    for (uint32_t i = 0; i < this->simple_textured.size(); i++) {
+        if (this->simple_textured[i].fragment.sampler == texture.sampler->vulkan()) {
+            // Simply return this material index
+            return this->simple_textured.get_abstract_index(i);
+        }
+    }
+
     // First, find a valid material ID
     material_t material = this->get_available_id("SimpleTextured");
 
@@ -240,7 +248,7 @@ material_t MaterialSystem::create_simple_textured(const std::string& name, const
     this->material_ids.insert({ material, { name, MaterialType::simple_textured } });
     // Simply add a new structure of this type
     MaterialData data{};
-    /* TBD */
+    data.fragment.sampler = texture.sampler->vulkan();
     this->simple_textured.add(material, data);
 
     // Return the material ID we found

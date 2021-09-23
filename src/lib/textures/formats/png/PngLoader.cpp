@@ -31,8 +31,8 @@ static constexpr const char* channel = "PngLoader";
 
 
 /***** LIBRARY FUNCTIONS *****/
-/* Loads the file at the given path as a .png file, and populates the given Texture component from it. */
-void Textures::load_png_texture(Rendering::MemoryManager& memory_manager, ECS::Texture& texture, const std::string& path) {
+/* Loads the file at the given path as a .png file, and populates the given Texture struct from it. */
+void Textures::load_png_texture(Rendering::MemoryManager& memory_manager, Texture& texture, const std::string& path) {
     // Try to load the given .png file with lodepng
     std::vector<unsigned char> png;
     unsigned error = lodepng::load_file(png, path);

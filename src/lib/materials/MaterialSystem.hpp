@@ -41,9 +41,9 @@ namespace Makma3D::Materials {
         /* The logging channel for the MaterialSystem class. */
         static constexpr const char* channel = "MaterialSystem";
         /* The number of material types in the MaterialSystem. */
-        static constexpr const uint32_t n_types = 2/*3*/;
+        static constexpr const uint32_t n_types = 3;
         /* A static list of materials in the MaterialSystem. */
-        static constexpr const MaterialType types[n_types] = { MaterialType::simple, MaterialType::simple_coloured/*, MaterialType::simple_textured*/ };
+        static constexpr const MaterialType types[n_types] = { MaterialType::simple, MaterialType::simple_coloured, MaterialType::simple_textured };
 
         /* Reference to the GPU used to create the pipeline properties for materials. */
         const Rendering::GPU& gpu;

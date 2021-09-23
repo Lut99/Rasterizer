@@ -17,12 +17,13 @@
 
 #include <string>
 
-#include "ecs/components/Textures.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
 
+#include "../../Texture.hpp"
+
 namespace Makma3D::Textures {
-    /* Loads the file at the given path as a .jpg file, and populates the given Texture component from it. */
-    void load_jpg_texture(Rendering::MemoryManager& memory_manager, ECS::Texture& texture, const std::string& path);
+    /* Loads the file at the given path as a .jpg file, and populates the given Texture struct from it. */
+    void load_jpg_texture(Rendering::MemoryManager& memory_manager, Texture& texture, const std::string& path);
 
 }
 

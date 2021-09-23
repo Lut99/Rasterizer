@@ -82,7 +82,7 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
 
     // Initialize the stage buffer
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
-    this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(EntityData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(MaterialVertexData), sizeof(MaterialFragmentData), sizeof(EntityData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     logger.logc(Verbosity::debug, ConceptualFrame::channel, "Allocated stage buffer @ ", this->stage_buffer->offset());
 
     // Initialize the commandbuffer
@@ -123,7 +123,8 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
 
     material_index_map(std::move(other.material_index_map)),
     material_sets(std::move(other.material_sets)),
-    material_buffers(std::move(other.material_buffers)),
+    vert_material_buffers(std::move(other.vert_material_buffers)),
+    frag_material_buffers(std::move(other.frag_material_buffers)),
 
     entity_index_map(std::move(other.entity_index_map)),
     entity_sets(std::move(other.entity_sets)),
@@ -153,10 +154,11 @@ ConceptualFrame::~ConceptualFrame() {
             this->memory_manager.draw_pool.free(this->entity_buffers[i]);
         }
     }
-    if (this->material_buffers.size() > 0) {
+    if (this->vert_material_buffers.size() > 0) {
         // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning material buffers...");
-        for (uint32_t i = 0; i < this->material_buffers.size(); i++) {
-            this->memory_manager.draw_pool.free(this->material_buffers[i]);
+        for (uint32_t i = 0; i < this->vert_material_buffers.size(); i++) {
+            this->memory_manager.draw_pool.free(this->vert_material_buffers[i]);
+            this->memory_manager.draw_pool.free(this->frag_material_buffers[i]);
         }
     }
     if (this->camera_buffer != nullptr) {
@@ -188,17 +190,21 @@ void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
     this->entity_index_map.clear();
 
     // Rescale the internal array of materials to the desired size
-    if (this->material_buffers.size() < n_materials) {
+    if (this->vert_material_buffers.size() < n_materials) {
         // Extent the object buffer to more space and allocate new buffers
-        this->material_buffers.reserve_opt(n_materials);
-        for (uint32_t i = this->material_buffers.size(); i < n_materials; i++) {
-            this->material_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(MaterialData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+        this->vert_material_buffers.reserve_opt(n_materials);
+        this->frag_material_buffers.reserve_opt(n_materials);
+        for (uint32_t i = this->vert_material_buffers.size(); i < n_materials; i++) {
+            this->vert_material_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(MaterialData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+            this->frag_material_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(MaterialData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
         }
-    } else if (this->material_buffers.size() > n_materials) {
+    } else if (this->vert_material_buffers.size() > n_materials) {
         // Remove the obsolete ones
-        for (uint32_t i = this->material_buffers.size(); i-- > n_materials ;) {
-            this->memory_manager.draw_pool.free(this->material_buffers[i]);
-            this->material_buffers.pop_back();
+        for (uint32_t i = this->vert_material_buffers.size(); i-- > n_materials ;) {
+            this->memory_manager.draw_pool.free(this->vert_material_buffers[i]);
+            this->memory_manager.draw_pool.free(this->frag_material_buffers[i]);
+            this->vert_material_buffers.pop_back();
+            this->frag_material_buffers.pop_back();
         }
     }
 
@@ -248,15 +254,17 @@ void ConceptualFrame::upload_material_data(Materials::material_t material, const
 
     #ifndef NDEBUG
     // Throw errors if out-of-range
-    if (material_index > this->material_buffers.size()) {
-        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->material_buffers.size(), " materials)");
+    if (material_index > this->vert_material_buffers.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->vert_material_buffers.size(), " materials)");
     }
     #endif
 
     // Otherwise, set the correct buffer using the staging buffer
-    this->material_buffers[material_index]->set((void*) &material_data, sizeof(MaterialData), this->stage_buffer, this->memory_manager.copy_cmd);
+    this->vert_material_buffers[material_index]->set((void*) &material_data.vertex, sizeof(MaterialVertexData), this->stage_buffer, this->memory_manager.copy_cmd);
+    this->frag_material_buffers[material_index]->set((void*) &material_data.fragment, sizeof(MaterialFragmentData), this->stage_buffer, this->memory_manager.copy_cmd);
     // Bind the material's buffer to the correct set
-    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->material_buffers[material_index] });
+    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->vert_material_buffers[material_index] });
+    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, { this->frag_material_buffers[material_index] });
 }
 
 /* Uploads entity data for the given entity to its buffer and its descriptor set. */
@@ -437,7 +445,8 @@ void Rendering::swap(ConceptualFrame& cf1, ConceptualFrame& cf2) {
 
     swap(cf1.material_index_map, cf2.material_index_map);
     swap(cf1.material_sets, cf2.material_sets);
-    swap(cf1.material_buffers, cf2.material_buffers);
+    swap(cf1.vert_material_buffers, cf2.vert_material_buffers);
+    swap(cf1.frag_material_buffers, cf2.frag_material_buffers);
 
     swap(cf1.entity_index_map, cf2.entity_index_map);
     swap(cf1.entity_sets, cf2.entity_sets);

@@ -81,8 +81,8 @@ static const std::unordered_map<jpgd::jpgd_status, std::string> jpgd_status_name
 
 
 /***** LIBRARY FUNCTIONS *****/
-/* Loads the file at the given path as a .jpg file, and populates the given Texture component from it. */
-void Textures::load_jpg_texture(Rendering::MemoryManager& memory_manager, ECS::Texture& texture, const std::string& path) {
+/* Loads the file at the given path as a .jpg file, and populates the given Texture struct from it. */
+void Textures::load_jpg_texture(Rendering::MemoryManager& memory_manager, Texture& texture, const std::string& path) {
     // Try to load the given .pjpg file with the jpgd.h library. Note that we tell it to return as RGBA (the 4).
     int width, height, comps;
     jpgd::jpgd_status status;

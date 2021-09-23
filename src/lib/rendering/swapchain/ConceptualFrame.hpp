@@ -77,8 +77,10 @@ namespace Makma3D::Rendering {
         std::unordered_map<Materials::material_t, uint32_t> material_index_map;
         /* Descriptors for all materials drawn with this buffer. */
         Tools::Array<Rendering::DescriptorSet*> material_sets;
-        /* Buffers for all materials. */
-        Tools::Array<Rendering::Buffer*> material_buffers;
+        /* Vertex-stage buffers for all materials. */
+        Tools::Array<Rendering::Buffer*> vert_material_buffers;
+        /* Fragment-stage buffers for all materials. */
+        Tools::Array<Rendering::Buffer*> frag_material_buffers;
 
         /* Maps entity IDs to entity indices into the arrays. */
         std::unordered_map<ECS::entity_t, uint32_t> entity_index_map;
