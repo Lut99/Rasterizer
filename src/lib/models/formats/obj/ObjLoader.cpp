@@ -18,6 +18,7 @@
 #include <fstream>
 #include <cstring>
 #include <cerrno>
+#include <cmath>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/hash.hpp"
@@ -38,12 +39,25 @@ using namespace Makma3D::Models;
 /***** CONSTANTS *****/
 /* Channel for the ObjLoader. */
 static constexpr const char* channel = "ObjLoader";
+/* The gamma correction to apply. */
+static const constexpr float gamma = 2.2f;
+/* The default vertex colour. */
+static const glm::vec3 default_colour(173.0f / 255.0f, 26.0f / 255.0f, 21.0f / 255.0f);
 
 
 
 
 
 /***** HELPER FUNCTIONS *****/
+/* Converts the given colour to a gamma-corrected colour. */
+static inline glm::vec3 correct_for_gamma(const glm::vec3& linear_colour) {
+    return glm::vec3(
+        pow(linear_colour.r, gamma),
+        pow(linear_colour.g, gamma),
+        pow(linear_colour.b, gamma)
+    );
+}
+
 /* Given the actual data and a vertex/normal/texel index triplet, insert the vertex in the Model data and return its index. */
 static Rendering::index_t store_vertex(Tools::Array<Rendering::Vertex>& vertices, std::unordered_map<glm::uvec3, uint32_t>& vertex_map, const tinyobj::attrib_t& data, int vertex_index, int normal_index, int texel_index) {
     // Wrap the indices in a vector
@@ -63,7 +77,7 @@ static Rendering::index_t store_vertex(Tools::Array<Rendering::Vertex>& vertices
                 data.vertices[3 * vertex_index + 1],
                 data.vertices[3 * vertex_index + 2]
             ),
-            glm::vec3(1.0f, 0.0f, 0.0f),
+            correct_for_gamma(default_colour),
             glm::vec2(
                 data.texcoords[2 * texel_index    ],
                 data.texcoords[2 * texel_index + 1]
@@ -114,7 +128,7 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     material_collection.insert({ -1, Materials::DefaultMaterial });
     for (size_t i = 0; i < materials.size(); i++) {
         // Store the name and colour as a SimpleTexture
-        Materials::material_t new_material = material_system.create_simple_coloured(materials[i].name, glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2]));
+        Materials::material_t new_material = material_system.create_simple_coloured(materials[i].name, correct_for_gamma(glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2])));
         // Store the material in our own map
         material_collection.insert({ static_cast<int>(i), new_material });
     }
