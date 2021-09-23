@@ -24,15 +24,20 @@ using namespace Makma3D::Rendering;
 
 
 /***** MODELSYSTEM CLASS *****/
-/* Constructor for the MaterialSystem class, which takes a GPU where the pipelines referencing materials created here will live. */
-MaterialSystem::MaterialSystem(const Rendering::GPU& gpu) :
-    gpu(gpu)
+/* Constructor for the MaterialSystem class, which takes a MemoryManager with a GPU where the pipelines referencing materials created here will live. The MemoryManager's pools are used for texture allocation. */
+MaterialSystem::MaterialSystem(Rendering::MemoryManager& memory_manager) :
+    gpu(gpu),
+    texture_system(memory_manager)
 {
     logger.logc(Verbosity::important, MaterialSystem::channel, "Initializing...");
 
     // Add in the default material
     this->material_ids.insert({ DefaultMaterial, { "DefaultMaterial", MaterialType::simple } });
-    this->simple.add(DefaultMaterial, {});
+    MaterialData data{};
+    data.image = nullptr;
+    data.view = nullptr;
+    data.sampler = nullptr;
+    this->simple.add(DefaultMaterial, data);
 
     logger.logc(Verbosity::important, MaterialSystem::channel, "Init success.");
 }
@@ -40,6 +45,9 @@ MaterialSystem::MaterialSystem(const Rendering::GPU& gpu) :
 /* Move constructor for the MaterialSystem. */
 MaterialSystem::MaterialSystem(MaterialSystem&& other) :
     gpu(other.gpu),
+
+    texture_system(std::move(other.texture_system)),
+    textures(std::move(other.textures)),
 
     material_ids(std::move(other.material_ids)),
     simple(std::move(other.simple)),
@@ -79,6 +87,7 @@ material_t MaterialSystem::get_available_id(const char* material_type) const {
 void MaterialSystem::init_layout(Rendering::DescriptorSetLayout& descriptor_set_layout) {
     descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
     descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
+    descriptor_set_layout.add_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT);
     descriptor_set_layout.finalize();
 }
 
@@ -225,21 +234,29 @@ material_t MaterialSystem::create_simple_coloured(const std::string& name, const
     // Simply add a new structure of this type
     MaterialData data{};
     data.vertex.colour = colour;
+    data.image = nullptr;
+    data.view = nullptr;
+    data.sampler = nullptr;
     this->simple_coloured.add(material, data);
 
     // Return the material ID we found
     return material;
 }
 
-/* Adds a new material with the given debug name that uses the simple lighting model with a texture. The texture used is the given one. */
-material_t MaterialSystem::create_simple_textured(const std::string& name, const Textures::Texture& texture) {
-    // Check if a material with this texture already exists
-    for (uint32_t i = 0; i < this->simple_textured.size(); i++) {
-        if (this->simple_textured[i].fragment.sampler == texture.sampler->vulkan()) {
-            // Simply return this material index
-            return this->simple_textured.get_abstract_index(i);
+/* Adds a new material with the given debug name that uses the simple lighting model with a texture. The string used denotes the path of the texture, who's format is automatically deduced if the given format is ::unsupported. */
+material_t MaterialSystem::create_simple_textured(const std::string& name, const std::string& path, Textures::TextureFormat format) {
+    // Check if a material with this name already exists
+    for (const auto& p : this->material_ids) {
+        if (p.second.first == name) {
+            // Simply return its index
+            logger.warningc(MaterialSystem::channel, "Duplicate material name '", name, "', not overwriting.");
+            return p.first;
         }
     }
+
+    // Next, try to load the texture
+    this->textures.push_back(this->texture_system.load_texture(path, Textures::TextureSystem::deduce_format(path)));
+    const Textures::Texture& texture = this->textures.last();
 
     // First, find a valid material ID
     material_t material = this->get_available_id("SimpleTextured");
@@ -248,7 +265,9 @@ material_t MaterialSystem::create_simple_textured(const std::string& name, const
     this->material_ids.insert({ material, { name, MaterialType::simple_textured } });
     // Simply add a new structure of this type
     MaterialData data{};
-    data.fragment.sampler = texture.sampler->vulkan();
+    data.image = texture.image;
+    data.view = texture.view;
+    data.sampler = texture.sampler;
     this->simple_textured.add(material, data);
 
     // Return the material ID we found
@@ -294,6 +313,9 @@ void Materials::swap(MaterialSystem& ms1, MaterialSystem& ms2) {
     #endif
 
     using std::swap;
+
+    swap(ms1.texture_system, ms2.texture_system);
+    swap(ms1.textures, ms2.textures);
 
     swap(ms1.material_ids, ms2.material_ids);
     swap(ms1.simple, ms2.simple);

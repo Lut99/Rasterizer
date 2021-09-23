@@ -241,13 +241,11 @@ int main(int argc, const char** argv) {
         // Initialize the WorldSystem
         World::WorldSystem world_system;
         // Initialize the MaterialSystem
-        Materials::MaterialSystem material_system(window.gpu());
+        Materials::MaterialSystem material_system(memory_manager);
         // Initialize the ModelSystem
         Models::ModelSystem model_system(memory_manager, material_system);
-        // // Initialize the TextureSystem
-        // Textures::TextureSystem texture_system(memory_manager);
         // Initialize the RenderSystem
-        Rendering::RenderSystem render_system(window, memory_manager, material_system, model_system/*, texture_system*/);
+        Rendering::RenderSystem render_system(window, memory_manager, material_system, model_system);
         // Initialize the entity manager
         ECS::EntityManager entity_manager;
 
@@ -297,6 +295,13 @@ int main(int argc, const char** argv) {
         model_system.load_model(entity_manager, obj3, "data/models/watermill.obj", Models::ModelFormat::obj);
         // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);
         logger.log(Verbosity::details, "Watermill is mapped to entity index ", obj3);
+
+        // And the fourth object, also a texture
+        entity_t obj4 = entity_manager.add(ECS::ComponentFlags::transform | ECS::ComponentFlags::model);
+        world_system.set(entity_manager, obj4, { 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 1.0f, 1.0f });
+        model_system.load_model(entity_manager, obj4, "data/models/capsule.obj", Models::ModelFormat::obj);
+        // texture_system.load_texture(entity_manager, obj2, exe_path + "/data/textures/capsule.jpg", Textures::TextureFormat::jpg);
+        logger.log(Verbosity::details, "Capsule is mapped to entity index ", obj4);
 
         // Do the render
         uint32_t fps = 0;

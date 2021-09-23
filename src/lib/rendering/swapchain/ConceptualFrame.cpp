@@ -92,8 +92,9 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
     // Initialize the pool
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing descriptor pool...");
     this->descriptor_pool = new DescriptorPool(this->memory_manager.gpu, {
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }
-    }, 10);
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 }
+    }, 64);
 
     // Initialize the global descriptor set & camera buffer
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing global frame data...");
@@ -265,6 +266,9 @@ void ConceptualFrame::upload_material_data(Materials::material_t material, const
     // Bind the material's buffer to the correct set
     this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->vert_material_buffers[material_index] });
     this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, { this->frag_material_buffers[material_index] });
+    if (material_data.image != nullptr) {
+        this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, { { material_data.view->vulkan(), material_data.image->layout(), material_data.sampler->vulkan() } });
+    }
 }
 
 /* Uploads entity data for the given entity to its buffer and its descriptor set. */

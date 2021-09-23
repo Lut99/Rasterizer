@@ -128,12 +128,13 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     material_collection.insert({ -1, Materials::DefaultMaterial });
     for (size_t i = 0; i < materials.size(); i++) {
         // Determine if it's a texture or not
+        Materials::material_t new_material;
         if (materials[i].diffuse_texname.empty()) {
             // Store the name and colour as a SimpleColoured
-            Materials::material_t new_material = material_system.create_simple_coloured(materials[i].name, correct_for_gamma(glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2])));
+            new_material = material_system.create_simple_coloured(materials[i].name, correct_for_gamma(glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2])));
         } else {
             // It do be a texture, so add it as such
-            /* TBD */
+            new_material = material_system.create_simple_textured(materials[i].name, materials[i].diffuse_texname);
         }
         // Store the material in our own map
         material_collection.insert({ static_cast<int>(i), new_material });

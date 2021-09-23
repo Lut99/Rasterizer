@@ -13,6 +13,8 @@
  *   managing textures for an entity.
 **/
 
+#include <sstream>
+#include "tools/Common.hpp"
 #include "tools/Logger.hpp"
 
 #include "formats/png/PngLoader.hpp"
@@ -22,6 +24,20 @@
 using namespace std;
 using namespace Makma3D;
 using namespace Makma3D::Textures;
+
+
+/***** HELPER FUNCTIONS *****/
+/* Converts given string to lowercase. */
+static std::string tolower(const std::string& s) {
+    std::stringstream sstr;
+    for (uint32_t i = 0; i < s.size(); i++) {
+        sstr << (char) tolower((int) s[i]);
+    }
+    return sstr.str();
+}
+
+
+
 
 
 /***** TEXTURESYSTEM CLASS *****/
@@ -54,21 +70,38 @@ TextureSystem::~TextureSystem() {
 
 
 
+/* Given a string filename/filepath, deduces any of the possible TextureFormats from it. Will throw errors if no such format is found. */
+TextureFormat TextureSystem::deduce_format(const std::string& path) {
+    // Simply look at the end of the string to find the extensions
+    if (path.size() >= 4 && tolower(path.substr(path.size() - 4)) == ".png") {
+        return TextureFormat::png;
+    } else if ((path.size() >= 4 && tolower(path.substr(path.size() - 4)) == ".jpg") || (path.size() >= 5 && tolower(path.substr(path.size() - 5)) == ".jpeg")) {
+        return TextureFormat::jpg;
+    } else {
+        logger.fatalc(TextureSystem::channel, "Could not deduce texture format from path '", path, "'");
+    }
+}
+
+
+
 /* Loads a new texture from the given file with the given format into a Texture struct and returns that. */
-Texture TextureSystem::load_texture(const std::string& path, TextureFormat format = TextureFormat::png) {
+Texture TextureSystem::load_texture(const std::string& path, TextureFormat format) {
+    // Change the given path in a full path
+    std::string fullpath = get_executable_path() + (path.size() > 0 && (path[0] == '/' || path[0] == '\\') ? "" : "/") + path;
+
     // Load the texture according to the given format
     Texture texture{};
     switch (format) {
         case TextureFormat::png:
             // Use the load function from the pngloader
-            logger.logc(Verbosity::details, TextureSystem::channel, "Loading '", path, "' as .png file...");
-            load_png_texture(this->memory_manager, texture, path);
+            logger.logc(Verbosity::details, TextureSystem::channel, "Loading '", fullpath, "' as .png file...");
+            load_png_texture(this->memory_manager, texture, fullpath);
             break;
 
         case TextureFormat::jpg:
             // Use the load function from the jpgloader
-            logger.logc(Verbosity::details, TextureSystem::channel, "Loading '", path, "' as .jpg/.jpeg file...");
-            load_jpg_texture(this->memory_manager, texture, path);
+            logger.logc(Verbosity::details, TextureSystem::channel, "Loading '", fullpath, "' as .jpg/.jpeg file...");
+            load_jpg_texture(this->memory_manager, texture, fullpath);
             break;
 
         default:
@@ -85,6 +118,7 @@ Texture TextureSystem::load_texture(const std::string& path, TextureFormat forma
     texture.sampler = this->sampler_pool.allocate(VK_FILTER_LINEAR, VK_TRUE);
 
     // Done
+    return texture;
 }
 
 /* Destroys the data in the given texture struct. */

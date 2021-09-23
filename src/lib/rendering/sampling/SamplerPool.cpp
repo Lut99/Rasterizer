@@ -92,7 +92,7 @@ SamplerPool::~SamplerPool() {
 
 
 /* Allocates a new Sampler with the given properties. The max anisotropy might be overriden by the hardware if that's lower (which is what happens in the default case). */
-Rendering::Sampler* SamplerPool::allocate(VkFilter filter, VkBool32 enable_anisotropy, float max_anisotropy = INFINITY) {
+Rendering::Sampler* SamplerPool::allocate(VkFilter filter, VkBool32 enable_anisotropy, float max_anisotropy) {
     VkResult vk_result;
 
     // Fetch the maximum allowed anisotropy filter for the chosen device

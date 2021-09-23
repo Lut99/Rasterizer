@@ -50,6 +50,9 @@ namespace Makma3D::Textures {
         /* Destructor for the TextureSystem class. */
         ~TextureSystem();
 
+        /* Given a string filename/filepath, deduces any of the possible TextureFormats from it. Will throw errors if no such format is found. */
+        static TextureFormat deduce_format(const std::string& path);
+
         /* Loads a new texture from the given file with the given format into a Texture struct and returns that. */
         Texture load_texture(const std::string& path, TextureFormat format = TextureFormat::png);
         /* Destroys the data in the given texture struct. */

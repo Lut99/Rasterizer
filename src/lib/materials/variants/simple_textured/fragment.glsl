@@ -23,12 +23,12 @@ layout(location = 0) in vec2 frag_texel;
 layout(location = 0) out vec4 out_color;
 
 // The image sampler for the texture
-layout(set = 1, binding = 1) uniform sampler2D texture_sampler;
+layout(set = 1, binding = 2) uniform sampler2D texture_sampler;
 
 
 
 /* Entry point */
 void main() {
     // Simply pass on
-    out_color = texture(texture_sampler, frag_texel);
+    out_color = texture(texture_sampler, vec2(frag_texel.x, -frag_texel.y));
 }

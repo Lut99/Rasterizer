@@ -1,5 +1,5 @@
 # Specify the libraries in this directory
-add_library(VulkanSampler STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Sampler.cpp)
+add_library(VulkanSampler STATIC ${CMAKE_CURRENT_SOURCE_DIR}/Sampler.cpp ${CMAKE_CURRENT_SOURCE_DIR}/SamplerPool.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(VulkanSampler PUBLIC

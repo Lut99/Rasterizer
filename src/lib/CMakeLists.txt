@@ -1,7 +1,7 @@
 # Add the subdirectories
 add_subdirectory(materials)
 add_subdirectory(models)
-# add_subdirectory(textures)
+add_subdirectory(textures)
 add_subdirectory(window)
 add_subdirectory(rendering)
 add_subdirectory(world)

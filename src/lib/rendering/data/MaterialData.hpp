@@ -19,6 +19,10 @@
 #include <vulkan/vulkan.h>
 #include "glm/glm.hpp"
 
+#include "../memory/Image.hpp"
+#include "../sampling/Sampler.hpp"
+#include "../views/ImageView.hpp"
+
 namespace Makma3D::Rendering {
     /* The MaterialVertexData struct, which carries all data needed for the vertex shader. */
     struct MaterialVertexData {
@@ -28,8 +32,6 @@ namespace Makma3D::Rendering {
     
     /* The MaterialFragmentData struct, which carries all data needed for the fragment shader. */
     struct MaterialFragmentData {
-        /* Pointer to a VkSampler we might sample for textures. */
-        VkSampler sampler;
     };
 
 
@@ -40,6 +42,13 @@ namespace Makma3D::Rendering {
         MaterialVertexData vertex;
         /* The data needed for the fragment shader. */
         MaterialFragmentData fragment;
+
+        /* The texture that a material might have. */
+        Rendering::Image* image;
+        /* The ImageView of the image to use for textures. */
+        Rendering::ImageView* view;
+        /* The sampler we assign for the texture. */
+        Rendering::Sampler* sampler;
     };
 
 }

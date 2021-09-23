@@ -24,9 +24,11 @@
 #include "tools/AssociativeArray.hpp"
 #include "ecs/EntityManager.hpp"
 #include "ecs/components/Model.hpp"
+#include "textures/TextureSystem.hpp"
 #include "textures/Texture.hpp"
 #include "rendering/data/MaterialData.hpp"
 #include "rendering/gpu/GPU.hpp"
+#include "rendering/memory_manager/MemoryManager.hpp"
 #include "rendering/descriptors/DescriptorSetLayout.hpp"
 #include "rendering/shaders/ShaderPool.hpp"
 #include "rendering/pipeline/PipelineConstructor.hpp"
@@ -49,6 +51,11 @@ namespace Makma3D::Materials {
         const Rendering::GPU& gpu;
 
     private:
+        /* The texture system with which we manage the textures. */
+        Textures::TextureSystem texture_system;
+        /* The list of allocated textures. */
+        Tools::Array<Textures::Texture> textures;
+
         /* List of all material IDs in use. */
         std::unordered_map<material_t, std::pair<std::string, MaterialType>> material_ids;
         /* List of materials that use the Simple lighting model, are not textured and have nothing special about them. */
@@ -62,8 +69,8 @@ namespace Makma3D::Materials {
         material_t get_available_id(const char* material_type) const;
 
     public:
-        /* Constructor for the MaterialSystem class, which takes a GPU where the pipelines referencing materials created here will live. */
-        MaterialSystem(const Rendering::GPU& gpu);
+        /* Constructor for the MaterialSystem class, which takes a MemoryManager with a GPU where the pipelines referencing materials created here will live. The MemoryManager's pools are used for texture allocation. */
+        MaterialSystem(Rendering::MemoryManager& memory_manager);
         /* Copy constructor for the MaterialSystem, which is deleted. */
         MaterialSystem(const MaterialSystem& other) = delete;
         /* Move constructor for the MaterialSystem. */
@@ -96,8 +103,8 @@ namespace Makma3D::Materials {
         inline constexpr material_t create_simple() const { return DefaultMaterial; }
         /* Adds a new material with the given debug name that uses the simple lighting model and no textures. The colour given is the colour for the entire object. Returns the ID of the new material. */
         material_t create_simple_coloured(const std::string& name, const glm::vec3& colour);
-        /* Adds a new material with the given debug name that uses the simple lighting model with a texture. The texture used is the given one. */
-        material_t create_simple_textured(const std::string& name, const Textures::Texture& texture);
+        /* Adds a new material with the given debug name that uses the simple lighting model with a texture. The string used denotes the path of the texture, who's format is automatically deduced if the given format is ::unsupported. */
+        material_t create_simple_textured(const std::string& name, const std::string& path, Textures::TextureFormat format = Textures::TextureFormat::unsupported);
         /* Removes the material with the given ID from the system. Throws errors if no such material exists. */
         void remove(material_t material);
 
