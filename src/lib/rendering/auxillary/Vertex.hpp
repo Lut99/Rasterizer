@@ -38,11 +38,6 @@ namespace Makma3D::Rendering {
         /* Constructor for the Vertex struct, which takes the position, colour and texel coordinate. */
         Vertex(const glm::vec3& pos, const glm::vec3& colour, const glm::vec2& texel);
 
-        /* Static function that returns the binding description for the vertex. */
-        static VkVertexInputBindingDescription input_binding_description();
-        /* Static function that returns the attribute descriptions for the vertex. */
-        static Tools::Array<VkVertexInputAttributeDescription> input_attribute_descriptions();
-
     };
 
 }
