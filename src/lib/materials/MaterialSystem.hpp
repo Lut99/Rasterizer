@@ -24,7 +24,7 @@
 #include "tools/AssociativeArray.hpp"
 #include "ecs/EntityManager.hpp"
 #include "ecs/components/Model.hpp"
-#include "textures/TextureSystem.hpp"
+// #include "textures/TextureSystem.hpp"
 #include "textures/Texture.hpp"
 #include "rendering/data/MaterialData.hpp"
 #include "rendering/gpu/GPU.hpp"

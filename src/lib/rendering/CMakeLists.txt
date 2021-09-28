@@ -9,12 +9,10 @@ target_include_directories(RenderSystem PUBLIC
 list(APPEND EXTRA_LIBS RenderSystem)
 
 # Add the subdirectories
-add_subdirectory(sampling)
 add_subdirectory(renderpass)
 add_subdirectory(pipeline)
 add_subdirectory(shaders)
 add_subdirectory(memory_manager)
-add_subdirectory(views)
 add_subdirectory(depthtesting)
 add_subdirectory(commandbuffers)
 add_subdirectory(descriptors)

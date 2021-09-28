@@ -31,7 +31,7 @@ using namespace std;
 using namespace Tools;
 
 
-/***** EXPORTED FUNCTIONS *****/
+/***** LIBRARY FUNCTIONS *****/
 /* Function that returns the path of the folder of the executable. */
 std::string Tools::get_executable_path() {
     #ifdef _WIN32
@@ -71,6 +71,30 @@ std::string Tools::get_executable_path() {
     return result;
 
     #endif
+}
+
+
+
+/* Appends the given string at the end of the given output stringstream as if both were paths (i.e., making sure there's only one slash in between them). */
+std::stringstream& Tools::merge_paths(std::stringstream& left, const std::string& right) {
+    // If right is empty, we can stop right away
+    if (right.empty()) { return left; }
+
+    // Get the last character in the stream
+    char c = '\0';
+    if (left.tellp() > 0) { left.seekg(-1, ios::end); left >> c; }
+
+    // Check if there's already a slash at left's end or right's start
+    if ((c != '/' && c != '\\') &&
+        (right[0] != '/' && right[1] != '\\'))
+    {
+        // Add the slash first
+        left << '/';
+    }
+
+    // Add right, we're done
+    left << right;
+    return left;
 }
 
 

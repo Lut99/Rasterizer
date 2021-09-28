@@ -10,21 +10,21 @@
  *
  * Description:
  *   Function that loads the given file as if it were a file in PNG-format.
- *   Populates the given Texture component.
 **/
 
-#ifndef TEXTURES_PNG_LOADER_HPP
-#define TEXTURES_PNG_LOADER_HPP
+#ifndef MATERIALS_PNG_LOADER_HPP
+#define MATERIALS_PNG_LOADER_HPP
 
 #include <string>
 
+#include "rendering/memory/Image.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
 
 #include "../../Texture.hpp"
 
-namespace Makma3D::Textures {
-    /* Loads the file at the given path as a .png file, and populates the given Texture struct from it. */
-    void load_png_texture(Rendering::MemoryManager& memory_manager, Texture& texture, const std::string& path);
+namespace Makma3D::Materials {
+    /* Loads the file at the given path as a .png file, and returns a populated Image. */
+    Rendering::Image* load_png_texture(Rendering::MemoryManager& memory_manager, const std::string& path);
 
 }
 

@@ -14,12 +14,13 @@
 
 #include <vector>
 #include <unordered_map>
+
 #include "jpgd.h"
 #include "JpgLoader.hpp"
 
 using namespace std;
 using namespace Makma3D;
-using namespace Makma3D::Textures;
+using namespace Makma3D::Materials;
 
 
 /***** MACROS *****/
@@ -81,8 +82,8 @@ static const std::unordered_map<jpgd::jpgd_status, std::string> jpgd_status_name
 
 
 /***** LIBRARY FUNCTIONS *****/
-/* Loads the file at the given path as a .jpg file, and populates the given Texture struct from it. */
-void Textures::load_jpg_texture(Rendering::MemoryManager& memory_manager, Texture& texture, const std::string& path) {
+/* Loads the file at the given path as a .jpg file, and returns a populated Image. */
+Rendering::Image* Materials::load_jpg_texture(Rendering::MemoryManager& memory_manager, const std::string& path) {
     // Try to load the given .pjpg file with the jpgd.h library. Note that we tell it to return as RGBA (the 4).
     int width, height, comps;
     jpgd::jpgd_status status;
@@ -92,11 +93,11 @@ void Textures::load_jpg_texture(Rendering::MemoryManager& memory_manager, Textur
     }
 
     // With the pixels in memory, allocate the Vulkan image
-    texture.extent = VkExtent2D({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
-    texture.image = memory_manager.draw_pool.allocate(texture.extent, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    VkExtent2D texture_extent({ static_cast<uint32_t>(width), static_cast<uint32_t>(height) });
+    Rendering::Image* result = memory_manager.draw_pool.allocate(texture_extent, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
 
     // Allocate a staging buffer
-    VkDeviceSize texture_size = 4 * texture.extent.width * texture.extent.height * sizeof(unsigned char);
+    VkDeviceSize texture_size = 4 * texture_extent.width * texture_extent.height * sizeof(unsigned char);
     Rendering::Buffer* stage = memory_manager.stage_pool.allocate(texture_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     void* stage_mem;
     stage->map(&stage_mem);
@@ -111,10 +112,11 @@ void Textures::load_jpg_texture(Rendering::MemoryManager& memory_manager, Textur
 
     // Copy the stage memory to the image once its in the correct layout
     Rendering::CommandBuffer* draw_cmd = memory_manager.draw_cmd_pool.allocate();
-    stage->copyto(texture.image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, draw_cmd, memory_manager.gpu.queues(Rendering::QueueType::graphics)[0]);
+    stage->copyto(result, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, draw_cmd, memory_manager.gpu.queues(Rendering::QueueType::graphics)[0]);
     memory_manager.draw_cmd_pool.free(draw_cmd);
 
-    // Deallocate the staging buffer
+    // Deallocate the staging buffer and we're done
     memory_manager.stage_pool.free(stage);
+    return result;
 }
 

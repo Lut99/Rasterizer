@@ -15,12 +15,29 @@
 #ifndef TOOLS_COMMON_HPP
 #define TOOLS_COMMON_HPP
 
+#include <sstream>
 #include <string>
+#include <type_traits>
 #include "Array.hpp"
 
 namespace Tools {
     /* Function that returns the path of the folder of the executable. */
     std::string get_executable_path();
+
+    /* Appends the given string at the end of the given stringstream as if both were paths (i.e., making sure there's only one slash in between them). */
+    std::stringstream& merge_paths(std::stringstream& left, const std::string& right);
+    /* Appends the given list of strings at the end of the given stringstream as if all were paths (i.e., making sure there's only one slash in between them). */
+    template <class... Ts>
+    inline std::stringstream& merge_paths(std::stringstream& left, const std::string& right, Ts... args) {
+        // Simply call the base case to merge the first two, then continue
+        return merge_paths(merge_paths(left, right), args...);
+    }
+    /* Appends the given list of strings at the end of the first one as if all were paths (i.e., making sure there's only one slash in between them). */
+    template <class... Ts>
+    inline std::string merge_paths(const std::string& left, const std::string& right, Ts... args) {
+        // Simply call the base case to merge the first two, then continue
+        return ((std::stringstream&) merge_paths(merge_paths(std::stringstream(left), right), args...)).str();
+    }
 
     /* Given a char, returns a readable string representation of it. */
     const char* readable_char(char c);

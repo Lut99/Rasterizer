@@ -12,18 +12,19 @@
  *   Function that loads the given file as if it were a .jpg picture.
 **/
 
-#ifndef TEXTURES_JPG_LOADER_HPP
-#define TEXTURES_JPG_LOADER_HPP
+#ifndef MATERIALS_JPG_LOADER_HPP
+#define MATERIALS_JPG_LOADER_HPP
 
 #include <string>
 
+#include "rendering/memory/Image.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
 
 #include "../../Texture.hpp"
 
-namespace Makma3D::Textures {
-    /* Loads the file at the given path as a .jpg file, and populates the given Texture struct from it. */
-    void load_jpg_texture(Rendering::MemoryManager& memory_manager, Texture& texture, const std::string& path);
+namespace Makma3D::Materials {
+    /* Loads the file at the given path as a .jpg file, and returns a populated Image. */
+    Rendering::Image* load_jpg_texture(Rendering::MemoryManager& memory_manager, const std::string& path);
 
 }
 

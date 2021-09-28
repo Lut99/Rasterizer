@@ -1,5 +1,5 @@
 # Add the RenderEngine itself
-add_library(TextureSystem STATIC ${CMAKE_CURRENT_SOURCE_DIR}/TextureSystem.cpp)
+add_library(TextureSystem STATIC ${CMAKE_CURRENT_SOURCE_DIR}/TextureSystem.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Texture.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(TextureSystem PUBLIC
