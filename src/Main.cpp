@@ -53,7 +53,7 @@ struct Options {
 
     /* Default constructor for the Options class, which sets everything to default. */
     Options() :
-        local_memory_size(1024 * 1024 * 1024),
+        local_memory_size(100 * 1024 * 1024),
         visible_memory_size(100 * 1024 * 1024)
     {}
 };
