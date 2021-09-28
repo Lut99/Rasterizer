@@ -98,8 +98,10 @@ add_custom_target(export
                   # Copy the necessary models/materials/textures
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/models/viking_room.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/viking_room.obj
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/textures/viking_room.png ${PROJECT_SOURCE_DIR}/export/rasterizer/data/textures/viking_room.png
+                  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/materials/viking_room.mtl ${PROJECT_SOURCE_DIR}/export/rasterizer/data/materials/viking_room.mtl
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/models/capsule.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/capsule.obj
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/textures/capsule.jpg ${PROJECT_SOURCE_DIR}/export/rasterizer/data/textures/capsule.jpg
+                  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/materials/capsule.mtl ${PROJECT_SOURCE_DIR}/export/rasterizer/data/materials/capsule.mtl
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/models/watermill.obj ${PROJECT_SOURCE_DIR}/export/rasterizer/data/models/watermill.obj
                   COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_SOURCE_DIR}/bin/data/materials/watermill.mtl ${PROJECT_SOURCE_DIR}/export/rasterizer/data/materials/watermill.mtl
                   )
