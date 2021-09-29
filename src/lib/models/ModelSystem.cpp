@@ -33,10 +33,10 @@ using namespace Makma3D::Models;
 
 
 /***** MODELMANAGER CLASS *****/
-/* Constructor for the ModelSystem class, which takes a MemoryManager struct for the required memory pools and a material system to possibly define new materials found in, for example, .obj files. */
-ModelSystem::ModelSystem(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system) :
+/* Constructor for the ModelSystem class, which takes a MemoryManager struct for the required memory pools and a material pool to possibly define new materials found in, for example, .obj files. */
+ModelSystem::ModelSystem(Rendering::MemoryManager& memory_manager, Materials::MaterialPool& material_pool) :
     memory_manager(memory_manager),
-    material_system(material_system)
+    material_pool(material_pool)
 {
     logger.logc(Verbosity::important, ModelSystem::channel, "Initializing...");
 
@@ -48,7 +48,7 @@ ModelSystem::ModelSystem(Rendering::MemoryManager& memory_manager, Materials::Ma
 /* Copy constructor for the ModelSystem class. */
 ModelSystem::ModelSystem(const ModelSystem& other) :
     memory_manager(other.memory_manager),
-    material_system(other.material_system)
+    material_pool(other.material_pool)
 {
     logger.logc(Verbosity::debug, ModelSystem::channel, "Copying ModelSystem @ ", &other, "...");
 
@@ -60,7 +60,7 @@ ModelSystem::ModelSystem(const ModelSystem& other) :
 /* Move constructor for the ModelSystem class. */
 ModelSystem::ModelSystem(ModelSystem&& other) :
     memory_manager(other.memory_manager),
-    material_system(other.material_system)
+    material_pool(other.material_pool)
 {}
 
 /* Destructor for the ModelSystem class. */
@@ -89,7 +89,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
         case ModelFormat::obj:
             // Use the load function from the modelloader
             logger.logc(Verbosity::details, ModelSystem::channel, "Loading '", real_path, "' as .obj file...");
-            load_obj_model(this->memory_manager, this->material_system, model, real_path);
+            load_obj_model(this->memory_manager, this->material_pool, model, real_path);
             break;
 
         case ModelFormat::triangle: {
@@ -118,9 +118,9 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             model.meshes.push_back({});
             Mesh& mesh = model.meshes[0];
             mesh.name = "triangle";
-            mesh.indices = { this->memory_manager.draw_pool.allocate(n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT) };
-            mesh.n_indices = { n_indices };
-            mesh.materials = { Materials::DefaultMaterial };
+            mesh.indices = this->memory_manager.draw_pool.allocate(n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.n_indices = n_indices;
+            mesh.material = this->material_pool.default();
 
             // Populate its indices
             Rendering::index_t* istage_memory = (Rendering::index_t*) stage_memory;
@@ -128,7 +128,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             istage_memory[1] = 1;
             istage_memory[2] = 2;
             stage_buffer->flush(n_indices * sizeof(Rendering::index_t));
-            stage_buffer->copyto(mesh.indices[0], n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
+            stage_buffer->copyto(mesh.indices, n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
 
             // Deallocate the stage buffer and update the index count
             stage_buffer->unmap();
@@ -165,9 +165,9 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             model.meshes.push_back({});
             Mesh& mesh = model.meshes[0];
             mesh.name = "square";
-            mesh.indices = { this->memory_manager.draw_pool.allocate(n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT) };
-            mesh.n_indices = { n_indices };
-            mesh.materials = { Materials::DefaultMaterial };
+            mesh.indices = this->memory_manager.draw_pool.allocate(n_indices * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT  | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.n_indices =  n_indices;
+            mesh.material = this->material_pool.default();
 
             // Populate its indices
             Rendering::index_t* istage_memory = (Rendering::index_t*) stage_memory;
@@ -178,7 +178,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
             istage_memory[4] = 3;
             istage_memory[5] = 0;
             stage_buffer->flush(n_indices * sizeof(Rendering::index_t));
-            stage_buffer->copyto(mesh.indices[0], n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
+            stage_buffer->copyto(mesh.indices, n_indices * sizeof(Rendering::index_t), 0, 0, this->memory_manager.copy_cmd);
 
             // Deallocate the stage buffer and update the index count
             stage_buffer->unmap();
@@ -226,30 +226,12 @@ void ModelSystem::unload_model(ECS::EntityManager& entity_manager, entity_t enti
     ECS::Model& model = entity_manager.get_component<ECS::Model>(entity);
     this->memory_manager.draw_pool.free(model.vertices);
 
-    // Try to get the entity's meshes and loop through them to delete the index arrays
+    // Loop through the model's meshes to delete the index buffers
     for (uint32_t i = 0; i < model.meshes.size(); i++) {
-        for (uint32_t j = 0; j < model.meshes[i].indices.size(); j++) {
-            this->memory_manager.draw_pool.free(model.meshes[i].indices[j]);
-        }
+        this->memory_manager.draw_pool.free(model.meshes[i].indices);
     }
-
     // Clear the list of meshes
     model.meshes.clear();
-}
-
-
-
-/* Binds the global vertex buffer part of the given Model to the given draw command queue. */
-void ModelSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Model& model) const {
-    // Bind the vertex buffer
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(draw_cmd->vulkan(), 0, 1, &model.vertices->vulkan(), offsets);
-}
-
-/* Binds the given per-mesh index buffer part of the given Mesh to the given draw command queue. */
-void ModelSystem::schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& mesh, uint32_t index_buffer_index) const {
-    // Bind the index buffer
-    vkCmdBindIndexBuffer(draw_cmd->vulkan(), mesh.indices[index_buffer_index]->vulkan(), 0, VK_INDEX_TYPE_UINT32);
 }
 
 
@@ -259,7 +241,7 @@ void Models::swap(ModelSystem& mm1, ModelSystem& mm2) {
     #ifndef NDEBUG
     // Make sure the all pools overlap
     if (&mm1.memory_manager != &mm2.memory_manager) { logger.fatal("Cannot swap model managers with different memory managers"); }
-    if (&mm1.material_system != &mm2.material_system) { logger.fatal("Cannot swap model managers with different material systems"); }
+    if (&mm1.material_pool != &mm2.material_pool) { logger.fatal("Cannot swap model managers with different material pools"); }
     #endif
 
     // Otherwise, swap all elements

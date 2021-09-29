@@ -19,6 +19,9 @@
 #include "tools/Array.hpp"
 #include "ecs/components/Model.hpp"
 #include "models/ModelSystem.hpp"
+#include "materials/variants/simple/Simple.hpp"
+#include "materials/variants/simple_coloured/SimpleColoured.hpp"
+#include "materials/variants/simple_textured/SimpleTextured.hpp"
 
 #include "../data/MaterialData.hpp"
 #include "../data/EntityData.hpp"
@@ -74,13 +77,11 @@ namespace Makma3D::Rendering {
         Rendering::Buffer* camera_buffer;
         
         /* Maps material IDs to material indices into the arrays. */
-        std::unordered_map<Materials::material_t, uint32_t> material_index_map;
+        std::unordered_map<const Materials::Material*, uint32_t> material_index_map;
         /* Descriptors for all materials drawn with this buffer. */
         Tools::Array<Rendering::DescriptorSet*> material_sets;
-        /* Vertex-stage buffers for all materials. */
-        Tools::Array<Rendering::Buffer*> vert_material_buffers;
-        /* Fragment-stage buffers for all materials. */
-        Tools::Array<Rendering::Buffer*> frag_material_buffers;
+        /* Buffers for all materials. */
+        Tools::Array<Rendering::Buffer*> material_buffers;
 
         /* Maps entity IDs to entity indices into the arrays. */
         std::unordered_map<ECS::entity_t, uint32_t> entity_index_map;
@@ -111,8 +112,8 @@ namespace Makma3D::Rendering {
 
         /* Populates the internal camera buffer with the given projection and view matrices. */
         void upload_camera_data(const glm::mat4& proj_matrix, const glm::mat4& view_matrix);
-        /* Uploads the material data for the given material index and its descriptor set. */
-        void upload_material_data(Materials::material_t material, const Rendering::MaterialData& material_data);
+        /* Uploads the given material to the GPU. What precisely will be uploaded is, of course, material dependent. */
+        void upload_material_data(const Materials::Material* material);
         /* Uploads entity data for the given entity to its buffer and its descriptor set. */
         void upload_entity_data(ECS::entity_t entity, const Rendering::EntityData& entity_data);
 
@@ -122,8 +123,8 @@ namespace Makma3D::Rendering {
         void schedule_pipeline(const Rendering::Pipeline* pipeline);
         /* Schedules frame-global descriptors on the internal draw queue (i.e., binds the camera data and the global descriptor). */
         void schedule_global();
-        /* Schedules the stuff for a material. */
-        void schedule_material(Materials::material_t material);
+        /* Schedules the stuff for the given material. Does have to have its data uploaded first, of course. */
+        void schedule_material(const Materials::Material* material);
         /* Schedules the given entity's descriptor set on the internal draw queue. */
         void schedule_entity(ECS::entity_t entity);
         /* Binds the given vertex buffer to the internal draw queue. */

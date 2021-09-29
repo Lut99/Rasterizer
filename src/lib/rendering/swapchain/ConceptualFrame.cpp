@@ -82,7 +82,7 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
 
     // Initialize the stage buffer
     // logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
-    this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(MaterialVertexData), sizeof(MaterialFragmentData), sizeof(EntityData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(SimpleColouredData), sizeof(EntityData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     logger.logc(Verbosity::debug, ConceptualFrame::channel, "Allocated stage buffer @ ", this->stage_buffer->offset());
 
     // Initialize the commandbuffer
@@ -124,8 +124,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
 
     material_index_map(std::move(other.material_index_map)),
     material_sets(std::move(other.material_sets)),
-    vert_material_buffers(std::move(other.vert_material_buffers)),
-    frag_material_buffers(std::move(other.frag_material_buffers)),
+    material_buffers(std::move(other.material_buffers)),
 
     entity_index_map(std::move(other.entity_index_map)),
     entity_sets(std::move(other.entity_sets)),
@@ -155,11 +154,10 @@ ConceptualFrame::~ConceptualFrame() {
             this->memory_manager.draw_pool.free(this->entity_buffers[i]);
         }
     }
-    if (this->vert_material_buffers.size() > 0) {
+    if (this->material_buffers.size() > 0) {
         // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning material buffers...");
-        for (uint32_t i = 0; i < this->vert_material_buffers.size(); i++) {
-            this->memory_manager.draw_pool.free(this->vert_material_buffers[i]);
-            this->memory_manager.draw_pool.free(this->frag_material_buffers[i]);
+        for (uint32_t i = 0; i < this->material_buffers.size(); i++) {
+            this->memory_manager.draw_pool.free(this->material_buffers[i]);
         }
     }
     if (this->camera_buffer != nullptr) {
@@ -242,6 +240,44 @@ void ConceptualFrame::upload_camera_data(const glm::mat4& proj_matrix, const glm
     this->camera_buffer->set((void*) &data, sizeof(CameraData), this->stage_buffer, this->memory_manager.copy_cmd);
     // Add the camera to the descriptor
     this->global_set->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->camera_buffer });
+}
+
+/* Uploads the given material to the GPU. What precisely will be uploaded is, of course, material dependent. */
+void ConceptualFrame::upload_material_data(const Materials::Material* material) {
+    // Map the material in the internal index map
+    std::unordered_map<const Materials::Material*, uint32_t>::iterator iter = this->material_index_map.find((const Materials::Material*) material);
+    if (iter == this->material_index_map.end()) {
+        iter = this->material_index_map.insert({ (const Materials::Material*) material, static_cast<uint32_t>(this->material_index_map.size()) }).first;
+    }
+    uint32_t material_index = (*iter).second;
+
+    #ifndef NDEBUG
+    // Throw errors if out-of-range
+    if (material_index > this->vert_material_buffers.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->vert_material_buffers.size(), " materials)");
+    }
+    #endif
+
+    // Select what to upload based on the given material
+    switch (material->type()) {
+        case Materials::MaterialType::simple:
+            // Upload nothing
+            break;
+        
+        case Materials::MaterialType::simple_coloured:
+            // Upload the SimpleColoured data
+
+        
+        case Materials::MaterialType::simple_textured:
+            // Schedule the texture's sampler
+
+        
+        default:
+            logger.fatalc(ConceptualFrame::channel, "Unsupported material type '", Materials::material_type_names[(int) material->type()], "'");
+
+    }
+
+    // Done with uploading
 }
 
 /* Uploads the material data for the given material index and its descriptor set. */
@@ -449,8 +485,7 @@ void Rendering::swap(ConceptualFrame& cf1, ConceptualFrame& cf2) {
 
     swap(cf1.material_index_map, cf2.material_index_map);
     swap(cf1.material_sets, cf2.material_sets);
-    swap(cf1.vert_material_buffers, cf2.vert_material_buffers);
-    swap(cf1.frag_material_buffers, cf2.frag_material_buffers);
+    swap(cf1.material_buffers, cf2.material_buffers);
 
     swap(cf1.entity_index_map, cf2.entity_index_map);
     swap(cf1.entity_sets, cf2.entity_sets);

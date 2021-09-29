@@ -5,4 +5,3 @@ add_subdirectory(simple_textured)
 
 # Carry the list to the parent scope
 set(EXTRA_LIBS "${EXTRA_LIBS}" PARENT_SCOPE)
-set(EXTRA_TARGETS "${EXTRA_TARGETS}" PARENT_SCOPE)

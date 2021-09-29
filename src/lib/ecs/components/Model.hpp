@@ -20,18 +20,18 @@
 
 #include "tools/Typenames.hpp"
 #include "tools/Array.hpp"
-#include "materials/Material.hpp"
 #include "rendering/memory/Buffer.hpp"
+#include "materials/Material.hpp"
 
 namespace Makma3D::ECS {
     /* Helper struct for the Model component, which contains data about a single mesh for the Model. */
     struct Mesh {
-        /* List of per-material indices to render. */
-        Tools::Array<Rendering::Buffer*> indices;
-        /* The number of indices per buffer to render. */
-        Tools::Array<uint32_t> n_indices;
-        /* The material for each buffer. */
-        Tools::Array<Materials::material_t> materials;
+        /* List of indices to render for this mesh. */
+        const Rendering::Buffer* indices;
+        /* The number of indices to render. */
+        uint32_t n_indices;
+        /* The material for this mesh. */
+        const Materials::Material* material;
 
         /* Name for this Mesh (only used for debugging). */
         std::string name;
@@ -50,6 +50,9 @@ namespace Makma3D::ECS {
         /* The list of meshes for this entity. */
         Tools::Array<Mesh> meshes;
 
+        /* Name for this Model (only used for debugging). */
+        std::string name;
+
     };
 
 }
@@ -57,6 +60,8 @@ namespace Makma3D::ECS {
 
 
 namespace Tools {
+    /* The string name of the Mesh struct. */
+    template <> inline constexpr const char* type_name<Makma3D::ECS::Mesh>() { return "ECS::Mesh"; }
     /* The string name of the Model component. */
     template <> inline constexpr const char* type_name<Makma3D::ECS::Model>() { return "ECS::Model"; }
 }

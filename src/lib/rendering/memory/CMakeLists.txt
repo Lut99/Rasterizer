@@ -8,5 +8,8 @@ target_include_directories(VulkanMemory PUBLIC
 # Add it to the list of includes & linked libraries
 list(APPEND EXTRA_LIBS VulkanMemory)
 
+# Add sub directories
+add_subdirectory(allocators)
+
 # Carry the list to the parent scope
 set(EXTRA_LIBS "${EXTRA_LIBS}" PARENT_SCOPE)

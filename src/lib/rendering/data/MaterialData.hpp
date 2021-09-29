@@ -9,7 +9,7 @@
  *   Yes
  *
  * Description:
- *   Contains a struct for carrying material-related data to and from the
+ *   Contains structs for carrying material-related data to and from the
  *   GPU.
 **/
 
@@ -19,36 +19,11 @@
 #include <vulkan/vulkan.h>
 #include "glm/glm.hpp"
 
-#include "../memory/Image.hpp"
-#include "../sampling/Sampler.hpp"
-#include "../views/ImageView.hpp"
-
 namespace Makma3D::Rendering {
-    /* The MaterialVertexData struct, which carries all data needed for the vertex shader. */
-    struct MaterialVertexData {
-        /* The colour of this Material. */
+    /* GPU data carrier for the SimpleColoured class. */
+    struct SimpleColouredData {
+        /* The colour of the material. */
         glm::vec3 colour;
-    };
-    
-    /* The MaterialFragmentData struct, which carries all data needed for the fragment shader. */
-    struct MaterialFragmentData {
-    };
-
-
-
-    /* The MaterialData struct, which is used to carry material-specific data to the GPU. */
-    struct MaterialData {
-        /* The data needed for the vertex shader. */
-        MaterialVertexData vertex;
-        /* The data needed for the fragment shader. */
-        MaterialFragmentData fragment;
-
-        /* The texture that a material might have. */
-        Rendering::Image* image;
-        /* The ImageView of the image to use for textures. */
-        Rendering::ImageView* view;
-        /* The sampler we assign for the texture. */
-        Rendering::Sampler* sampler;
     };
 
 }

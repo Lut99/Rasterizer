@@ -22,7 +22,7 @@
 
 #include "ecs/EntityManager.hpp"
 #include "ecs/components/Model.hpp"
-#include "materials/MaterialSystem.hpp"
+#include "materials/MaterialPool.hpp"
 #include "rendering/memory_manager/MemoryManager.hpp"
 #include "rendering/commandbuffers/CommandBuffer.hpp"
 #include "ModelFormat.hpp"
@@ -36,12 +36,12 @@ namespace Makma3D::Models {
 
         /* Reference to the memory manager that contains the pools we need. */
         Rendering::MemoryManager& memory_manager;
-        /* Reference to the MaterialSystem which we use to load new materials with. */
-        Materials::MaterialSystem& material_system;
+        /* Reference to the MaterialPool which we use to load new materials with. */
+        Materials::MaterialPool& material_pool;
 
     public:
-        /* Constructor for the ModelSystem class, which takes a MemoryManager struct for the required memory pools and a material system to possibly define new materials found in, for example, .obj files. */
-        ModelSystem(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system);
+        /* Constructor for the ModelSystem class, which takes a MemoryManager struct for the required memory pools and a material pool to possibly define new materials found in, for example, .obj files. */
+        ModelSystem(Rendering::MemoryManager& memory_manager, Materials::MaterialPool& material_pool);
         /* Copy constructor for the ModelSystem class. */
         ModelSystem(const ModelSystem& other);
         /* Move constructor for the ModelSystem class. */
@@ -53,11 +53,6 @@ namespace Makma3D::Models {
         void load_model(ECS::EntityManager& entity_manager, entity_t entity, const std::string& path, ModelFormat format = ModelFormat::obj);
         /* Unloads the model belonging to the given entity in the given entity manager. */
         void unload_model(ECS::EntityManager& entity_manager, entity_t entity);
-
-        /* Binds the global vertex buffer part of the given Model to the given draw command queue. */
-        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Model& model) const;
-        /* Binds the given per-mesh index buffer part of the given Mesh to the given draw command queue. */
-        void schedule(const Rendering::CommandBuffer* draw_cmd, const ECS::Mesh& mesh, uint32_t index_buffer_index) const;
 
         /* Copy assignment operator for the ModelSystem class. */
         inline ModelSystem& operator=(const ModelSystem& other) { return *this = ModelSystem(other); }

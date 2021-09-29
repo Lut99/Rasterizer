@@ -30,7 +30,7 @@
 
 #include "world/WorldSystem.hpp"
 
-#include "materials/MaterialSystem.hpp"
+// #include "materials/MaterialSystem.hpp"
 #include "models/ModelSystem.hpp"
 // #include "textures/TextureSystem.hpp"
 

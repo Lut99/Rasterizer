@@ -100,8 +100,8 @@ static Rendering::index_t store_vertex(Tools::Array<Rendering::Vertex>& vertices
 
 
 /***** LIBRARY FUNCTIONS *****/
-/* Loads the file at the given path as a .obj file, and populates the given model data from it. Uses the assimp library for most of the work. */
-void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials::MaterialSystem& material_system, ECS::Model& model, const std::string& path) {
+/* Loads the file at the given path as a .obj file, and populates the given model data from it. Uses the tinyobjloader library for most of the work. */
+void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials::MaterialPool& material_pool, ECS::Model& model, const std::string& path) {
     // Load the model
     tinyobj::attrib_t data;
     std::vector<tinyobj::shape_t> shapes;
@@ -109,7 +109,17 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     std::string error;
     if (tinyobj::LoadObj(&data, &shapes, &materials, &error, path.c_str(), (get_executable_path() + "/data/materials/").c_str()) != true) {
         // Show the error
-        logger.fatalc(channel, "Could not parse input file '", path, "' as .obj file: ", error);
+        logger.errorc(channel, "Could not parse input file '", path, "' as .obj file:");
+        std::stringstream sstr;
+        for (size_t i = 0; i < error.size(); i++) {
+            if (error[i] == '\n') {
+                logger.errorc(channel, sstr.str());
+                sstr.str("");
+            } else {
+                sstr << error[i];
+            }
+        }
+        logger.fatalc(channel, "Cannot continue.");
     }
     if (!error.empty()) {
         std::stringstream sstr;
@@ -123,33 +133,32 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
         }
     }
 
-    // Create the materials we parsed, if any, and map them to the local material indices. We always map the default material to -1 to indicate no material given.
-    std::unordered_map<int, Materials::material_t> material_collection;
-    material_collection.insert({ -1, Materials::DefaultMaterial });
+
+
+    // From the parsed materials, allocate space in the Pool for them and map them in a local map
+    std::unordered_map<int, const Materials::Material*> material_map = { { -1, material_pool.default() } };
     for (size_t i = 0; i < materials.size(); i++) {
-        // Determine if it's a texture or not
-        Materials::material_t new_material;
+        // Determine if the material is a texture or not
+        const Materials::Material* new_material;
         if (materials[i].diffuse_texname.empty()) {
-            // Store the name and colour as a SimpleColoured
-            new_material = material_system.create_simple_coloured(materials[i].name, correct_for_gamma(glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2])));
+            new_material = material_pool.allocate_simple_coloured(materials[i].name, correct_for_gamma(glm::vec3(materials[i].diffuse[0], materials[i].diffuse[1], materials[i].diffuse[2])));
         } else {
-            // It do be a texture, so add it as such
-            new_material = material_system.create_simple_textured(materials[i].name, materials[i].diffuse_texname);
+            new_material = material_pool.allocate_simple_textured(materials[i].name, materials[i].diffuse_texname, VK_FILTER_LINEAR, VK_TRUE);
         }
+
         // Store the material in our own map
-        material_collection.insert({ static_cast<int>(i), new_material });
+        material_map.insert({ static_cast<int>(i), new_material });        
     }
 
+
+
     // Go through the meshes to collect the data
+    model.meshes.reserve_opt(16);
     Tools::Array<Rendering::Vertex> vertices(16);
     std::unordered_map<glm::uvec3, uint32_t> vertex_map;
-    std::unordered_map<Materials::material_t, Tools::Array<Rendering::index_t>> mesh_indices;
+    std::unordered_map<int, Tools::Array<Rendering::index_t>> cpu_index_lists;
     for (size_t i = 0; i < shapes.size(); i++) {
-        // Each shape is what we call a mesh, so initialize it with the correct name and the material index for this mesh
-        ECS::Mesh mesh{};
-        mesh.name = shapes[i].name;
-
-        // Populate the lists of indices CPU-side
+        // Populate the lists of indices CPU-side, sorting them by material
         uint32_t largest_list_size = 0;
         for (size_t j = 0; j < shapes[i].mesh.indices.size(); j++) {
             // Find a unique vector/normal/texel pair from the coordinates and map it to our indices
@@ -157,45 +166,57 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
             Rendering::index_t index = store_vertex(vertices, vertex_map, data, obj_indices.vertex_index, obj_indices.normal_index, obj_indices.texcoord_index);
 
             // Find the correct list of indices to add it to (depending on the mesh)
-            Materials::material_t face_material = material_collection.at(shapes[i].mesh.material_ids[j / 3]);
-            std::unordered_map<Materials::material_t, Tools::Array<Rendering::index_t>>::iterator iter = mesh_indices.find(face_material);
-            if (iter == mesh_indices.end()) {
-                iter = mesh_indices.insert({ face_material, Tools::Array<Rendering::index_t>(16) }).first;
+            int material_id = shapes[i].mesh.material_ids[j / 3];
+            std::unordered_map<int, Tools::Array<Rendering::index_t>>::iterator iter = cpu_index_lists.find(material_id);
+            if (iter == cpu_index_lists.end()) {
+                iter = cpu_index_lists.insert({ material_id, Tools::Array<Rendering::index_t>(16) }).first;
             }
 
-            // Insert the engine's index into the mesh's list
+            // Insert our index into the mesh's list
             while ((*iter).second.size() >= (*iter).second.capacity()) { (*iter).second.reserve(2 * (*iter).second.capacity()); }
             (*iter).second.push_back(index);
+
             // Also keep track of the largest list for the stage buffer
             if ((*iter).second.size() > largest_list_size) { largest_list_size = (*iter).second.size(); }
         }
 
-        // Next, populate a stage buffer to send the lists to the GPU
+        // Next, allocate a staging buffer with enough space for all buffers (but not at the same time)
         Rendering::Buffer* stage = memory_manager.stage_pool.allocate(largest_list_size * sizeof(Rendering::index_t), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
         void* stage_map; stage->map(&stage_map);
 
-        // Now loop through all the index lists to transfer them, after which we add them to the mesh with their size and material type
-        for (const auto& [ material, indices ] : mesh_indices) {
-            // Allocate a new buffer for this in the mesh
-            mesh.indices.push_back(memory_manager.draw_pool.allocate(indices.size() * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-            mesh.n_indices.push_back(indices.size());
-            mesh.materials.push_back(material);
+        // With the list of material-sorted indices, create a new Mesh each
+        for (const auto& [ material_id, cpu_indices ] : cpu_index_lists) {
+            // Fetch the appropriate material
+            const Materials::Material* material = material_map.at(material_id);
 
-            // Use the stage buffer to transfer the CPU-side list to the newly allocated GPU-side one
-            memcpy(stage_map, indices.rdata(), indices.size() * sizeof(Rendering::index_t));
+            // Create the mesh
+            ECS::Mesh mesh{};
+            mesh.name = cpu_index_lists.size() == 1 ? shapes[i].name : shapes[i].name + ' ' + material->name();
+            mesh.material = material;
+
+            // Create the buffer for this mesh
+            mesh.indices = memory_manager.draw_pool.allocate(cpu_indices.size() * sizeof(Rendering::index_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            mesh.n_indices = cpu_indices.size();
+
+            // Populate the buffer with the staging buffer
+            memcpy(stage_map, (void*) cpu_indices.rdata(), cpu_indices.size() * sizeof(Rendering::index_t));
             stage->flush();
-            stage->copyto(mesh.indices.last(), indices.size() * sizeof(Rendering::index_t), 0, 0, memory_manager.copy_cmd);
+            stage->copyto(mesh.indices, cpu_indices.size() * sizeof(Rendering::index_t), 0, 0, memory_manager.copy_cmd);
+
+            // Add the Mesh to the model before we're done
+            while (model.meshes.size() >= model.meshes.capacity()) { model.meshes.reserve(2 * model.meshes.capacity()); }
+            model.meshes.push_back(std::move(mesh));
         }
 
         // We can free the stage buffer again
         stage->unmap();
         memory_manager.stage_pool.free(stage);
 
-        // The mesh is now complete, so add it to the model
-        model.meshes.push_back(std::move(mesh));
-        // Do reset the mesh indices to re-use that memory
-        mesh_indices.clear();
+        // Reset the necessary buffers to re-use them next iteration
+        cpu_index_lists.clear();
     }
+
+
 
     // With a global collection of vertices complete, it's time to send them to the GPU
     model.n_vertices = vertices.size();
@@ -208,4 +229,5 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     memory_manager.stage_pool.free(stage);
 
     // And with that, we've loaded the model
+    model.name = path;
 }
