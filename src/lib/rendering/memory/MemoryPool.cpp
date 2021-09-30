@@ -166,8 +166,6 @@ static uint32_t select_memory(const Rendering::GPU& gpu, VkMemoryPropertyFlags m
 MemoryPool::MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemoryPropertyFlags memory_properties, VkBufferUsageFlags buffer_usage, VkImageUsageFlags image_usage) :
     gpu(gpu),
 
-    free_list(pool_size),
-
     vk_properties(memory_properties)
 {
     logger.logc(Verbosity::important, MemoryPool::channel, "Initializing...");
@@ -194,9 +192,9 @@ MemoryPool::MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemo
     this->memory_type = select_memory(gpu, memory_properties, buffer_usage, image_usage);
 
     // Prepare a create info for the device memory we'll allocate
-    logger.logc(Verbosity::details, MemoryPool::channel, "Allocating ", Tools::bytes_to_string(this->free_list.capacity()),  " on device '", gpu.name(), "'...");
+    logger.logc(Verbosity::details, MemoryPool::channel, "Allocating ", Tools::bytes_to_string(pool_size),  " on device '", gpu.name(), "'...");
     VkMemoryAllocateInfo allocate_info;
-    populate_allocate_info(allocate_info, memory_type, this->free_list.capacity());
+    populate_allocate_info(allocate_info, memory_type, pool_size);
 
     // Do the allocation
     VkResult vk_result;
@@ -208,37 +206,12 @@ MemoryPool::MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemo
     logger.logc(Verbosity::important, MemoryPool::channel, "Init success.");
 }
 
-/* Copy constructor for the MemoryPool class. */
-MemoryPool::MemoryPool(const MemoryPool& other) :
-    gpu(other.gpu),
-
-    memory_type(other.memory_type),
-    free_list(other.free_list.capacity()),
-
-    vk_properties(other.vk_properties)
-{
-    logger.logc(Verbosity::debug, MemoryPool::channel, "Copying...");
-
-    // We already know the memory type and size, so go directly to allocating a new pool
-    VkMemoryAllocateInfo allocate_info;
-    populate_allocate_info(allocate_info, memory_type, this->free_list.capacity());
-
-    // Do the allocation
-    VkResult vk_result;
-    if ((vk_result = vkAllocateMemory(this->gpu, &allocate_info, nullptr, &this->vk_memory)) != VK_SUCCESS) {
-        logger.fatalc(MemoryPool::channel,"Could not allocate memory on device: ", vk_error_map[vk_result]);
-    }
-
-    logger.logc(Verbosity::debug, MemoryPool::channel, "Copy success.");
-}
-
 /* Move constructor for the MemoryPool class. */
 MemoryPool::MemoryPool(MemoryPool&& other) :
     gpu(other.gpu),
 
     memory_type(other.memory_type),
     vk_memory(other.vk_memory),
-    free_list(std::move(other.free_list)),
 
     vk_properties(other.vk_properties),
 
@@ -272,19 +245,6 @@ MemoryPool::~MemoryPool() {
     }
 
     logger.logc(Verbosity::important, MemoryPool::channel, "Cleaned.");
-}
-
-
-
-/* Private helper function that does the actual memory allocation part. */
-VkDeviceSize MemoryPool::_allocate(const VkMemoryRequirements& requirements) {
-    // Try to reserve memory in the freelist
-    freelist_size_t offset = this->free_list.reserve(requirements.size, requirements.alignment);
-    if (offset == std::numeric_limits<freelist_size_t>::max()) { logger.fatalc(MemoryPool::channel, "Could not allocate new memory object: not enough space left in pool (need ", Tools::bytes_to_string(requirements.size), ", but ", Tools::bytes_to_string(this->free_list.capacity() - this->free_list.size()), " free)"); }
-    else if (offset == std::numeric_limits<freelist_size_t>::max() - 1) { logger.fatalc(MemoryPool::channel, "Could not allocate new memory object: enough space but bad fragmentation"); }
-
-    // Well that's it
-    return offset;
 }
 
 
@@ -365,7 +325,9 @@ Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_forma
     vkGetImageMemoryRequirements(this->gpu, image, &image_requirements);
 
     // With the buffer in place, allocate memory and bind it
+    logger.debug("Allocating image of size ", image_requirements.size, " and alignment ", image_requirements.alignment);
     VkDeviceSize offset = this->_allocate(image_requirements);
+    logger.debug("Allocated @ ", offset);
     vkBindImageMemory(this->gpu, image, this->vk_memory, offset);
 
     // Create the new Buffer object and insert it in our own list
@@ -423,7 +385,7 @@ void MemoryPool::free(const MemoryObject* object) {
     }
 
     // Free the memory in the freelist
-    this->free_list.release(object->object_offset);
+    this->_free(object->object_offset);
 
     // Destroy either the buffer or the image
     if (object->type == MemoryObjectType::buffer) {
@@ -453,7 +415,7 @@ void MemoryPool::reset() {
 
     // Clear the list and the freelist
     this->objects.clear();
-    this->free_list.clear();
+    this->_reset();
 }
 
 
@@ -469,10 +431,8 @@ void Rendering::swap(MemoryPool& mp1, MemoryPool& mp2) {
     
     swap(mp1.memory_type, mp2.memory_type);
     swap(mp1.vk_memory, mp2.vk_memory);
-    swap(mp1.free_list, mp2.free_list);
     
     swap(mp1.vk_properties, mp2.vk_properties);
 
     swap(mp1.objects, mp2.objects);
 }
-

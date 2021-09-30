@@ -39,14 +39,14 @@ using namespace Makma3D::Rendering;
 
 
 /***** HELPER STRUCTS *****/
-/* Used to store data for a single index buffer to render. */
-struct IndexBufferRenderData {
-    /* The entity to which the index buffer belongs. */
+/* Used to store data for a single mesh to render. */
+struct MeshRenderData {
+    /* The entity to which the mesh belongs. */
     ECS::entity_t entity;
     /* The vertex buffer of this entity. */
-    Rendering::Buffer* vertex_buffer;
+    const Rendering::Buffer* vertex_buffer;
     /* The index buffer to render. */
-    Rendering::Buffer* index_buffer;
+    const Rendering::Buffer* index_buffer;
     /* The number of indices to render. */
     uint32_t n_indices;
 
@@ -58,9 +58,9 @@ struct IndexBufferRenderData {
 
 /***** HELPER FUNCTIONS *****/
 /* Sorts given list of 'entities' (list of their Model components) in such a way that they can be rendered material-by-material efficiently. */
-static std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>> sort_entities(const Materials::MaterialSystem& material_system, const ECS::ComponentList<ECS::Model>& entities) {
+static std::unordered_map<Materials::MaterialType, std::unordered_map<const Materials::Material*, Tools::Array<MeshRenderData>>> sort_entities(const Materials::MaterialPool& material_pool, const ECS::ComponentList<ECS::Model>& entities) {
     // Delcare the result array
-    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>> result;
+    std::unordered_map<Materials::MaterialType, std::unordered_map<const Materials::Material*, Tools::Array<MeshRenderData>>> result;
 
     // Loop through the entities in the given list to sort them
     for (uint32_t i = 0; i < entities.size(); i++) {
@@ -68,39 +68,33 @@ static std::unordered_map<Materials::MaterialType, std::unordered_map<Materials:
         ECS::entity_t entity = entities.get_entity(i);
         const ECS::Model& model = entities[i];
 
-        // Loop through the model's meshes and then per-mesh index buffers
+        // Loop through the model's meshes
         for (uint32_t j = 0; j < model.meshes.size(); j++) {
+            // Get the mesh and its material
             const ECS::Mesh& mesh = model.meshes[j];
-            for (uint32_t k = 0; k < mesh.indices.size(); k++) {
-                // Get the data for this index buffer
-                Rendering::Buffer* indices = mesh.indices[k];
-                uint32_t n_indices = mesh.n_indices[k];
-                Materials::material_t material = mesh.materials[k];
-                // Also get the material type for this material
-                Materials::MaterialType material_type = material_system.get_type(material);
+            const Materials::Material* material = mesh.material;
 
-                // With that collected, we first check if we have already seen a material with this type
-                std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>>::iterator type_iter = result.find(material_type);
-                if (type_iter == result.end()) {
-                    type_iter = result.insert({ material_type, {} }).first;
-                }
-
-                // Next, check if we have already seen index buffers of this type
-                std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>::iterator material_iter = (*type_iter).second.find(material);
-                if (material_iter == (*type_iter).second.end()) {
-                    material_iter = (*type_iter).second.insert({ material, Tools::Array<IndexBufferRenderData>(16) }).first;
-                }
-
-                // Populate the IndexBufferRenderData and add it to the list, resizing it in a more optimal fashion
-                Tools::Array<IndexBufferRenderData>& indices_to_render = (*material_iter).second;
-                if (indices_to_render.size() >= indices_to_render.capacity()) { indices_to_render.reserve(2 * indices_to_render.capacity()); }
-                indices_to_render.push_back({
-                    entity,
-                    model.vertices,
-                    indices,
-                    n_indices
-                });
+            // Check if we have already seen a material with this type
+            std::unordered_map<Materials::MaterialType, std::unordered_map<const Materials::Material*, Tools::Array<MeshRenderData>>>::iterator type_iter = result.find(material->type());
+            if (type_iter == result.end()) {
+                type_iter = result.insert({ material->type(), {} }).first;
             }
+
+            // Next, check if we have already seen index buffers of this type
+            std::unordered_map<const Materials::Material*, Tools::Array<MeshRenderData>>::iterator material_iter = (*type_iter).second.find(material);
+            if (material_iter == (*type_iter).second.end()) {
+                material_iter = (*type_iter).second.insert({ material, Tools::Array<MeshRenderData>(16) }).first;
+            }
+
+            // Populate the IndexBufferRenderData and add it to the list, resizing it in a more optimal fashion
+            Tools::Array<MeshRenderData>& indices_to_render = (*material_iter).second;
+            if (indices_to_render.size() >= indices_to_render.capacity()) { indices_to_render.reserve(2 * indices_to_render.capacity()); }
+            indices_to_render.push_back({
+                entity,
+                model.vertices,
+                mesh.indices,
+                mesh.n_indices
+            });
         }
     }
 
@@ -113,13 +107,11 @@ static std::unordered_map<Materials::MaterialType, std::unordered_map<Materials:
 
 
 /***** RENDERSYSTEM CLASS *****/
-/* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a material system to create pipelines with, a model system to schedule the model buffers with and a texture system to schedule texture images with. */
-RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Materials::MaterialSystem& material_system, const Models::ModelSystem& model_system/*, const Textures::TextureSystem& texture_system*/) :
+/* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively) and a model system to schedule the model buffers withh. */
+RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system) :
     window(window),
     memory_manager(memory_manager),
-    material_system(material_system),
     model_system(model_system),
-    // texture_system(texture_system),
 
     global_descriptor_layout(this->window.gpu()),
     material_descriptor_layout(this->window.gpu()),
@@ -139,7 +131,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->global_descriptor_layout.finalize();
 
     // Initialize the descritpor set layout for the per-material data
-    Materials::MaterialSystem::init_layout(this->material_descriptor_layout);
+    Materials::MaterialPool::init_layout(this->material_descriptor_layout);
 
     // Initialize the descriptor set layout for the per-object data
     this->object_descriptor_layout.add_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT);
@@ -174,13 +166,13 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
     this->pipeline_constructor.pipeline_layout = PipelineLayout({ this->global_descriptor_layout, this->material_descriptor_layout, this->object_descriptor_layout }, {});
 
     // Create the pipeline for all materials
-    for (uint32_t i = 0; i < Materials::MaterialSystem::n_types; i++) {
+    for (uint32_t i = 0; i < Materials::MaterialPool::n_types; i++) {
         // Modify the pipeline constructor for this type
-        this->material_system.init_props(Materials::MaterialSystem::types[i], this->shader_pool, this->pipeline_constructor);
+        this->model_system.material_pool.init_props(Materials::MaterialPool::types[i], this->shader_pool, this->pipeline_constructor);
 
         // Construct the new pipeline and insert it into the list
         this->pipelines.insert({
-            Materials::MaterialSystem::types[i],
+            Materials::MaterialPool::types[i],
             this->pipeline_constructor.construct(this->render_pass, 0, VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT)
         });
     }
@@ -197,9 +189,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 RenderSystem::RenderSystem(RenderSystem&& other)  :
     window(other.window),
     memory_manager(other.memory_manager),
-    material_system(other.material_system),
     model_system(other.model_system),
-    // texture_system(other.texture_system),
 
     global_descriptor_layout(std::move(other.global_descriptor_layout)),
     material_descriptor_layout(std::move(other.material_descriptor_layout)),
@@ -265,7 +255,7 @@ void RenderSystem::_resize() {
     // Recreate our pipelines
     for (auto& p : this->pipelines) {
         // Update the constructo to this type's preferences
-        this->material_system.init_props(p.first, this->shader_pool, this->pipeline_constructor);
+        this->model_system.material_pool.init_props(p.first, this->shader_pool, this->pipeline_constructor);
         // Set the current pipeline as the base
         this->pipeline_constructor.set_base_pipeline(p.second);
         
@@ -298,10 +288,10 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
 
     // Prepare rendering to the frame
     const ECS::ComponentList<ECS::Model>& entities = entity_manager.get_list<ECS::Model>();
-    frame->prepare_render(this->material_system.size(), entities.size());
+    frame->prepare_render(this->model_system.material_pool.size(), entities.size());
 
     // Sort the objects by material type
-    std::unordered_map<Materials::MaterialType, std::unordered_map<Materials::material_t, Tools::Array<IndexBufferRenderData>>> sorted_entities = sort_entities(this->material_system, entities);
+    std::unordered_map<Materials::MaterialType, std::unordered_map<const Materials::Material*, Tools::Array<MeshRenderData>>> sorted_entities = sort_entities(this->model_system.material_pool, entities);
 
     // Populate the frame's camera data
     const Camera& cam = entity_manager.get_list<Camera>()[0];
@@ -332,19 +322,16 @@ bool RenderSystem::render_frame(const ECS::EntityManager& entity_manager) {
         // Schedule the frame global data on it
         frame->schedule_global();
 
-        // Get the list of data for this material type
-        const Tools::AssociativeArray<Materials::material_t, MaterialData>& material_data = this->material_system.get_list(material_types.first);
-
         // Loop through all specific materials for this type
         for (const auto& materials : material_types.second) {
             // Upload & schedule the data for this material
-            frame->upload_material_data(materials.first, material_data.get(materials.first));
+            frame->upload_material_data(materials.first);
             frame->schedule_material(materials.first);
 
             // Next, loop through all index buffers of this material to render them
             for (uint32_t i = 0; i < materials.second.size(); i++) {
                 // Get a shortcut to the data we'll need
-                const IndexBufferRenderData& render_data = materials.second[i];
+                const MeshRenderData& render_data = materials.second[i];
 
                 // Schedule the object data & its vertex buffer
                 frame->schedule_entity(render_data.entity);
@@ -390,9 +377,7 @@ void Rendering::swap(RenderSystem& rs1, RenderSystem& rs2) {
     #ifndef NDEBUG
     if (&rs1.window != &rs2.window) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different windows"); }
     if (&rs1.memory_manager != &rs2.memory_manager) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different memory managers"); }
-    if (&rs1.material_system != &rs2.material_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different material systems"); }
     if (&rs1.model_system != &rs2.model_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different model systems"); }
-    // if (&rs1.texture_system != &rs2.texture_system) { logger.fatalc(RenderSystem::channel, "Cannot swap render systems with different texture systems"); }
     #endif
 
     // Simply swap everything

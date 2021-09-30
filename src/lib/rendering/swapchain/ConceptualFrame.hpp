@@ -26,6 +26,7 @@
 #include "../data/MaterialData.hpp"
 #include "../data/EntityData.hpp"
 #include "../memory_manager/MemoryManager.hpp"
+#include "../memory/LinearMemoryPool.hpp"
 #include "../memory/Buffer.hpp"
 #include "../commandbuffers/CommandBuffer.hpp"
 #include "../descriptors/DescriptorSetLayout.hpp"
@@ -68,6 +69,8 @@ namespace Makma3D::Rendering {
 
         /* Command buffer for drawing to this Frame. */
         Rendering::CommandBuffer* draw_cmd;
+        /* Memory pool for creating buffers cheaply each Frame. */
+        Rendering::LinearMemoryPool* memory_pool;
         /* Descriptor pool for all descriptors in this frame. */
         Rendering::DescriptorPool* descriptor_pool;
         

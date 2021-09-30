@@ -19,7 +19,7 @@
 #include <unordered_map>
 
 #include "tools/Array.hpp"
-#include "../memory/MemoryPool.hpp"
+#include "../memory/BlockMemoryPool.hpp"
 #include "../commandbuffers/CommandPool.hpp"
 #include "../descriptors/DescriptorPool.hpp"
 
@@ -40,9 +40,9 @@ namespace Makma3D::Rendering {
         Rendering::CommandPool mem_cmd_pool;
 
         /* The memory pool for GPU-only, speedier buffers. */
-        Rendering::MemoryPool draw_pool;
+        Rendering::BlockMemoryPool draw_pool;
         /* The memory pool for staging buffers. */
-        Rendering::MemoryPool stage_pool;
+        Rendering::BlockMemoryPool stage_pool;
 
         /* The descriptor pool used to manage the descriptors. */
         Rendering::DescriptorPool descr_pool;

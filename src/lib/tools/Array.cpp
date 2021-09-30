@@ -647,6 +647,19 @@ auto Array<T, D, C, M>::resize(array_size_t new_size) -> std::enable_if_t<D && M
     }
 }
 
+/* Guarantees that the Array has at least min_size size after the call. Does so by reallocating the internal array if we currently have less, but leaving it untouched otherwise. Any leftover elements will be initialized with their default constructor (and thus requires the type to have one). */
+template <class T, bool D, bool C, bool M>
+template <typename U>
+auto Array<T, D, C, M>::resize_opt(array_size_t min_size) -> std::enable_if_t<D && M, U> {
+    // Simply reserve new space (optimised)
+    this->reserve_opt(min_size);
+
+    // Populate the other elements with default constructors
+    for (array_size_t i = this->storage.length; i < min_size; i++) {
+        new(this->storage.elements + this->storage.length++) T();
+    }
+}
+
 
 
 /* Returns a muteable reference to the element at the given index. Performs in-of-bounds checks before accessing the element. */

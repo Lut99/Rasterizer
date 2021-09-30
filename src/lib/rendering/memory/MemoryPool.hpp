@@ -16,10 +16,10 @@
 #ifndef RENDERING_MEMORY_POOL_HPP
 #define RENDERING_MEMORY_POOL_HPP
 
+#include <type_traits>
 #include <vulkan/vulkan.h>
 
 #include "tools/Array.hpp"
-#include "tools/Freelist.hpp"
 #include "../gpu/GPU.hpp"
 
 #include "MemoryObject.hpp"
@@ -36,13 +36,11 @@ namespace Makma3D::Rendering {
         /* The GPU to which the pool is bound. */
         const Rendering::GPU& gpu;
     
-    private:
+    protected:
         /* The memory type index we chose for this pool. */
         uint32_t memory_type;
         /* The memory we allocated for the pool. */
         VkDeviceMemory vk_memory;
-        /* The Freelist in charge of keeping track of what is allocated. */
-        Freelist free_list;
 
         /* The memory properties given to us at creation. */
         VkMemoryPropertyFlags vk_properties;
@@ -51,18 +49,22 @@ namespace Makma3D::Rendering {
         Tools::Array<MemoryObject*> objects;
 
 
-        /* Private helper function that does the actual memory allocation part. */
-        VkDeviceSize _allocate(const VkMemoryRequirements& requirements);
+        /* Private helper function that does the actual memory allocation part using the internal allocator. */
+        virtual VkDeviceSize _allocate(const VkMemoryRequirements& requirements) = 0;
+        /* Private helper function that does the actual memory freeing part in the internal allocator. */
+        virtual void _free(VkDeviceSize offset) = 0;
+        /* Private helper function that resets the internal allocator. */
+        virtual void _reset() = 0;
     
     public:
         /* Constructor for the MemoryPool class, which takes the GPU where it lives, the size of its memory, the memory properties and optionally some buffer memory usage flags to take into account when selecting memory. */
         MemoryPool(const Rendering::GPU& gpu, VkDeviceSize pool_size, VkMemoryPropertyFlags memory_properties, VkBufferUsageFlags buffer_usage = 0, VkImageUsageFlags image_usage = 0);
-        /* Copy constructor for the MemoryPool class. */
-        MemoryPool(const MemoryPool& other);
+        /* Copy constructor for the MemoryPool class, which is deleted. */
+        MemoryPool(const MemoryPool& other) = delete;
         /* Move constructor for the MemoryPool class. */
         MemoryPool(MemoryPool&& other);
         /* Destructor for the MemoryPool class. */
-        ~MemoryPool();
+        virtual ~MemoryPool();
 
         /* Tries to allocate a new Buffer of the given size (in bytes) and with the given usage flags. Optionally, one can set the sharing mode and any create flags. */
         Buffer* allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer_usage, VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE, VkBufferCreateFlags create_flags = 0);
@@ -81,10 +83,6 @@ namespace Makma3D::Rendering {
         /* Resets the memory pool, freeing all allocated buffers and junk. */
         void reset();
 
-        /* Returns the number of bytes used in the MemoryPool. */
-        inline VkDeviceSize size() const { return static_cast<VkDeviceSize>(this->free_list.size()); }
-        /* Returns the total number of bytes in the MemoryPool. */
-        inline VkDeviceSize capacity() const { return static_cast<VkDeviceSize>(this->free_list.capacity()); }
         /* Returns the memory properties given to this pool. */
         inline VkMemoryPropertyFlags properties() const { return this->vk_properties; }
         /* Explicitly returns the internal VkDeviceMemory object. */
@@ -92,8 +90,8 @@ namespace Makma3D::Rendering {
         /* Implicitly returns the internal VkDeviceMemory object. */
         inline operator const VkDeviceMemory&() const { return this->vk_memory; }
 
-        /* Copy assignment operator for the MemoryPool class. */
-        inline MemoryPool& operator=(const MemoryPool& other) { return *this = MemoryPool(other); }
+        /* Copy assignment operator for the MemoryPool class, which is deleted. */
+        MemoryPool& operator=(const MemoryPool& other) = delete;
         /* Move assignment operator for the MemoryPool class. */
         inline MemoryPool& operator=(MemoryPool&& other) { if (this != &other) { swap(*this, other); } return *this; }
         /* Swap operator for the MemoryPool class. */

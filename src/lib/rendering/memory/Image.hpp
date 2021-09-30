@@ -75,11 +75,11 @@ namespace Makma3D::Rendering {
         void schedule_transition(const Rendering::CommandBuffer* command_buffer, VkImageLayout new_layout);
 
         /* Returns the extent of the image. */
-        inline VkExtent2D extent() const { return this->vk_extent; }
+        inline const VkExtent2D& extent() const { return this->vk_extent; }
         /* Returns the format of the image. */
-        inline VkFormat format() const { return this->vk_format; }
+        inline const VkFormat& format() const { return this->vk_format; }
         /* Returns the layout of the image. */
-        inline VkImageLayout layout() const { return this->vk_layout; }
+        inline const VkImageLayout& layout() const { return this->vk_layout; }
         /* Returns the memory offset of the buffer, in bytes. */
         inline VkDeviceSize offset() const { return this->object_offset; }
         /* Returns the conceptual size of the image, in bytes. */

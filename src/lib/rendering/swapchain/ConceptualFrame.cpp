@@ -78,30 +78,24 @@ ConceptualFrame::ConceptualFrame(Rendering::MemoryManager& memory_manager, const
     render_ready_semaphore(this->memory_manager.gpu),
     in_flight_fence(this->memory_manager.gpu, VK_FENCE_CREATE_SIGNALED_BIT)
 {
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing...");
-
     // Initialize the stage buffer
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating staging buffer...");
     this->stage_buffer = this->memory_manager.stage_pool.allocate(std::max({ sizeof(CameraData), sizeof(SimpleColouredData), sizeof(EntityData) }), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
     logger.logc(Verbosity::debug, ConceptualFrame::channel, "Allocated stage buffer @ ", this->stage_buffer->offset());
 
     // Initialize the commandbuffer
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Allocating command buffer...");
     this->draw_cmd = this->memory_manager.draw_cmd_pool.allocate();
 
-    // Initialize the pool
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing descriptor pool...");
+    // Initialize the pools
+    this->memory_pool = new LinearMemoryPool(this->memory_manager.gpu, 10 * 1024 * 1024, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     this->descriptor_pool = new DescriptorPool(this->memory_manager.gpu, {
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 }
     }, 64);
 
     // Initialize the global descriptor set & camera buffer
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Initializing global frame data...");
     this->camera_buffer = this->memory_manager.draw_pool.allocate(sizeof(CameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
     // And that's it
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Init success.");
 }
 
 /* Move constructor for the ConceptualFrame class. */
@@ -117,6 +111,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     entity_layout(std::move(other.entity_layout)),
 
     draw_cmd(std::move(other.draw_cmd)),
+    memory_pool(std::move(other.memory_pool)),
     descriptor_pool(std::move(other.descriptor_pool)),
 
     global_set(std::move(other.global_set)),
@@ -137,6 +132,7 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
     // Tell the other not to deallocate any of his resources
     other.stage_buffer = nullptr;
     other.draw_cmd = nullptr;
+    other.memory_pool = nullptr;
     other.descriptor_pool = nullptr;
     other.global_set = nullptr;
     other.camera_buffer = nullptr;
@@ -146,38 +142,31 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
 
 /* Destructor for the ConceptualFrame class. */
 ConceptualFrame::~ConceptualFrame() {
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning...");
-
     if (this->entity_buffers.size() > 0) {
-        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning entity buffers...");
         for (uint32_t i = 0; i < this->entity_buffers.size(); i++) {
             this->memory_manager.draw_pool.free(this->entity_buffers[i]);
         }
     }
     if (this->material_buffers.size() > 0) {
-        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning material buffers...");
         for (uint32_t i = 0; i < this->material_buffers.size(); i++) {
             this->memory_manager.draw_pool.free(this->material_buffers[i]);
         }
     }
     if (this->camera_buffer != nullptr) {
-        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning camera buffer...");
         this->memory_manager.draw_pool.free(this->camera_buffer);
     }
     if (this->descriptor_pool != nullptr) {
-        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning descriptor pool...");
         delete this->descriptor_pool;
     }
+    if (this->memory_pool != nullptr) {
+        delete this->memory_pool;
+    }
     if (this->draw_cmd != nullptr) {
-        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning command buffer...");
         this->memory_manager.draw_cmd_pool.free(this->draw_cmd);
     }
     if (this->stage_buffer != nullptr) {
-        // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaning stage buffer...");
         this->memory_manager.stage_pool.free(this->stage_buffer);
     }
-
-    // logger.logc(Verbosity::details, ConceptualFrame::channel, "Cleaned.");
 }
 
 
@@ -188,42 +177,17 @@ void ConceptualFrame::prepare_render(uint32_t n_materials, uint32_t n_objects) {
     this->material_index_map.clear();
     this->entity_index_map.clear();
 
-    // Rescale the internal array of materials to the desired size
-    if (this->vert_material_buffers.size() < n_materials) {
-        // Extent the object buffer to more space and allocate new buffers
-        this->vert_material_buffers.reserve_opt(n_materials);
-        this->frag_material_buffers.reserve_opt(n_materials);
-        for (uint32_t i = this->vert_material_buffers.size(); i < n_materials; i++) {
-            this->vert_material_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(MaterialData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-            this->frag_material_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(MaterialData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-        }
-    } else if (this->vert_material_buffers.size() > n_materials) {
-        // Remove the obsolete ones
-        for (uint32_t i = this->vert_material_buffers.size(); i-- > n_materials ;) {
-            this->memory_manager.draw_pool.free(this->vert_material_buffers[i]);
-            this->memory_manager.draw_pool.free(this->frag_material_buffers[i]);
-            this->vert_material_buffers.pop_back();
-            this->frag_material_buffers.pop_back();
-        }
-    }
-
-    // Rescale the internal array to objects to the desired size
-    if (this->entity_buffers.size() < n_objects) {
-        // Extent the object buffer to more space and allocate new buffers
-        this->entity_buffers.reserve_opt(n_objects);
-        for (uint32_t i = this->entity_buffers.size(); i < n_objects; i++) {
-            this->entity_buffers.push_back(this->memory_manager.draw_pool.allocate(sizeof(EntityData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-        }
-    } else if (this->entity_buffers.size() > n_objects) {
-        // Remove the obsolete ones
-        for (uint32_t i = this->entity_buffers.size(); i-- > n_objects ;) {
-            this->memory_manager.draw_pool.free(this->entity_buffers[i]);
-            this->entity_buffers.pop_back();
-        }
-    }
-
-    // Allocate n_objects new descriptors, since we always reset the pool
+    // Reset the pools
+    this->memory_pool->reset();
     this->descriptor_pool->reset();
+
+    // Prepare enough space in the object arrays
+    this->material_buffers.clear();
+    this->entity_buffers.clear();
+    this->material_buffers.resize_opt(n_materials);
+    this->entity_buffers.resize_opt(n_objects);
+
+    // Allocate the new descriptors
     this->global_set    = this->descriptor_pool->allocate(this->global_layout);
     this->material_sets = this->descriptor_pool->nallocate(n_materials, this->material_layout);
     this->entity_sets   = this->descriptor_pool->nallocate(n_objects, this->entity_layout);
@@ -253,8 +217,8 @@ void ConceptualFrame::upload_material_data(const Materials::Material* material) 
 
     #ifndef NDEBUG
     // Throw errors if out-of-range
-    if (material_index > this->vert_material_buffers.size()) {
-        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->vert_material_buffers.size(), " materials)");
+    if (material_index > this->material_sets.size()) {
+        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->material_sets.size(), " materials)");
     }
     #endif
 
@@ -264,13 +228,29 @@ void ConceptualFrame::upload_material_data(const Materials::Material* material) 
             // Upload nothing
             break;
         
-        case Materials::MaterialType::simple_coloured:
+        case Materials::MaterialType::simple_coloured: {
+            const Materials::SimpleColoured* simple_coloured = (const Materials::SimpleColoured*) material;
+
             // Upload the SimpleColoured data
+            if (this->material_buffers[material_index] == nullptr) {
+                // Allocate a new buffer first
+                this->material_buffers[material_index] = this->memory_pool->allocate(sizeof(SimpleColouredData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            }
 
-        
-        case Materials::MaterialType::simple_textured:
+            // Populate the buffer with the stage data using the internal stage buffer
+            SimpleColouredData data = simple_coloured->data();
+            this->material_buffers[material_index]->set((void*) &data, sizeof(SimpleColouredData), this->stage_buffer, this->memory_manager.copy_cmd);
+
+            // Bind the descriptor set
+            this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->material_buffers[material_index] });
+        }
+
+        case Materials::MaterialType::simple_textured: {
+            const Materials::SimpleTextured* simple_textured = (const Materials::SimpleTextured*) material;
+
             // Schedule the texture's sampler
-
+            this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, { simple_textured->texture });
+        }
         
         default:
             logger.fatalc(ConceptualFrame::channel, "Unsupported material type '", Materials::material_type_names[(int) material->type()], "'");
@@ -278,33 +258,6 @@ void ConceptualFrame::upload_material_data(const Materials::Material* material) 
     }
 
     // Done with uploading
-}
-
-/* Uploads the material data for the given material index and its descriptor set. */
-void ConceptualFrame::upload_material_data(Materials::material_t material, const Rendering::MaterialData& material_data) {
-    // Map the material
-    std::unordered_map<Materials::material_t, uint32_t>::iterator iter = this->material_index_map.find(material);
-    if (iter == this->material_index_map.end()) {
-        iter = this->material_index_map.insert({ material, static_cast<uint32_t>(this->material_index_map.size()) }).first;
-    }
-    uint32_t material_index = (*iter).second;
-
-    #ifndef NDEBUG
-    // Throw errors if out-of-range
-    if (material_index > this->vert_material_buffers.size()) {
-        logger.fatalc(ConceptualFrame::channel, "Material index ", material_index, " is out of range (prepared for only ", this->vert_material_buffers.size(), " materials)");
-    }
-    #endif
-
-    // Otherwise, set the correct buffer using the staging buffer
-    this->vert_material_buffers[material_index]->set((void*) &material_data.vertex, sizeof(MaterialVertexData), this->stage_buffer, this->memory_manager.copy_cmd);
-    this->frag_material_buffers[material_index]->set((void*) &material_data.fragment, sizeof(MaterialFragmentData), this->stage_buffer, this->memory_manager.copy_cmd);
-    // Bind the material's buffer to the correct set
-    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->vert_material_buffers[material_index] });
-    this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, { this->frag_material_buffers[material_index] });
-    if (material_data.image != nullptr) {
-        this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, { { material_data.view->vulkan(), material_data.image->layout(), material_data.sampler->vulkan() } });
-    }
 }
 
 /* Uploads entity data for the given entity to its buffer and its descriptor set. */
@@ -323,7 +276,9 @@ void ConceptualFrame::upload_entity_data(ECS::entity_t entity, const Rendering::
     }
     #endif
 
-    // Otherwise, set the correct buffer using the staging buffer
+    // Otherwise, allocate a new buffer if needed
+    if (this->entity_buffers[entity_index] == nullptr) { this->entity_buffers[entity_index] = this->memory_pool->allocate(sizeof(EntityData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT); }
+    // Populate the buffer with this entity's data
     this->entity_buffers[entity_index]->set((void*) &entity_data, sizeof(EntityData), this->stage_buffer, this->memory_manager.copy_cmd);
     // Bind the correct object buffer to the correct set
     this->entity_sets[entity_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->entity_buffers[entity_index] });
@@ -362,10 +317,10 @@ void ConceptualFrame::schedule_global() {
     this->global_set->schedule(this->draw_cmd, this->pipeline->layout(), 0);
 }
 
-/* Schedules the stuff for a material. */
-void ConceptualFrame::schedule_material(Materials::material_t material) {
-    // Map the material
-    std::unordered_map<Materials::material_t, uint32_t>::iterator iter = this->material_index_map.find(material);
+/* Schedules the stuff for the given material. Does have to have its data uploaded first, of course. */
+void ConceptualFrame::schedule_material(const Materials::Material* material) {
+    // Map the material in the internal index map
+    std::unordered_map<const Materials::Material*, uint32_t>::iterator iter = this->material_index_map.find((const Materials::Material*) material);
     if (iter == this->material_index_map.end()) {
         logger.fatalc(ConceptualFrame::channel, "Cannot schedule material ", material, " for which nothing has been uploaded.");
     }
@@ -378,8 +333,20 @@ void ConceptualFrame::schedule_material(Materials::material_t material) {
     }
     #endif
 
-    // Schedule the material's descriptor set
-    this->material_sets[material_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
+    // Choose what to schedule
+    switch (material->type()) {
+        case Materials::MaterialType::simple_coloured:
+        case Materials::MaterialType::simple_textured:
+            // Schedule its descriptor set
+            this->material_sets[material_index]->schedule(this->draw_cmd, this->pipeline->layout(), 1);
+
+        default:
+            // Don't schedule
+            break;
+
+    }
+
+    // Done
 }
 
 /* Schedules the given entity's descriptor set on the internal draw queue. */
@@ -443,20 +410,6 @@ void ConceptualFrame::submit(const VkQueue& vk_queue) {
     if ((vk_result = vkQueueSubmit(vk_queue, 1, &submit_info, this->in_flight_fence)) != VK_SUCCESS) {
         logger.fatalc(ConceptualFrame::channel, "Could not submit frame to queue: ", vk_error_map[vk_result]);
     }
-
-    // // Before we go, debug print all DescriptorSetLayouts
-    // logger.debug("Global sets:");
-    // logger.debug(" - DescriptorSet @ ", this->global_set->vulkan());
-    // logger.debug("Material sets:");
-    // for (uint32_t i = 0; i < this->material_sets.size(); i++) {
-    //     logger.debug(" - DescriptorSet @ ", this->material_sets[i]->vulkan());
-    // }
-    // logger.debug("Object sets:");
-    // for (uint32_t i = 0; i < this->object_sets.size(); i++) {
-    //     logger.debug(" - DescriptorSet @ ", this->object_sets[i]->vulkan());
-    // }
-
-    // Done
 }
 
 
@@ -478,6 +431,7 @@ void Rendering::swap(ConceptualFrame& cf1, ConceptualFrame& cf2) {
     swap(cf1.entity_layout, cf2.entity_layout);
     
     swap(cf1.draw_cmd, cf2.draw_cmd);
+    swap(cf1.memory_pool, cf2.memory_pool);
     swap(cf1.descriptor_pool, cf2.descriptor_pool);
     
     swap(cf1.global_set, cf2.global_set);

@@ -53,6 +53,8 @@ namespace Makma3D::Materials {
 
         
 
+        /* Explicitly returns the layout of the internal Image. */
+        inline const VkImageLayout& layout() const { return this->_image->layout(); }
         /* Explicitly returns the internal VkImage object. */
         inline const VkImage& image() const { return this->_image->vulkan(); }
         /* Explicitly returns the internal VkImageView object. */

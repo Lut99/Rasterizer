@@ -19,6 +19,7 @@
 
 #include <vulkan/vulkan.h>
 
+#include "materials/textures/Texture.hpp"
 #include "../gpu/GPU.hpp"
 #include "../memory/Buffer.hpp"
 #include "../commandbuffers/CommandBuffer.hpp"
@@ -52,8 +53,8 @@ namespace Makma3D::Rendering {
         void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<Rendering::Buffer*>& buffers) const;
         /* Binds this descriptor set with the contents of a given image view to the given bind index. Must be enough views to actually populate all bindings of the given type. */
         void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::tuple<VkImageView, VkImageLayout>>& image_views) const;
-        /* Binds this descriptor set with the contents of a given image view & sampler pair to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-        void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::tuple<VkImageView, VkImageLayout, VkSampler>>& view_sampler_pairs) const;
+        /* Binds this descriptor set with the contents of a given texture (i.e., image, imageview & sampler) to the given bind index. Must be enough textures to actually populate all bindings of the given type. */
+        void bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<const Materials::Texture*>& textures) const;
         /* Binds the descriptor to the given (compute) command buffer. We assume that the recording already started. */
         void schedule(const Rendering::CommandBuffer* buffer, VkPipelineLayout pipeline_layout, uint32_t set_index = 0) const;
 

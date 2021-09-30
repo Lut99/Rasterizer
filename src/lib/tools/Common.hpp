@@ -32,6 +32,8 @@ namespace Tools {
         // Simply call the base case to merge the first two, then continue
         return merge_paths(merge_paths(left, right), args...);
     }
+    /* Appends the given string at the end of the first one as if both were paths (i.e., making sure there's only one slash in between them). */
+    inline std::string merge_paths(const std::string& left, const std::string& right) { return ((std::stringstream&) merge_paths(std::stringstream(left), right)).str(); }
     /* Appends the given list of strings at the end of the first one as if all were paths (i.e., making sure there's only one slash in between them). */
     template <class... Ts>
     inline std::string merge_paths(const std::string& left, const std::string& right, Ts... args) {

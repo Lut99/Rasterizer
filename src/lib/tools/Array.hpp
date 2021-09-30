@@ -205,6 +205,9 @@ namespace Tools {
         /* Resizes the array to the given size. Any leftover elements will be initialized with their default constructor (and thus requires the type to have one), and elements that won't fit will be deallocated. */
         template <typename U = void>
         auto resize(array_size_t new_size) -> std::enable_if_t<D && M, U>;
+        /* Guarantees that the Array has at least min_size size after the call. Does so by reallocating the internal array if we currently have less, but leaving it untouched otherwise. Any leftover elements will be initialized with their default constructor (and thus requires the type to have one). */
+        template <typename U = void>
+        auto resize_opt(array_size_t min_size) -> std::enable_if_t<D && M, U>;
 
         /* Returns a muteable reference to the element at the given index. Does not perform any in-of-bounds checking. */
         inline T& operator[](array_size_t index) { return this->storage.elements[index]; }

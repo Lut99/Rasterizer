@@ -1,5 +1,5 @@
 # Add the RenderEngine itself
-add_library(MaterialSystem STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MaterialSystem.cpp${CMAKE_CURRENT_SOURCE_DIR}/Material.cpp)
+add_library(MaterialSystem STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MaterialPool.cpp ${CMAKE_CURRENT_SOURCE_DIR}/Material.cpp)
 
 # Set the dependencies for this library:
 target_include_directories(MaterialSystem PUBLIC

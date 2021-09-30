@@ -17,11 +17,8 @@
 #ifndef RENDERING_RENDER_SYSTEM_HPP
 #define RENDERING_RENDER_SYSTEM_HPP
 
-#include "tools/StaticArray.hpp"
-
 #include "window/Window.hpp"
 #include "ecs/EntityManager.hpp"
-#include "materials/MaterialSystem.hpp"
 #include "models/ModelSystem.hpp"
 
 #include "memory_manager/MemoryManager.hpp"
@@ -59,12 +56,8 @@ namespace Makma3D::Rendering {
         Window& window;
         /* The MemoryManager that contains the pools we might need. */
         MemoryManager& memory_manager;
-        /* The MaterialSystem which we use to load materials with and render them. */
-        const Materials::MaterialSystem& material_system;
         /* The ModelSystem which we use to schedule the model buffers with. */
         const Models::ModelSystem& model_system;
-        // /* The TextureSystem which we use to schedule the texture buffers with. */
-        // const Textures::TextureSystem& texture_system;
 
     private:
         /* Descriptor set layout for general data, such as the camera information. */
@@ -98,8 +91,8 @@ namespace Makma3D::Rendering {
         void _resize();
 
     public:
-        /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively), a material system to create pipelines with, a model system to schedule the model buffers with and a texture system to schedule texture images with. */
-        RenderSystem(Window& window, MemoryManager& memory_manager, const Materials::MaterialSystem& material_system, const Models::ModelSystem& model_system/*, const Textures::TextureSystem& texture_system*/);
+        /* Constructor for the RenderSystem, which takes a window, a memory manager to render (to and draw memory from, respectively) and a model system to schedule the model buffers withh. */
+        RenderSystem(Window& window, MemoryManager& memory_manager, const Models::ModelSystem& model_system);
         /* Copy constructor for the RenderSystem class, which is deleted. */
         RenderSystem(const RenderSystem& other) = delete;
         /* Move constructor for the RenderSystem class. */

@@ -42,8 +42,12 @@ namespace Makma3D::Materials {
         /* Move constructor for the SimpleTextured class, which is deleted. */
         SimpleTextured(SimpleTextured&& other) = delete;
 
-        /* Returns the VkSampler needed to access the texture's data in the shader. */
-        inline const VkSampler& sampler() const { return this->texture->sampler(); }
+        // /* Returns the VkImage that carries the texture's data. */
+        // inline const VkImage& image() const { return this->texture->image(); }
+        // /* Returns the VkImageView needed to access the texture's data. */
+        // inline const VkImageView& view() const { return this->texture->view(); }
+        // /* Returns the VkSampler needed to access the texture's data in the shader. */
+        // inline const VkSampler& sampler() const { return this->texture->sampler(); }
 
         /* Copy assignment operator for the SimpleTextured class, which is deleted. */
         SimpleTextured& operator=(const SimpleTextured& other) = delete;

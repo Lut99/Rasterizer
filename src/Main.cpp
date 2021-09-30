@@ -31,6 +31,8 @@
 #include "world/WorldSystem.hpp"
 
 // #include "materials/MaterialSystem.hpp"
+#include "materials/textures/TexturePool.hpp"
+#include "materials/MaterialPool.hpp"
 #include "models/ModelSystem.hpp"
 // #include "textures/TextureSystem.hpp"
 
@@ -240,12 +242,14 @@ int main(int argc, const char** argv) {
         Rendering::MemoryManager memory_manager(window.gpu(), opts.local_memory_size, opts.visible_memory_size);
         // Initialize the WorldSystem
         World::WorldSystem world_system;
-        // Initialize the MaterialSystem
-        Materials::MaterialSystem material_system(memory_manager);
+        // Initialize the TexturePool
+        Materials::TexturePool texture_pool(memory_manager);
+        // Initialize the MaterialPool
+        Materials::MaterialPool material_pool(texture_pool);
         // Initialize the ModelSystem
-        Models::ModelSystem model_system(memory_manager, material_system);
+        Models::ModelSystem model_system(memory_manager, material_pool);
         // Initialize the RenderSystem
-        Rendering::RenderSystem render_system(window, memory_manager, material_system, model_system);
+        Rendering::RenderSystem render_system(window, memory_manager, model_system);
         // Initialize the entity manager
         ECS::EntityManager entity_manager;
 

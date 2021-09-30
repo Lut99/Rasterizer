@@ -156,14 +156,14 @@ void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, 
     vkUpdateDescriptorSets(gpu, 1, &write_info, 0, nullptr);
 }
 
-/* Binds this descriptor set with the contents of a given image view & sampler pair to the given bind index. Must be enough views to actually populate all bindings of the given type. */
-void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<std::tuple<VkImageView, VkImageLayout, VkSampler>>& view_sampler_pairs) const {
+/* Binds this descriptor set with the contents of a given texture (i.e., image, imageview & sampler) to the given bind index. Must be enough textures to actually populate all bindings of the given type. */
+void DescriptorSet::bind(VkDescriptorType descriptor_type, uint32_t bind_index, const Tools::Array<const Materials::Texture*>& textures) const {
     // We first create a list of image infos
-    Tools::Array<VkDescriptorImageInfo> image_infos(view_sampler_pairs.size());
-    for (uint32_t i = 0; i < view_sampler_pairs.size(); i++) {
+    Tools::Array<VkDescriptorImageInfo> image_infos(textures.size());
+    for (uint32_t i = 0; i < textures.size(); i++) {
         // Start by creating the image info so that the descriptor knows smthng about the image
         VkDescriptorImageInfo image_info;
-        populate_image_info(image_info, std::get<0>(view_sampler_pairs[i]), std::get<1>(view_sampler_pairs[i]), std::get<2>(view_sampler_pairs[i]));
+        populate_image_info(image_info, textures[i]->view(), textures[i]->layout(), textures[i]->sampler());
 
         // Add to the list
         image_infos.push_back(image_info);
