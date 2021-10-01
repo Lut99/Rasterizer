@@ -83,6 +83,7 @@ std::stringstream& Tools::merge_paths(std::stringstream& left, const std::string
     // Get the last character in the stream
     char c = '\0';
     if (left.tellp() > 0) { left.seekg(-1, ios::end); left >> c; }
+    left.seekp(0, ios::end);
 
     // Check if there's already a slash at left's end or right's start
     if ((c != '/' && c != '\\') &&

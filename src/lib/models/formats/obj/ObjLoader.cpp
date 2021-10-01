@@ -107,7 +107,7 @@ void Models::load_obj_model(Rendering::MemoryManager& memory_manager, Materials:
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string error;
-    if (tinyobj::LoadObj(&data, &shapes, &materials, &error, path.c_str(), (get_executable_path() + "/data/materials/").c_str()) != true) {
+    if (tinyobj::LoadObj(&data, &shapes, &materials, &error, path.c_str(), (Tools::merge_paths(get_executable_path(), "data/materials/")).c_str()) != true) {
         // Show the error
         logger.errorc(channel, "Could not parse input file '", path, "' as .obj file:");
         std::stringstream sstr;

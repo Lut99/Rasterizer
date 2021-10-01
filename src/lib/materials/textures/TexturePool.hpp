@@ -52,7 +52,7 @@ namespace Makma3D::Materials {
         static TextureFormat deduce_format(const std::string& path);
 
         /* Allocates a new Texture object, and populates it with the data loaded at the given path as the given format. The filter and by how much to apply anisotropy apply to the texture's sampler. If the given format is "automatic", tries to deduce the format from the file's extension. */
-        Materials::Texture* allocate(const std::string& path, VkFilter filter, VkBool32 enable_anisotropy, float max_anisotropy_level = INFINITY, TextureFormat format = TextureFormat::automatic);
+        Materials::Texture* allocate(const std::string& path, VkFilter filter, VkBool32 enable_anisotropy, float max_anisotropy_level = 16.0f, TextureFormat format = TextureFormat::automatic);
         /* Destroys the given texture, freeing memory again. */
         void free(const Materials::Texture* texture);
 

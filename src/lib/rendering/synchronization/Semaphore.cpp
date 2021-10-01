@@ -53,8 +53,6 @@ Semaphore::Semaphore(const Rendering::GPU& gpu) :
 Semaphore::Semaphore(const Semaphore& other) :
     gpu(other.gpu)
 {
-    logger.debug("Copying Semaphore...");
-
     // Populate the create info
     VkSemaphoreCreateInfo semaphore_info;
     populate_semaphore_info(semaphore_info);

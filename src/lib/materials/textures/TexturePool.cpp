@@ -208,7 +208,7 @@ Materials::Texture* TexturePool::allocate(const std::string& path, VkFilter filt
 
     // Then, create the Sampler
     VkSamplerCreateInfo sampler_info;
-    populate_sampler_info(sampler_info, VK_FILTER_LINEAR, VK_TRUE, INFINITY);
+    populate_sampler_info(sampler_info, filter, enable_anisotropy, max_anisotropy_level);
     VkSampler sampler;
     if ((vk_result = vkCreateSampler(this->memory_manager.gpu, &sampler_info, nullptr, &sampler)) != VK_SUCCESS) {
         logger.fatalc(TexturePool::channel, "Cannot create sampler: ", Rendering::vk_error_map[vk_result]);

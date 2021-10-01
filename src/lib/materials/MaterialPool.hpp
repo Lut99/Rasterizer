@@ -88,7 +88,7 @@ namespace Makma3D::Materials {
         /* Adds a new material to the pool that simply takes a uniform colour, no lighting applied. Takes the name of that material and the colour to apply. */
         Materials::SimpleColoured* allocate_simple_coloured(const std::string& name, const glm::vec3& colour);
         /* Adds a new material to the pool that simply takes a texture, no lighting applied. Takes the name of that material, its path, the filter to apply in its Sampler, whether or not to apply anisotropy, by how much to apply anisotropy at most and the format of the file. When set to automatic, automatically deduces the file's format from its extension. */
-        Materials::SimpleTextured* allocate_simple_textured(const std::string& name, const std::string& path, VkFilter filter, VkBool32 enable_anisotropy, float max_anisotropy_level = INFINITY, TextureFormat format = TextureFormat::automatic);
+        Materials::SimpleTextured* allocate_simple_textured(const std::string& name, const std::string& path, VkFilter filter, VkBool32 enable_anisotropy, float max_anisotropy_level = 16.0f, TextureFormat format = TextureFormat::automatic);
         /* Frees the given Material again. */
         void free(const Materials::Material* material);
 

@@ -79,7 +79,7 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
     logger.logc(Verbosity::important, ModelSystem::channel, "Loading model for entity ", entity, "...");
 
     // Create a 'real' path, containing the executable's location as well
-    std::string real_path = get_executable_path() + (path.size() > 0 && path[0] != '/' && path[0] != '\\' ? "/" : "") + path;
+    std::string fullpath = Tools::merge_paths(get_executable_path(), path);
 
     // Get the entity's component
     ECS::Model& model = entity_manager.get_component<ECS::Model>(entity);
@@ -88,8 +88,8 @@ void ModelSystem::load_model(ECS::EntityManager& entity_manager, entity_t entity
     switch (format) {
         case ModelFormat::obj:
             // Use the load function from the modelloader
-            logger.logc(Verbosity::details, ModelSystem::channel, "Loading '", real_path, "' as .obj file...");
-            load_obj_model(this->memory_manager, this->material_pool, model, real_path);
+            logger.logc(Verbosity::details, ModelSystem::channel, "Loading '", fullpath, "' as .obj file...");
+            load_obj_model(this->memory_manager, this->material_pool, model, fullpath);
             break;
 
         case ModelFormat::triangle: {

@@ -123,7 +123,7 @@ RenderSystem::RenderSystem(Window& window, MemoryManager& memory_manager, const 
 
     render_pass(this->window.gpu()),
 
-    pipeline_cache(this->window.gpu(), get_executable_path() + "/pipeline.cache"),
+    pipeline_cache(this->window.gpu(), Tools::merge_paths(get_executable_path(), "pipeline.cache")),
     pipeline_constructor(this->window.gpu(), this->pipeline_cache)
 {
     // Initialize the descriptor set layout for the global data
@@ -234,6 +234,8 @@ RenderSystem::~RenderSystem() {
 
 /* Private helper function that resizes all required structures for a new window size. */
 void RenderSystem::_resize() {
+    logger.logc(Verbosity::important, RenderSystem::channel, "Resizing...");
+
     // First, wait until the device is idle
     this->window.gpu().wait_for_idle();
 
@@ -241,7 +243,7 @@ void RenderSystem::_resize() {
     this->window.resize();
 
     // Re-create the depth stencil with a new size
-    logger.debug("Window size: ", this->window.real_extent().width, 'x', this->window.real_extent().height);
+    logger.logc(Verbosity::details, RenderSystem::channel, "New window size: ", this->window.real_extent().width, 'x', this->window.real_extent().height);
     this->depth_stencil.resize(this->window.real_extent());
 
     // Re-create all frames in the frame manager

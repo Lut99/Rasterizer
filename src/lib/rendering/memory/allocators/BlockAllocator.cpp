@@ -41,6 +41,16 @@ T Makma3D::Rendering::BlockAllocator<T>::allocate(T size, T alignment) {
         return std::numeric_limits<size_t>::max();
     }
 
+    // If there aren't any blocks yet, we do know there's enough size, so add
+    if (this->_blocks.empty()) {
+        T result = 0;
+        this->_blocks.push_back(MemoryBlock{ result, size });
+
+        // Update the used size, then we're done
+        this->_size += size;
+        return result;
+    }
+
     // If we have the basic size, try to find a free block
     T after_block = 0;
     for (array_size_t i = 0; i < this->_blocks.size(); i++) {
@@ -49,7 +59,7 @@ T Makma3D::Rendering::BlockAllocator<T>::allocate(T size, T alignment) {
         if (align_bytes >= alignment) { align_bytes = 0; }
 
         // If the free space between this block and the last used byte is enough, put it here
-        if (align_bytes + size >= this->_blocks[i].offset - after_block) {
+        if (align_bytes + size <= this->_blocks[i].offset - after_block) {
             // Insert the block here
             T result = after_block + align_bytes;
             while (this->_blocks.size() >= this->_blocks.capacity()) { this->_blocks.reserve(2 * this->_blocks.capacity()); }
@@ -67,7 +77,7 @@ T Makma3D::Rendering::BlockAllocator<T>::allocate(T size, T alignment) {
     // Last chance: is there space after the last block?
     T align_bytes = alignment - after_block % alignment;
     if (align_bytes >= alignment) { align_bytes = 0; }
-    if (align_bytes + size >= this->capacity() - (this->_blocks.last().offset + this->_blocks.last().size)) {
+    if (align_bytes + size <= this->_capacity - (this->_blocks.last().offset + this->_blocks.last().size)) {
         // There is, so put it after the last block
         T result = after_block + align_bytes;
         while (this->_blocks.size() >= this->_blocks.capacity()) { this->_blocks.reserve(2 * this->_blocks.capacity()); }

@@ -228,13 +228,13 @@ MemoryPool::~MemoryPool() {
     // First, deallocate any buffers or images or whatnot there may be
     if (this->objects.size() > 0) {
         logger.logc(Verbosity::details, MemoryPool::channel, "Deallocating allocated objects...");
-        for (uint32_t i = 0; i < this->objects.size(); i++) {
-            if (this->objects[i]->type == MemoryObjectType::buffer) {
-                vkDestroyBuffer(this->gpu, ((Buffer*) this->objects[i])->vk_buffer, nullptr);
+        for (const MemoryObject* object : this->objects) {
+            if (object->type == MemoryObjectType::buffer) {
+                vkDestroyBuffer(this->gpu, ((Buffer*) object)->vk_buffer, nullptr);
             } else {
-                vkDestroyImage(this->gpu, ((Image*) this->objects[i])->vk_image, nullptr);
+                vkDestroyImage(this->gpu, ((Image*) object)->vk_image, nullptr);
             }
-            delete this->objects[i];
+            delete object;
         }
     }
 
@@ -271,7 +271,7 @@ Buffer* MemoryPool::allocate(VkDeviceSize buffer_size, VkBufferUsageFlags buffer
 
     // Create the new Buffer object and insert it in our own list
     Buffer* to_return = new Buffer(*this, buffer, offset, buffer_size, buffer_requirements, buffer_usage, sharing_mode, create_flags);
-    this->objects.push_back((MemoryObject*) to_return);
+    this->objects.insert((MemoryObject*) to_return);
 
     // Done
     return to_return;
@@ -299,7 +299,7 @@ Buffer* MemoryPool::allocate(const Buffer* other) {
 
     // Create the new Buffer object and insert it in our own list
     Buffer* to_return = new Buffer(*this, buffer, offset, other->buffer_size, buffer_requirements, other->init_data.buffer_usage, other->init_data.sharing_mode, other->init_data.create_flags);
-    this->objects.push_back((MemoryObject*) to_return);
+    this->objects.insert((MemoryObject*) to_return);
 
     // Done!
     return to_return;
@@ -325,14 +325,12 @@ Image* MemoryPool::allocate(const VkExtent2D& image_extent, VkFormat image_forma
     vkGetImageMemoryRequirements(this->gpu, image, &image_requirements);
 
     // With the buffer in place, allocate memory and bind it
-    logger.debug("Allocating image of size ", image_requirements.size, " and alignment ", image_requirements.alignment);
     VkDeviceSize offset = this->_allocate(image_requirements);
-    logger.debug("Allocated @ ", offset);
     vkBindImageMemory(this->gpu, image, this->vk_memory, offset);
 
     // Create the new Buffer object and insert it in our own list
     Image* to_return = new Image(*this, image, offset, image_extent, image_format, image_layout, image_requirements, usage_flags, sharing_mode, create_flags);
-    this->objects.push_back((MemoryObject*) to_return);
+    this->objects.insert((MemoryObject*) to_return);
 
     // Done
     return to_return;
@@ -361,7 +359,7 @@ Image* MemoryPool::allocate(const Image* other) {
 
     // Create the new Buffer object and insert it in our own list
     Image* to_return = new Image(*this, image, offset, other->vk_extent, other->vk_format, other->vk_layout, image_requirements, other->init_data.image_usage, other->init_data.sharing_mode, other->init_data.create_flags);
-    this->objects.push_back((MemoryObject*) to_return);
+    this->objects.insert((MemoryObject*) to_return);
 
     // Done!
     return to_return;
@@ -372,45 +370,42 @@ Image* MemoryPool::allocate(const Image* other) {
 /* Deallocates the given MemoryObject. */
 void MemoryPool::free(const MemoryObject* object) {
     // Try to remove the pointer from the list
-    bool found = false;
-    for (uint32_t i = 0; i < this->objects.size(); i++) {
-        if (this->objects[i] == object) {
-            this->objects.erase(i);
-            found = true;
-            break;
+    std::unordered_set<MemoryObject*>::iterator iter = this->objects.find(const_cast<MemoryObject*>(object));
+    if (iter == this->objects.end()) {
+        if (object->type == MemoryObjectType::buffer) {
+            logger.fatalc(MemoryPool::channel, "Tried to free Buffer that was not allocated with this pool.");
+        } else if (object->type == MemoryObjectType::image) {
+            logger.fatalc(MemoryPool::channel, "Tried to free Image that was not allocated with this pool.");
+        } else {
+            logger.fatalc(MemoryPool::channel, "Tried to free object that was not allocated with this pool.");
         }
-    }
-    if (!found) {
-        logger.fatalc(MemoryPool::channel, "Tried to free Buffer that was not allocated with this pool.");
     }
 
     // Free the memory in the freelist
-    this->_free(object->object_offset);
+    this->_free((*iter)->object_offset);
 
     // Destroy either the buffer or the image
-    if (object->type == MemoryObjectType::buffer) {
-        vkDestroyBuffer(this->gpu, ((Buffer*) object)->vk_buffer, nullptr);
+    if ((*iter)->type == MemoryObjectType::buffer) {
+        vkDestroyBuffer(this->gpu, ((Buffer*) (*iter))->vk_buffer, nullptr);
     } else {
-        vkDestroyImage(this->gpu, ((Image*) object)->vk_image, nullptr);
+        vkDestroyImage(this->gpu, ((Image*) (*iter))->vk_image, nullptr);
     }
     
-    // Destroy the pointer itself
-    delete object;
+    // Destroy the pointer itself, then remove it from the internal list
+    delete (*iter);
+    this->objects.erase(iter);
 }
 
 /* Resets the memory pool, freeing all allocated buffers and junk. */
 void MemoryPool::reset() {
     // Go through the list to deallocate it all
-    for (uint32_t i = 0; i < this->objects.size(); i++) {
-        // Destroy the wrapped Vulkan object
-        if (this->objects[i]->type == MemoryObjectType::buffer) {
-            vkDestroyBuffer(this->gpu, ((Buffer*) this->objects[i])->vk_buffer, nullptr);
+    for (const MemoryObject* object : this->objects) {
+        if (object->type == MemoryObjectType::buffer) {
+            vkDestroyBuffer(this->gpu, ((Buffer*) object)->vk_buffer, nullptr);
         } else {
-            vkDestroyImage(this->gpu, ((Image*) this->objects[i])->vk_image, nullptr);
+            vkDestroyImage(this->gpu, ((Image*) object)->vk_image, nullptr);
         }
-
-        // Destroy the pointer itself
-        delete this->objects[i];
+        delete object;
     }
 
     // Clear the list and the freelist

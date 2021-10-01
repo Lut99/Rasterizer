@@ -17,9 +17,9 @@
 #define RENDERING_MEMORY_POOL_HPP
 
 #include <type_traits>
+#include <unordered_set>
 #include <vulkan/vulkan.h>
 
-#include "tools/Array.hpp"
 #include "../gpu/GPU.hpp"
 
 #include "MemoryObject.hpp"
@@ -46,7 +46,7 @@ namespace Makma3D::Rendering {
         VkMemoryPropertyFlags vk_properties;
 
         /* List of all allocated objects in the pool. */
-        Tools::Array<MemoryObject*> objects;
+        std::unordered_set<MemoryObject*> objects;
 
 
         /* Private helper function that does the actual memory allocation part using the internal allocator. */

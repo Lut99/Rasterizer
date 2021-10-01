@@ -52,7 +52,7 @@ VkDeviceSize BlockMemoryPool::_allocate(const VkMemoryRequirements& requirements
 
 /* Private helper function that does the actual memory freeing part in the internal allocator. */
 void BlockMemoryPool::_free(VkDeviceSize offset) {
-    logger.fatalc(MemoryPool::channel, "Cannot free individual objects in a MemoryPool with a block allocator.");
+    this->allocator.free(offset);
 }
 
 /* Private helper function that resets the internal allocator. */

@@ -116,19 +116,19 @@ ShaderPool::~ShaderPool() {
 /* Allocates a new Shader, loaded from the given location as a .spv. Optionally, create flags for the VkShaderModule can be set. */
 Rendering::Shader* ShaderPool::allocate(const std::string& path, VkShaderModuleCreateFlags create_flags) {
     // Pad the path with the exe location
-    std::string full_path = get_executable_path() + '/' + path;
+    std::string fullpath = Tools::merge_paths(get_executable_path(), path);
 
     // Try to find if we already allocated this shader
-    std::unordered_map<std::string, Rendering::Shader*>::iterator iter = this->shaders.find(full_path);
+    std::unordered_map<std::string, Rendering::Shader*>::iterator iter = this->shaders.find(fullpath);
     if (iter != this->shaders.end()) {
         // Return that shader instead
         return (*iter).second;
     }
 
     // Otherwise, we try to load the shader data form the path
-    logger.logc(Verbosity::important, ShaderPool::channel, "Loading shader from file '", full_path, "'...");
+    logger.logc(Verbosity::important, ShaderPool::channel, "Loading shader from file '", fullpath, "'...");
     uint32_t* data; uint32_t data_size;
-    load_raw_shader_data(full_path, &data, &data_size);
+    load_raw_shader_data(fullpath, &data, &data_size);
 
     // If we succeeded, continue by populating the create info for the VkShaderModule
     VkShaderModuleCreateInfo shader_info;
@@ -142,8 +142,8 @@ Rendering::Shader* ShaderPool::allocate(const std::string& path, VkShaderModuleC
     }
 
     // If created, use it to populate the Shader object
-    Shader* result = new Shader(this->gpu, vk_shader_module, full_path);
-    this->shaders.insert({ full_path, result });
+    Shader* result = new Shader(this->gpu, vk_shader_module, fullpath);
+    this->shaders.insert({ fullpath, result });
 
     // Deallocate the raw data and we're done
     delete[] data;

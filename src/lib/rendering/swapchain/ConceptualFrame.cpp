@@ -142,16 +142,6 @@ ConceptualFrame::ConceptualFrame(ConceptualFrame&& other) :
 
 /* Destructor for the ConceptualFrame class. */
 ConceptualFrame::~ConceptualFrame() {
-    if (this->entity_buffers.size() > 0) {
-        for (uint32_t i = 0; i < this->entity_buffers.size(); i++) {
-            this->memory_manager.draw_pool.free(this->entity_buffers[i]);
-        }
-    }
-    if (this->material_buffers.size() > 0) {
-        for (uint32_t i = 0; i < this->material_buffers.size(); i++) {
-            this->memory_manager.draw_pool.free(this->material_buffers[i]);
-        }
-    }
     if (this->camera_buffer != nullptr) {
         this->memory_manager.draw_pool.free(this->camera_buffer);
     }
@@ -243,6 +233,9 @@ void ConceptualFrame::upload_material_data(const Materials::Material* material) 
 
             // Bind the descriptor set
             this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, { this->material_buffers[material_index] });
+
+            // Done
+            break;
         }
 
         case Materials::MaterialType::simple_textured: {
@@ -250,6 +243,9 @@ void ConceptualFrame::upload_material_data(const Materials::Material* material) 
 
             // Schedule the texture's sampler
             this->material_sets[material_index]->bind(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, { simple_textured->texture });
+
+            // Done
+            break;
         }
         
         default:

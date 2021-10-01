@@ -246,6 +246,7 @@ int main(int argc, const char** argv) {
         Materials::TexturePool texture_pool(memory_manager);
         // Initialize the MaterialPool
         Materials::MaterialPool material_pool(texture_pool);
+        material_pool.set_default(material_pool.allocate_simple("default"));
         // Initialize the ModelSystem
         Models::ModelSystem model_system(memory_manager, material_pool);
         // Initialize the RenderSystem
